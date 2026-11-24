@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pricing Desk 101</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=JetBrains+Mono:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..600&display=swap">
+<link rel="stylesheet" href="assets/course.css">
+</head>
+<body data-page="index.html">
+<div class="shell">
+<aside class="toc" id="toc"></aside>
+<main class="page">
+
+<header class="ph">
+  <p class="eyebrow">A trader's course · from cash to exotics</p>
+  <h1>Pricing Desk 101</h1>
+  <p class="lede">Every major product type a multi-asset trading desk deals in, explained from scratch. It runs from a share of stock to a dual-digital FX barrier. By the last page you should be able to write down the cashflows of any of them and compute its present value (PV) by hand.</p>
+</header>
+
+<section class="sec" id="how">
+  <h2>How every product page works</h2>
+  <div class="prose">
+    <p>Each page climbs the same four levels. You can stop at any level and still have a correct picture. Each new level only adds detail.</p>
+  </div>
+  <div class="tbl"><table>
+    <thead><tr><th>Step</th><th>What you get</th></tr></thead>
+    <tbody>
+      <tr><td><span class="lv">Level 1</span> The idea</td><td>What the product is for, in everyday words, with an analogy.</td></tr>
+      <tr><td><span class="lv">Level 2</span> The cashflows</td><td>Every payment drawn on a timeline: who pays, who receives, when, and how much.</td></tr>
+      <tr><td><span class="lv">Level 3</span> The PV formula</td><td>The formula built step by step: estimate each unknown payment, then discount it to today.</td></tr>
+      <tr><td><span class="lv">Level 4</span> Desk reality</td><td>The conventions that change the number on a real trade: day counts, curves, lags, quoting.</td></tr>
+      <tr><td>Then</td><td>The greeks that matter for that product, a worked example done by hand, a live calculator, and a short recap.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="sec" id="read">
+  <h2>How to read the cashflow diagrams</h2>
+  <div class="prose"><p>Every diagram is drawn from <em>your</em> side of the trade. Time runs left to right. Arrow length is proportional to the amount.</p></div>
+  <figure class="fig">
+    <div id="legend-demo"></div>
+    <figcaption><b>Up and blue</b>: money you receive. <b>Down and orange</b>: money you pay. <b>Solid</b>: amount known today. <b>Dashed</b>: amount depends on a future rate or price. <b>Dotted with ?</b>: only paid if something happens (a default, an option ending in the money). <b>Thick</b>: an exchange of principal.</figcaption>
+  </figure>
+  <aside class="key"><p>Every PV in this course is the same recipe. List the payments, replace each unknown amount by its market expectation (a forward, a survival-weighted amount, or an option formula), multiply each by its discount factor, and add them up.</p></aside>
+</section>
+
+<section class="sec" id="map">
+  <h2>The course map</h2>
+  <div class="prose"><p>Products are ordered from the most vanilla to the most complex, and each part leans on the ones before it. Start with the toolkit.</p></div>
+  <div class="map" id="course-map"></div>
+</section>
+
+</main>
+</div>
+<script src="assets/course.js"></script>
+<script>
+C.legs('#legend-demo', {
+  tMin: 0, tMax: 3, ticks: [0, 1, 2, 3], height: 92,
+  legs: [
+    { name: 'Fixed amount you receive', dir: 1, style: 'fixed', flows: [{ t: 1, a: 4, label: '4.00' }, { t: 2, a: 4, label: '4.00' }, { t: 3, a: 4, label: '' }] },
+    { name: 'Principal returned to you', dir: 1, style: 'notional', flows: [{ t: 3, a: 9, label: '100 + 4.00' }] },
+    { name: 'Floating amount you pay', dir: -1, style: 'float', flows: [{ t: 1, a: 3.5, label: 'SOFR' }, { t: 2, a: 3.5, label: 'SOFR' }, { t: 3, a: 3.5, label: 'SOFR' }] },
+    { name: 'Contingent payment', dir: -1, style: 'contingent', flows: [{ t: 1.6, a: 7, label: 'if default' }] },
+  ],
+});
+
+(function () {
+  const blurbs = [
+    'The maths every page reuses: discounting, curves, forwards, probability and the Black formula.',
+    'One payment or a fixed schedule. The price is the present value of known amounts.',
+    'Exchange-traded forwards with daily margin. Value is the move in the futures price.',
+    'Exchanges of fixed against floating amounts. Price each leg from a forward curve and discount.',
+    'Payments that depend on whether a company defaults. Survival probabilities join the discount factors.',
+    'Bonds backed by home loans that borrowers can repay early. Prepayment drives the cashflows.',
+    'The right, without the obligation, to trade at a fixed level. Volatility enters the price.',
+    'Payoffs on barriers, several underlyings, or volatility and correlation themselves.',
+    'All formulas on one page, plus a glossary of every term.',
+  ];
+  const root = document.getElementById('course-map');
+  let num = 0;
+  root.innerHTML = C.PARTS.map((name, pi) => {
+    const pages = C.PAGES.filter(p => p.p === pi && p.f !== 'index.html');
+    if (!pages.length) return '';
+    const cards = pages.map(p => {
+      const label = p.f === 'cheatsheet.html' ? '' : String(num++).padStart(2, '0');
+      const types = p.types.map(t => `<span>${C.esc(t)}</span>`).join('');
+      return `<a class="map-card" href="${p.f}"><div class="h"><span class="n">${label}</span><span>${C.esc(p.t)}</span></div>${types ? `<div class="types">${types}</div>` : ''}</a>`;
+    }).join('');
+    return `<div class="map-part"><h2>${C.esc(name)}</h2><p>${blurbs[pi]}</p><div class="map-grid">${cards}</div></div>`;
+  }).join('');
+})();
+</script>
+</body>
+</html>

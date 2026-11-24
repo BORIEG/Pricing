@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Correlation Swaps</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=JetBrains+Mono:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..600&display=swap">
+<link rel="stylesheet" href="assets/course.css">
+</head>
+<body data-page="correlation-swap.html">
+<div class="shell">
+<aside class="toc" id="toc"></aside>
+<main class="page">
+
+<header class="ph">
+  <p class="eyebrow">Part 7 · Exotics &amp; volatility</p>
+  <h1>Correlation swaps</h1>
+  <p class="lede">A bet on how closely two markets move together. You agree a correlation today. At maturity you measure the real correlation of their daily moves and settle the difference. It is the cousin of the <a href="var-vol-swaps.html">variance swap</a>, one level more abstract.</p>
+  <div class="ptypes" data-ptypes data-eg="CorrelationSwap NIKKEI 225 FX:USD:JPY 3Y USD 50 % 31/Dec/27"></div>
+</header>
+
+<section class="lvl" id="idea">
+  <h2><span class="lv">Level 1</span> The idea</h2>
+  <div class="prose">
+    <p>When the yen weakens, Japanese exporters earn more in yen, so the Nikkei 225 often rises at the same time as USD/JPY. The two markets are <b>correlated</b>. Correlation is a number between −1 and +1. +1 means they always move together, −1 means always opposite, 0 means no link.</p>
+    <p>A correlation swap turns that number into a payment. The example trade agrees 50% today on the Nikkei and USD/JPY for 3 years. If, over the 3 years, their daily moves turn out 60% correlated, the buyer receives 10 correlation points times the notional. If they turn out 40% correlated, the buyer pays 10 points.</p>
+  </div>
+  <aside class="analogy"><p>Think of two friends walking a dog each in the same park. Correlation measures how often they turn left or right at the same moment. A correlation swap is a bet, made at the park gate, on how in-step they will be by the end of the walk.</p></aside>
+  <p>Why would anyone want that? Banks that sell <b>quanto</b> products, such as a Nikkei investment paid in dollars, carry hidden exposure to this correlation. A correlation swap hedges it directly.</p>
+</section>
+
+<section class="lvl" id="cashflows">
+  <h2><span class="lv">Level 2</span> The cashflows</h2>
+  <div class="prose"><p>Nothing is paid at the start. Every trading day both closing prices are recorded. At maturity one net amount is paid:</p></div>
+  <div class="f"><span class="lbl">Payment at maturity, to the buyer</span>
+    <var>N</var> × ( <var>ρ</var><sub>real</sub> − <var>K</var> ) &nbsp;&nbsp; with <var>ρ</var> and <var>K</var> in correlation points (50% = 50)
+  </div>
+  <dl class="where">
+    <dt><var>N</var></dt><dd>money per correlation point, e.g. USD 100,000</dd>
+    <dt><var>K</var></dt><dd>the strike correlation agreed today (50)</dd>
+  </dl>
+  <figure class="fig">
+    <div class="fig-title">Long Nikkei/USD-JPY correlation swap, strike 50%, 3 years to 31 Dec 2027</div>
+    <div id="legs-corr"></div>
+    <figcaption>Dotted aqua arrows are daily price pairs being recorded. The single payment at maturity can go either way. It is bounded, because correlation can never exceed +1 or fall below −1.</figcaption>
+  </figure>
+  <figure class="fig">
+    <div class="fig-title">Payout at maturity for USD 100,000 per point</div>
+    <div id="chart-corr"></div>
+    <figcaption>A straight line: correlation swaps are linear in realised correlation. The most you can win is 50 points (correlation +1) and the most you can lose is 150 points (correlation −1).</figcaption>
+  </figure>
+</section>
+
+<section class="lvl" id="pv">
+  <h2><span class="lv">Level 3</span> The PV formula</h2>
+  <h3>Step 1 · Measuring realised correlation</h3>
+  <div class="prose"><p>Take the daily log-returns <var>x</var><sub><var>i</var></sub> = ln(Nikkei<sub><var>i</var></sub>/Nikkei<sub><var>i</var>−1</sub>) and <var>y</var><sub><var>i</var></sub> = ln(USDJPY<sub><var>i</var></sub>/USDJPY<sub><var>i</var>−1</sub>), and their averages <var>x̄</var>, <var>ȳ</var>. Realised correlation is the usual statistics formula:</p></div>
+  <div class="f"><span class="lbl">Realised correlation over n days</span>
+    <var>ρ</var><sub>real</sub> = <span class="frac"><span><span class="sum"><span class="s">Σ</span></span> (<var>x</var><sub><var>i</var></sub> − <var>x̄</var>)(<var>y</var><sub><var>i</var></sub> − <var>ȳ</var>)</span><span><span class="big">√</span>( <span class="sum"><span class="s">Σ</span></span>(<var>x</var><sub><var>i</var></sub> − <var>x̄</var>)² × <span class="sum"><span class="s">Σ</span></span>(<var>y</var><sub><var>i</var></sub> − <var>ȳ</var>)² )</span></span>
+  </div>
+  <div class="prose"><p>The top measures how often the two move the same way at the same time. The bottom scales by how much each moves on its own, so the result always lands between −1 and +1.</p></div>
+
+  <h3>Step 2 · Mid-life: realised part plus expected part</h3>
+  <div class="prose"><p>Part of the period has already happened. As a good approximation, the final correlation is the day-weighted average of the correlation realised so far and the correlation the market expects for the rest:</p></div>
+  <div class="f"><span class="lbl">Expected final correlation, w = elapsed fraction of the period</span>
+    E[<var>ρ</var><sub>real</sub>] ≈ <var>w</var> × <var>ρ</var><sub>e</sub> + (1 − <var>w</var>) × <var>ρ</var><sub>imp</sub>
+  </div>
+  <div class="f"><span class="lbl">PV for the buyer</span>
+    PV = <var>D</var>(<var>T</var>) × <var>N</var> × ( E[<var>ρ</var><sub>real</sub>] − <var>K</var> )
+  </div>
+  <aside class="trap"><p>The day-weighted average is exact only if both markets were equally volatile in the two sub-periods. Correlation over a full sample is a ratio, so a very volatile sub-period carries more weight than its share of days. Production systems keep the running sums Σ<var>xy</var>, Σ<var>x</var>², Σ<var>y</var>² and project each one forward separately.</p></aside>
+
+  <h3>Step 3 · Where implied correlation comes from</h3>
+  <div class="prose"><p>Correlation is rarely quoted directly. It is backed out of three volatilities. The Nikkei measured in dollars has log-return <var>x</var> − <var>y</var> (Nikkei in yen, divided by yen per dollar). Using the variance-of-a-difference rule:</p></div>
+  <div class="f"><span class="lbl">Variance of the Nikkei in USD, then solve for ρ</span>
+    <var>σ</var><sub>NKY$</sub>² = <var>σ</var><sub>N</sub>² + <var>σ</var><sub>FX</sub>² − 2<var>ρ</var><var>σ</var><sub>N</sub><var>σ</var><sub>FX</sub>
+    &nbsp;&nbsp;⇒&nbsp;&nbsp;
+    <var>ρ</var><sub>imp</sub> = <span class="frac"><span><var>σ</var><sub>N</sub>² + <var>σ</var><sub>FX</sub>² − <var>σ</var><sub>NKY$</sub>²</span><span>2 <var>σ</var><sub>N</sub> <var>σ</var><sub>FX</sub></span></span>
+  </div>
+  <div class="prose"><p>With a Nikkei vol of 22%, a USD/JPY vol of 10% and a vol of 21% for Nikkei-in-dollars (from "composite" options), <var>ρ</var><sub>imp</sub> = (0.0484 + 0.0100 − 0.0441) ÷ (2 × 0.22 × 0.10) = 0.325. The same idea gives implied correlation for an index from the vols of its members.</p></div>
+</section>
+
+<section class="lvl" id="desk">
+  <h2><span class="lv">Level 4</span> Desk reality</h2>
+  <ul>
+    <li><b>Reading the trade description.</b> <code>CorrelationSwap NIKKEI 225 FX:USD:JPY 3Y USD 50 % 31/Dec/27</code> is a 3-year swap on the correlation between the Nikkei 225 and USD/JPY, settled in USD, strike 50%, maturing 31 Dec 2027.</li>
+    <li><b>Why the desk holds it.</b> Quanto Nikkei products (for example Nikkei futures paid in dollars) have a forward price that depends on this correlation. Their seller is naturally short or long correlation and uses swaps like this to offset it.</li>
+    <li><b>Thin market.</b> Implied correlation is rarely quoted. Desks back it out from composite or quanto prices, and the bid-offer is wide (several points).</li>
+    <li><b>Conventions.</b> Term sheets say whether returns are demeaned (as in Step 1) or zero-mean, and how missing days on either market are handled. Japanese holidays and US holidays differ, so the two calendars must be aligned.</li>
+    <li><b>Regime shifts.</b> The Nikkei/yen link changes with Bank of Japan policy. Over 2013–2015 it was strongly positive. In some risk-off episodes both the yen and safe assets rally while equities fall, which also pushes it positive. History is a weak guide.</li>
+  </ul>
+</section>
+
+<section class="sec" id="greeks">
+  <h2>Greeks that matter</h2>
+  <div class="tbl greeks"><table>
+    <thead><tr><th>Greek</th><th>What it measures</th><th>For a correlation swap</th></tr></thead>
+    <tbody>
+      <tr><td>Corr01</td><td>PV change if implied correlation for the rest of the period moves +1 point</td><td>The main risk: <var>D</var> × <var>N</var> × (1 − <var>w</var>). It shrinks as days are realised. About USD 35k per point in the example.</td></tr>
+      <tr><td>Vega</td><td>PV change if vols move +1 point</td><td>Close to zero to first order, because correlation is a ratio and the vol levels cancel. That is the advantage over trading correlation through options (dispersion).</td></tr>
+      <tr><td>Delta, gamma</td><td>Sensitivity to the level of either market</td><td>None directly. Only the co-movement of daily returns matters.</td></tr>
+      <tr><td>Theta</td><td>PV change per day</td><td>Each day replaces a day of implied correlation by a day of realised.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="sec" id="example">
+  <h2>Worked example</h2>
+  <p>On 23 Nov 2026 you hold a long correlation swap on USD 100,000 per point, strike 50. It started 31 Dec 2024 and ends 31 Dec 2027 (1,095 calendar days). 692 days have passed with realised correlation 58%. The market implies 45% for the remaining period. USD rate 3.75%.</p>
+  <ol class="steps">
+    <li><span>Elapsed weight.</span>
+      <div class="calc-line">w = 692 / 1,095 = 0.631963</div></li>
+    <li><span>Expected final correlation.</span>
+      <div class="calc-line">E[ρ] = 0.631963 × 58 + 0.368037 × 45 = 36.654 + 16.562 = 53.216 points</div></li>
+    <li><span>Discount factor to maturity (403 days).</span>
+      <div class="calc-line">D = e^(−0.0375 × 403/365) = 0.959441</div></li>
+    <li><span>PV.</span>
+      <div class="calc-line">PV = 0.959441 × 100,000 × (53.216 − 50) = USD 308,511</div></li>
+    <li><span>Correlation sensitivity.</span>
+      <div class="calc-line">Corr01 = 0.959441 × 100,000 × 0.368037 = USD 35,311 per point of implied correlation</div></li>
+  </ol>
+  <p class="answer">The swap is worth <b>+USD 308,511</b> to the buyer. The high correlation realised so far (58%) already outweighs a lower implied 45% for the remaining 37% of the period.</p>
+</section>
+
+<section class="sec" id="try">
+  <h2>Try it</h2>
+  <p>The calculator simulates daily returns for both markets, built so that their realised correlation over the elapsed days equals your input. The chart shows the running correlation settling at that level. The side calculation backs out implied correlation from three vols.</p>
+  <div id="calc-corr"></div>
+</section>
+
+<section class="sec" id="recap">
+  <h2>Remember</h2>
+  <ul class="recap">
+    <li>Payout = N × (realised correlation − strike), in correlation points.</li>
+    <li>Realised correlation is the standard statistics formula on daily log-returns.</li>
+    <li>Mid-life: E[ρ] ≈ w × realised + (1 − w) × implied, then discount.</li>
+    <li>Implied correlation comes from three vols: ρ = (σ₁² + σ₂² − σ₁₂²) ÷ (2σ₁σ₂).</li>
+    <li>Main risk is corr01. Vega and delta are close to zero.</li>
+  </ul>
+</section>
+
+</main>
+</div>
+<script src="assets/course.js"></script>
+<script>
+function rng(seed) { let a = seed >>> 0; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function normals(n, seed) { const r = rng(seed), out = []; while (out.length < n) { const u1 = r() || 1e-12, u2 = r(), m = Math.sqrt(-2 * Math.log(u1)); out.push(m * Math.cos(2 * Math.PI * u2), m * Math.sin(2 * Math.PI * u2)); } return out.slice(0, n); }
+// Two return series whose full-sample correlation is exactly rho (demeaned, orthogonalised, equal norms).
+function corrPath(n, rho, seed) {
+  const z = normals(2 * n, seed), a = z.slice(0, n), b = z.slice(n);
+  const mean = v => v.reduce((s, x) => s + x, 0) / v.length;
+  const ma = mean(a), mb = mean(b); for (let i = 0; i < n; i++) { a[i] -= ma; b[i] -= mb; }
+  const dot = (u, v) => u.reduce((s, x, i) => s + x * v[i], 0);
+  const beta = dot(a, b) / dot(a, a); for (let i = 0; i < n; i++) b[i] -= beta * a[i];
+  const na = Math.sqrt(dot(a, a)), nb = Math.sqrt(dot(b, b));
+  const x = a.map(v => v / na * 0.014), y = a.map((v, i) => (rho * v / na + Math.sqrt(1 - rho * rho) * b[i] / nb) * 0.006);
+  return { x, y };
+}
+function corr(x, y, k) {
+  let sx = 0, sy = 0; for (let i = 0; i < k; i++) { sx += x[i]; sy += y[i]; }
+  const mx = sx / k, my = sy / k; let sxy = 0, sxx = 0, syy = 0;
+  for (let i = 0; i < k; i++) { const dx = x[i] - mx, dy = y[i] - my; sxy += dx * dy; sxx += dx * dx; syy += dy * dy; }
+  return sxy / Math.sqrt(sxx * syy);
+}
+
+C.legs('#legs-corr', {
+  tMin: 0, tMax: 3.15, ticks: [0, 1, 2, 3], tickFmt: t => C.fmt(t, 0) + 'y', axisLabel: 'years since start',
+  events: [{ t: 0, label: 'Start 31 Dec 24' }, { t: 1.896, label: 'Today' }, { t: 3, label: 'Maturity 31 Dec 27' }],
+  legs: [
+    { name: 'Daily Nikkei and USD/JPY closes recorded (not paid)', dir: 1, style: 'contingent', color: 'aqua', flows: Array.from({ length: 11 }, (_, i) => ({ t: (i + 1) * 0.25, a: 0.25, tip: 'A pair of daily closes is recorded' })) },
+    { name: 'Net payout: N × (ρ_real − 50), either sign', dir: -1, style: 'float', flows: [{ t: 3, a: 1, label: 'N × (ρ − 50)', tip: 'One payment at maturity in USD' }] },
+  ],
+});
+
+C.chart('#chart-corr', {
+  x: [-100, 100], xLabel: 'realised correlation (points)', yLabel: 'payout (USD)',
+  xFmt: x => C.fmt(x, 0), yFmt: y => C.fmt(y / 1e6, 0) + 'm', tipFmt: y => 'USD ' + C.fmt(y, 0), height: 230, zero: false,
+  series: [{ name: 'Payout', f: r => 1e5 * (r - 50), color: 1 }],
+  marks: [{ x: 50, label: 'K = 50' }],
+});
+
+C.calc('#calc-corr', {
+  title: 'Correlation swap pricer',
+  inputs: [
+    { id: 'N', label: 'Notional per point', unit: 'USD k', value: 100, step: 10 },
+    { id: 'K', label: 'Strike', unit: 'points', value: 50, step: 1 },
+    { id: 'tot', label: 'Total calendar days', value: 1095, step: 1, min: 2 },
+    { id: 'el', label: 'Elapsed calendar days', value: 692, step: 1, min: 0 },
+    { id: 're', label: 'Realised so far', unit: 'points', value: 58, step: 1, min: -99, max: 99 },
+    { id: 'ri', label: 'Implied for the rest', unit: 'points', value: 45, step: 1, min: -99, max: 99 },
+    { id: 'r', label: 'USD rate', unit: '%', value: 3.75, step: 0.05 },
+    { id: 'seed', label: 'Path seed', value: 3, step: 1 },
+    { id: 'sN', label: 'Side calc: Nikkei vol', unit: '%', value: 22, step: 0.5 },
+    { id: 'sF', label: 'Side calc: USD/JPY vol', unit: '%', value: 10, step: 0.5 },
+    { id: 'sC', label: 'Side calc: Nikkei-in-USD vol', unit: '%', value: 21, step: 0.5 },
+  ],
+  compute: v => {
+    const tot = Math.max(2, v.tot), el = Math.min(tot, Math.max(0, v.el)), w = el / tot;
+    const D = Math.exp(-v.r / 100 * (tot - el) / 365), N = v.N * 1e3;
+    const E = w * v.re + (1 - w) * v.ri, pv = D * N * (E - v.K);
+    const nTd = Math.round(el * 252 / 365); let pts = [], chk = NaN;
+    if (nTd >= 20) {
+      const p = corrPath(nTd, Math.max(-0.99, Math.min(0.99, v.re / 100)), Math.round(v.seed) || 1);
+      for (let k = 20; k <= nTd; k += Math.max(1, Math.floor(nTd / 200))) pts.push([k, 100 * corr(p.x, p.y, k)]);
+      chk = 100 * corr(p.x, p.y, nTd); pts.push([nTd, chk]);
+    }
+    const sN = v.sN / 100, sF = v.sF / 100, sC = v.sC / 100, imp = (sN * sN + sF * sF - sC * sC) / (2 * sN * sF);
+    return {
+      out: [
+        ['Elapsed weight w', C.fmt(w, 6)],
+        ['Realised correlation of simulated path', nTd >= 20 ? C.fmt(chk, 2) : 'too few days'],
+        ['Expected final correlation', C.fmt(E, 3) + ' points'],
+        ['Discount factor', C.fmt(D, 6)],
+        ['PV', 'USD ' + C.fmt(pv, 0), true],
+        ['Corr01 (implied +1 point)', 'USD ' + C.fmt(D * N * (1 - w), 0)],
+        ['Side calc: implied correlation from vols', Math.abs(imp) <= 1 ? C.fmt(100 * imp, 1) + ' points' : 'vols inconsistent (|ρ| > 1)'],
+      ],
+      chart: pts.length ? {
+        x: [20, nTd], xLabel: 'trading day', yLabel: 'running realised correlation (points)',
+        xFmt: x => C.fmt(x, 0), yFmt: y => C.fmt(y, 0), tipFmt: y => C.fmt(y, 1),
+        series: [{ name: 'Running correlation', points: pts, color: 1 }],
+        hmarks: [{ y: v.K, label: 'strike ' + v.K }],
+      } : null,
+      note: 'Day-weighted mix of realised and implied correlation (approximation). The simulated path is illustrative: only the realised and implied inputs enter the PV.',
+    };
+  },
+});
+</script>
+</body>
+</html>

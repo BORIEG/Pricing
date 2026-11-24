@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Commodity Swap Futures</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=JetBrains+Mono:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..600&display=swap">
+<link rel="stylesheet" href="assets/course.css">
+</head>
+<body data-page="commodity-swap-futures.html">
+<div class="shell">
+<aside class="toc" id="toc"></aside>
+<main class="page">
+
+<header class="ph">
+  <p class="eyebrow">Part 2 · Futures</p>
+  <h1>Commodity swap &amp; spread futures</h1>
+  <p class="lede">A bet on the <em>average</em> oil price over a calendar month, cleared like a future. Refiners, airlines and shipping companies use them because they buy fuel every day, so the monthly average is the price they actually pay.</p>
+  <div class="ptypes" data-ptypes data-eg="Dubai 1st Line Swap Nov26 · Sing Mogas 92 Unl (Platts) Nov26 · FO Mini 380 Sing Swap (Mini) Nov26 · SingM92U Vs Br1stL Dec26"></div>
+</header>
+
+<section class="lvl" id="idea">
+  <h2><span class="lv">Level 1</span> The idea</h2>
+  <div class="prose">
+    <p>An airline fills its planes every day. It does not care what jet fuel costs on one particular Tuesday. It cares what fuel costs <em>on average</em> this month. So it wants a hedge that pays the average.</p>
+    <p>A <b>commodity swap future</b> does exactly that. You agree a fixed price today, say $71.80 a barrel. At the end of the month, the exchange averages the published price over every pricing day. If the average is higher than your fixed price, you (the buyer) gain the difference on every barrel.</p>
+  </div>
+  <aside class="analogy"><p>Think of your mobile data bill. You don't pay for the peak day, you pay for the month. An average-price swap is a fixed monthly plan: you lock the monthly price, and whoever is on the wrong side of the real average makes up the difference.</p></aside>
+  <p>A <b>spread future</b> is the same idea on the <em>difference</em> between two averages, for example Singapore petrol minus Brent crude. That difference is a refiner's profit margin, called the <b>crack spread</b>.</p>
+</section>
+
+<section class="lvl" id="cashflows">
+  <h2><span class="lv">Level 2</span> The cashflows</h2>
+  <div class="prose">
+    <p>The contract settles once, after the month ends, against the monthly average <var>A</var>. Before that, like every future, it is margined daily against the exchange's settlement price. That price is the market's best guess of <var>A</var>.</p>
+  </div>
+  <figure class="fig">
+    <div class="fig-title">Long 5 lots Dubai 1st Line Swap Nov26 at $71.80/bbl (1,000 bbl per lot)</div>
+    <div id="legs-cs"></div>
+    <figcaption>At final settlement you receive the <b>average</b> (dashed: unknown until the month ends) and pay the <b>fixed</b> price. Only the net amount moves, mostly already paid through daily margin.</figcaption>
+  </figure>
+  <figure class="fig">
+    <div class="fig-title">Inside the pricing month: 15 days already published, 6 still to come</div>
+    <div id="chart-days"></div>
+    <figcaption>Blue line: Platts Dubai prices already <b>published</b> (fixed, no more risk). Orange: the <b>forward</b> price for the remaining days. The dashed line is the expected monthly average.</figcaption>
+  </figure>
+</section>
+
+<section class="lvl" id="pv">
+  <h2><span class="lv">Level 3</span> The PV formula</h2>
+  <h3>Step 1 · The settlement amount</h3>
+  <div class="f"><span class="lbl">Payoff at final settlement, long position</span>
+    (<var>A</var> − <var>K</var>) × <var>Q</var> × <var>n</var>,&nbsp;&nbsp;&nbsp; <var>A</var> = <span class="frac"><span>1</span><span><var>D</var></span></span> <span class="sum"><span class="s">Σ</span><small>d = 1..D</small></span> <var>P</var><sub><var>d</var></sub>
+  </div>
+  <dl class="where">
+    <dt><var>K</var></dt><dd>fixed (trade) price</dd>
+    <dt><var>Q</var></dt><dd>lot size: 1,000 bbl for Dubai and Brent swaps, 100 t for the mini fuel oil contract</dd>
+    <dt><var>D</var></dt><dd>number of pricing days in the month (days Platts publishes)</dd>
+    <dt><var>P</var><sub><var>d</var></sub></dt><dd>published price on pricing day <var>d</var></dd>
+  </dl>
+  <h3>Step 2 · Split the month into "known" and "still to come"</h3>
+  <div class="prose"><p>On any day inside the month, <var>m</var> prices are already published. The rest are unknown, so we replace each by its forward price <var>F</var><sub><var>d</var></sub>, as for every linear product.</p></div>
+  <div class="f"><span class="lbl">Expected average</span>
+    E[<var>A</var>] = <span class="frac"><span>1</span><span><var>D</var></span></span> ( <span class="sum"><span class="s">Σ</span><small>published</small></span> <var>P</var><sub><var>d</var></sub> + <span class="sum"><span class="s">Σ</span><small>remaining</small></span> <var>F</var><sub><var>d</var></sub> )
+  </div>
+  <h3>Step 3 · PV</h3>
+  <div class="f"><span class="lbl">Cleared (margined daily): no discounting</span>
+    PV = (E[<var>A</var>] − <var>K</var>) × <var>Q</var> × <var>n</var>
+  </div>
+  <p>The OTC version of the same swap pays a few days after month end and has no daily margin. Then you multiply by the discount factor to the payment date: PV<sub>OTC</sub> = (E[<var>A</var>] − <var>K</var>) × <var>Q</var> × <var>n</var> × <var>D</var>(<var>T</var><sub>pay</sub>).</p>
+  <h3>Spread futures (<code>CommoditySpreadFuture</code>)</h3>
+  <div class="f"><span class="lbl">Crack spread future, long the spread</span>
+    PV = ( E[<var>A</var><sub>product</sub>] − E[<var>A</var><sub>crude</sub>] − <var>K</var> ) × <var>Q</var> × <var>n</var>
+  </div>
+  <div class="prose"><p>Both legs must be in the <b>same unit</b>. Singapore Mogas 92 and Brent are both quoted in $/bbl, so you subtract directly. Fuel oil 380 is quoted in $/<b>metric tonne</b>. You first convert it with the industry factor 6.35 bbl per tonne: $455/t ÷ 6.35 = $71.65/bbl.</p></div>
+</section>
+
+<section class="lvl" id="desk">
+  <h2><span class="lv">Level 4</span> Desk reality</h2>
+  <ul>
+    <li><b>What "1st line" means.</b> On each pricing day the Brent 1st line price is the settlement of the front-month ICE Brent future that day. When the front month expires mid-month, the average silently rolls to the next contract. Your forward for the remaining days must follow the same roll.</li>
+    <li><b>Dubai</b> is the Middle East crude benchmark priced by Platts. <b>Dated Brent</b> is physical North Sea cargoes loading in the next 10 days to one month. They are different prices with different forward curves.</li>
+    <li><b>Pricing calendars.</b> Platts Singapore and London have different holidays. Count <var>D</var> from the right publication calendar. One wrong holiday shifts every weight by about 5%.</li>
+    <li><b>Delta melts through the month.</b> Each published day removes 1/<var>D</var> of the risk. On the last pricing day almost nothing is left. Hedge ratios must be rebalanced daily.</li>
+    <li><b>Naming.</b> <code>Dubai 1st Line Swap Nov26</code> = November 2026 pricing month. <code>SingM92U Vs Br1stL Dec26</code> = Singapore Mogas 92 unleaded minus Brent 1st line, December 2026 averages. <code>FO Mini 380 Sing Swap (Mini)</code> = fuel oil 380 cst Singapore, 100 t lots.</li>
+  </ul>
+</section>
+
+<section class="sec" id="greeks">
+  <h2>Greeks that matter</h2>
+  <div class="tbl greeks"><table>
+    <thead><tr><th>Greek</th><th>What it measures</th><th>For an average-price swap future</th></tr></thead>
+    <tbody>
+      <tr><td>Delta</td><td>PV change if the remaining forward prices rise $1</td><td>(remaining days ÷ <var>D</var>) × <var>Q</var> × <var>n</var>. Before the month starts it equals <var>Q</var> × <var>n</var>. On the last day it is close to zero.</td></tr>
+      <tr><td>Bucketed delta</td><td>Which futures contracts carry the risk</td><td>Split by the contract that sets each remaining day's 1st-line price (front month, then second month after the roll).</td></tr>
+      <tr><td>Spread delta</td><td>For spread futures: risk to each leg</td><td>Long product leg, short crude leg, same size in bbl. You are flat outright oil but long the crack.</td></tr>
+      <tr><td>Gamma, vega</td><td>Curvature, volatility</td><td>Zero. The payoff is linear in prices.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="sec" id="example">
+  <h2>Worked example</h2>
+  <p>On 23 Nov 2026 you hold 5 lots long Dubai 1st Line Swap Nov26 at $71.80. November 2026 has 21 pricing days. 15 are published (2 to 20 Nov) with an average of $72.40. The forward for the remaining 6 days is $73.10.</p>
+  <ol class="steps">
+    <li><span>Expected average.</span>
+      <div class="calc-line">E[A] = (15 × 72.40 + 6 × 73.10) / 21 = (1,086.00 + 438.60) / 21 = $72.60</div></li>
+    <li><span>PV.</span>
+      <div class="calc-line">PV = (72.60 − 71.80) × 1,000 × 5 = $4,000</div></li>
+    <li><span>Delta: only the 6 unpublished days can still move.</span>
+      <div class="calc-line">Delta = 6/21 × 1,000 × 5 = $1,428.57 per $1 move in the forward</div></li>
+  </ol>
+  <p class="answer">PV <b>+$4,000</b> with delta <b>$1,429 per $1/bbl</b>, which is only 29% of the 5,000 bbl you started the month with.</p>
+  <h3>Spread future</h3>
+  <p>Long 4 lots SingM92U Vs Br1stL Dec26 at $10.80. December has not started, so both legs are fully forward. Mogas 92 December swap is $82.35/bbl and Brent 1st line December swap is $70.90/bbl.</p>
+  <ol class="steps">
+    <li><span>Fair crack.</span><div class="calc-line">82.35 − 70.90 = $11.45/bbl</div></li>
+    <li><span>PV.</span><div class="calc-line">(11.45 − 10.80) × 1,000 × 4 = $2,600</div></li>
+  </ol>
+</section>
+
+<section class="sec" id="try">
+  <h2>Try it</h2>
+  <p>Move the "days published" input to watch the delta melt as the month goes by.</p>
+  <div id="calc-cs"></div>
+</section>
+
+<section class="sec" id="recap">
+  <h2>Remember</h2>
+  <ul class="recap">
+    <li>The payoff is the monthly average price minus the fixed price, times barrels.</li>
+    <li>Expected average = published days at their real prices + remaining days at forward, divided by all pricing days.</li>
+    <li>Cleared contracts are not discounted; OTC versions are discounted to the payment date.</li>
+    <li>Spreads need both legs in the same unit (6.35 bbl per tonne for fuel oil).</li>
+    <li>Delta shrinks by 1/<var>D</var> every pricing day.</li>
+  </ul>
+</section>
+
+</main>
+</div>
+<script src="assets/course.js"></script>
+<script>
+(function () {
+  C.legs('#legs-cs', {
+    tMin: 0, tMax: 1.2, ticks: [0, 0.25, 0.5, 0.75, 1], tickFmt: t => ['Trade', '', 'Nov pricing', '', 'Month end'][Math.round(t * 4)], axisLabel: 'time',
+    events: [{ t: 0.05, label: '1 Nov' }, { t: 1, label: '30 Nov' }, { t: 1.13, label: 'Settle' }],
+    legs: [
+      { name: 'Receive monthly average A × 5,000 bbl', dir: 1, style: 'float', flows: [{ t: 1.13, a: 1.01, label: 'A × 5,000', tip: 'Average of 21 Platts Dubai prices × 5,000 bbl' }] },
+      { name: 'Pay fixed $71.80 × 5,000 bbl', dir: -1, style: 'fixed', flows: [{ t: 1.13, a: 1, label: '$359,000', tip: '71.80 × 5,000 = $359,000' }] },
+    ],
+  });
+  const pub = [71.90, 72.10, 72.35, 72.60, 72.20, 71.80, 72.05, 72.45, 72.70, 72.90, 72.55, 72.30, 72.65, 72.85, 72.60];
+  const pts = pub.map((p, i) => [i + 1, p]);
+  C.chart('#chart-days', {
+    x: [1, 21], height: 220, xLabel: 'pricing day', yLabel: '$/bbl', zero: false, y: [71.5, 73.5],
+    xFmt: x => C.fmt(x, 0), yFmt: y => C.fmt(y, 2), tipFmt: y => '$' + C.fmt(y, 2),
+    series: [
+      { name: 'Published Platts Dubai', points: pts, color: 1 },
+      { name: 'Forward, remaining days', points: [[15, 72.60], [16, 73.10], [21, 73.10]], color: 2 },
+      { name: 'Expected average 72.60', points: [[1, 72.60], [21, 72.60]], color: 0, dashed: true },
+    ],
+    marks: [{ x: 15.5, label: 'today' }],
+  });
+
+  C.calc('#calc-cs', {
+    title: 'Average-price swap future',
+    inputs: [
+      { id: 'D', label: 'Pricing days in month', value: 21, step: 1, min: 1 },
+      { id: 'm', label: 'Days published', value: 15, step: 1, min: 0 },
+      { id: 'avgP', label: 'Average of published', unit: '$', value: 72.40, step: 0.05 },
+      { id: 'F', label: 'Forward, remaining days', unit: '$', value: 73.10, step: 0.05 },
+      { id: 'K', label: 'Trade price K', unit: '$', value: 71.80, step: 0.05 },
+      { id: 'n', label: 'Lots (− = short)', value: 5, step: 1 },
+      { id: 'Q', label: 'Lot size', unit: 'bbl', value: 1000, step: 100 },
+    ],
+    compute: v => {
+      const m = Math.max(0, Math.min(v.m, v.D)), rem = v.D - m;
+      const A = (m * v.avgP + rem * v.F) / v.D;
+      const pv = (A - v.K) * v.Q * v.n, delta = rem / v.D * v.Q * v.n;
+      const rows = [];
+      for (let k = 0; k <= v.D; k++) rows.push([k, (v.D - k) / v.D * v.Q * v.n]);
+      return {
+        out: [
+          ['Expected average E[A]', '$' + C.fmt(A, 4)],
+          ['Share of month fixed', C.pct(m / v.D, 1)],
+          ['PV (cleared)', '$' + C.fmt(pv, 0), true],
+          ['Delta per $1 forward move', '$' + C.fmt(delta, 2)],
+        ],
+        chart: {
+          x: [0, v.D], height: 200, xLabel: 'days published', yLabel: 'delta ($ per $1/bbl)', zero: true,
+          xFmt: x => C.fmt(x, 0), yFmt: y => C.fmt(y, 0), tipFmt: y => '$' + C.fmt(y, 0),
+          series: [{ name: 'Delta', points: rows, color: 1 }], marks: [{ x: m, label: 'now' }],
+        },
+        note: 'Cleared on ICE/SGX with daily margin, so the PV is not discounted. For a spread future enter the spread values (product − crude) in the price fields.',
+      };
+    },
+  });
+})();
+</script>
+</body>
+</html>

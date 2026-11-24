@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Short-Rate Futures</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=JetBrains+Mono:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..600&display=swap">
+<link rel="stylesheet" href="assets/course.css">
+</head>
+<body data-page="stir-futures.html">
+<div class="shell">
+<aside class="toc" id="toc"></aside>
+<main class="page">
+
+<header class="ph">
+  <p class="eyebrow">Part 2 · Futures</p>
+  <h1>Short-rate &amp; swap futures</h1>
+  <p class="lede">Exchange-traded bets on where overnight interest rates will average over a future three-month window. They are among the most heavily traded contracts in the world. The ERIS swap future at the end of the page applies the same idea to a whole swap.</p>
+  <div class="ptypes" data-ptypes data-eg="Three-Month SARON ICE Sep27 · ERIS SOFR 7yr Sep24"></div>
+</header>
+
+<section class="lvl" id="idea">
+  <h2><span class="lv">Level 1</span> The idea</h2>
+  <div class="prose">
+    <p>Banks lend each other money overnight. The average rate they charge is published every morning: <b>SOFR</b> in dollars, <b>SONIA</b> in sterling, <b>€STR</b> in euros, <b>SARON</b> in Swiss francs. A <b>STIR future</b> (short-term interest rate future) lets you bet on what that rate will average over a future quarter, for example June to September 2027.</p>
+    <p>The odd part is the quote. The price is <b>100 minus the rate</b>. If the market expects 3.50%, the future trades at 96.50. This keeps the usual rule that buyers win when the price goes up. Buying the future means you win when rates <em>fall</em>.</p>
+  </div>
+  <aside class="analogy"><p>It is like betting on the average temperature for next summer, scored as "100 minus degrees". A cool summer gives a high score. If you expect a cool summer, you buy the score.</p></aside>
+</section>
+
+<section class="lvl" id="cashflows">
+  <h2><span class="lv">Level 2</span> The cashflows</h2>
+  <div class="prose">
+    <p>One CME 3M SOFR contract behaves like a deposit of $1,000,000 for a quarter (90/360 of a year). One basis point (0.01%) on that is $1,000,000 × 0.0001 × 0.25 = <b>$25</b>. So every 0.01 move in price pays or costs $25 per contract, settled daily as variation margin, exactly like the <a href="futures.html">futures basics</a>.</p>
+    <p>At the end of the reference quarter the exchange computes the final rate <var>R</var> from the daily fixings and settles at 100 − <var>R</var>.</p>
+  </div>
+  <figure class="fig">
+    <div class="fig-title">Long 20 SOFR Jun27 at 96.40: what decides the final settlement</div>
+    <div id="legs-stir"></div>
+    <figcaption>The reference quarter runs from the third Wednesday of June (16 Jun 2027) to the third Wednesday of September (15 Sep 2027). Dashed arrows are the <b>daily SOFR fixings</b> that will be compounded into <var>R</var>. Your cash arrives through daily margin long before the end.</figcaption>
+  </figure>
+</section>
+
+<section class="lvl" id="pv">
+  <h2><span class="lv">Level 3</span> The PV formula</h2>
+  <h3>Step 1 · Position value</h3>
+  <div class="f"><span class="lbl">Like every future: price change × value of a point × lots</span>
+    PV = (<var>P</var><sub>now</sub> − <var>P</var><sub>trade</sub>) × 100 × <var>TV</var> × <var>n</var>
+  </div>
+  <dl class="where">
+    <dt><var>P</var></dt><dd>futures price, e.g. 96.4812</dd>
+    <dt><var>TV</var></dt><dd>tick value per basis point: $25 (3M SOFR), €25 (3M Euribor), CHF 25 (3M SARON ICE), £12.50 (3M SONIA ICE)</dd>
+    <dt>100</dt><dd>converts a price move of 1.00 into 100 basis points</dd>
+  </dl>
+  <h3>Step 2 · Fair rate: the forward compounded overnight rate</h3>
+  <div class="prose"><p>The final rate compounds every daily fixing over the quarter. If you invest $1 overnight every day from <var>T</var><sub>1</sub> to <var>T</var><sub>2</sub>, your expected growth is exactly what the OIS curve says. So the expected rate is the OIS forward:</p></div>
+  <div class="f"><span class="lbl">Forward rate from OIS discount factors</span>
+    <var>F</var> = <span class="frac"><span>1</span><span><var>τ</var></span></span> ( <span class="frac"><span><var>D</var>(<var>T</var><sub>1</sub>)</span><span><var>D</var>(<var>T</var><sub>2</sub>)</span></span> − 1 ),&nbsp;&nbsp; <var>τ</var> = days/360
+  </div>
+  <h3>Step 3 · Add the convexity adjustment</h3>
+  <div class="prose">
+    <p>Daily margining creates a small bias. When rates rise, the short side of the future gains margin cash just when cash earns more interest. When rates fall, the short side loses cash just when it earns less. That always helps the short, so the market charges for it. The futures <em>rate</em> sits slightly above the forward rate.</p>
+  </div>
+  <div class="f"><span class="lbl">Futures price, desk formula (simple Ho-Lee approximation)</span>
+    <var>P</var> = 100 − 100 × ( <var>F</var> + <span class="frac"><span>1</span><span>2</span></span> <var>σ</var><sub>N</sub><sup>2</sup> <var>T</var><sub>1</sub> <var>T</var><sub>2</sub> )
+  </div>
+  <dl class="where">
+    <dt><var>σ</var><sub>N</sub></dt><dd>normal (basis-point) volatility of rates, e.g. 0.0090 = 90bp a year</dd>
+    <dt><var>T</var><sub>1</sub>, <var>T</var><sub>2</sub></dt><dd>start and end of the reference quarter in years (ACT/365)</dd>
+  </dl>
+  <p>For a contract six months away it is a fraction of a basis point. Five years out it reaches about 10bp, which matters a lot.</p>
+</section>
+
+<section class="lvl" id="desk">
+  <h2><span class="lv">Level 4</span> Desk reality</h2>
+  <ul>
+    <li><b>IMM dates.</b> Quarterly contracts (Mar, Jun, Sep, Dec) start their reference period on the third Wednesday of the month. Month codes are H, M, U, Z, so SOFR Jun27 is <code>SFRM7</code>.</li>
+    <li><b>In-arrears contracts.</b> 3M SOFR, SONIA and SARON futures fix <em>after</em> the reference quarter, from daily compounded fixings. 3M Euribor futures are older: they fix on one day, at the <em>start</em>, on a term rate that includes bank credit risk.</li>
+    <li><b>Partly fixed contracts.</b> Once inside its quarter, part of <var>R</var> is known. Compound the published fixings, then the forward for the remaining days: <var>R</var> = (1/<var>τ</var>)[ Π<sub>past</sub>(1 + <var>r</var><sub><var>i</var></sub><var>δ</var><sub><var>i</var></sub>) × <var>D</var>(today)/<var>D</var>(<var>T</var><sub>2</sub>) − 1 ]. The delta shrinks day by day.</li>
+    <li><b>1M SOFR futures</b> average (not compound) SOFR over a calendar month. Each bp is worth $41.67 per contract.</li>
+    <li><b>Curve building.</b> STIR futures are a main input of the OIS curve between 3 months and 3 years. Convexity-adjusted futures rates are stripped into discount factors.</li>
+    <li><b>Packs and bundles.</b> Strips of four consecutive quarters (packs) hedge a 1-year swap. Bundles hedge multi-year swaps.</li>
+  </ul>
+</section>
+
+<section class="sec" id="greeks">
+  <h2>Greeks that matter</h2>
+  <div class="tbl greeks"><table>
+    <thead><tr><th>Greek</th><th>What it measures</th><th>For a STIR future</th></tr></thead>
+    <tbody>
+      <tr><td>DV01</td><td>PV change if rates move +1bp</td><td>−<var>TV</var> per long contract (−$25 for 3M SOFR). Rates up means price down, so a long loses.</td></tr>
+      <tr><td>Bucketed delta</td><td>Which curve segment carries the risk</td><td>Only the forward quarter <var>T</var><sub>1</sub>→<var>T</var><sub>2</sub>.</td></tr>
+      <tr><td>Vega (via convexity)</td><td>Sensitivity to rate volatility</td><td>Higher vol raises the futures rate and lowers the price. It is tiny at the front and meaningful beyond 3 years.</td></tr>
+      <tr><td>Gamma</td><td>How DV01 changes</td><td>Zero on the future itself. The futures-vs-FRA gap is a gamma effect that the convexity adjustment prices.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="sec" id="example">
+  <h2>Worked example</h2>
+  <p>On 23 Nov 2026 you are long 20 SOFR Jun27 futures bought at 96.40. The reference quarter is 16 Jun 2027 (205 days away) to 15 Sep 2027 (296 days, so 91 days long). The USD OIS curve is flat at a 3.55% continuously compounded zero rate. SOFR normal volatility is 90bp.</p>
+  <ol class="steps">
+    <li><span>Times and accrual.</span>
+      <div class="calc-line">T1 = 205/365 = 0.56164    T2 = 296/365 = 0.81096    τ = 91/360 = 0.25278</div></li>
+    <li><span>Forward compounded SOFR.</span>
+      <div class="calc-line">F = (e^(−0.0355×0.56164) / e^(−0.0355×0.81096) − 1) / 0.25278 = 3.51691%</div></li>
+    <li><span>Convexity adjustment.</span>
+      <div class="calc-line">CA = ½ × 0.0090² × 0.56164 × 0.81096 = 0.0000184 = 0.18bp</div></li>
+    <li><span>Fair futures price.</span>
+      <div class="calc-line">P = 100 − 100 × (0.0351691 + 0.0000184) = 100 − 3.51876 = 96.4812</div></li>
+    <li><span>Position value.</span>
+      <div class="calc-line">PV = (96.4812 − 96.40) × 100 × $25 × 20 = 8.12bp × $500 = $4,062</div></li>
+  </ol>
+  <p class="answer">PV <b>+$4,062</b>. The position loses <b>$500 per bp</b> if rates rise.</p>
+</section>
+
+<section class="sec" id="try">
+  <h2>Try it</h2>
+  <p>Push the start date out by a few years to see the convexity adjustment grow. The chart shows the adjustment across expiries for your volatility.</p>
+  <div id="calc-stir"></div>
+</section>
+
+<section class="lvl" id="eris">
+  <h2><span class="lv">Level 5</span> ERIS swap futures (<code>InterestSwapFuture</code>)</h2>
+  <div class="prose">
+    <p>A STIR future covers one quarter. An <b>ERIS SOFR swap future</b> wraps a whole standard SOFR swap (for example 7 years, $100,000 notional) into a futures contract. Buying it is economically like <b>receiving fixed</b> on that swap: you gain when rates fall.</p>
+    <p>Its price is built from the swap's value, so you price it with the <a href="irs.html">interest rate swap</a> page:</p>
+  </div>
+  <div class="f"><span class="lbl">ERIS settlement price (per 100 of notional)</span>
+    <var>P</var> = 100 + <var>A</var> + <var>B</var> − <var>C</var>
+  </div>
+  <dl class="where">
+    <dt><var>A</var></dt><dd>NPV of the underlying receive-fixed swap (fixed coupon set by the exchange), per 100 notional</dd>
+    <dt><var>B</var></dt><dd>fixed and floating amounts already exchanged since the swap's effective date, accumulated</dd>
+    <dt><var>C</var></dt><dd>price alignment interest: a running correction that gives back the interest on margin, so the contract behaves like a cleared OTC swap</dd>
+  </dl>
+  <p>Position value = (<var>P</var><sub>now</sub> − <var>P</var><sub>trade</sub>)/100 × $100,000 × lots. DV01 per lot ≈ $100,000 × annuity × 0.0001, about $60 for a 7-year swap. The example trade <code>ERIS SOFR 7yr Sep24</code> is a contract listed in September 2024 on a 7-year swap.</p>
+</section>
+
+<section class="sec" id="recap">
+  <h2>Remember</h2>
+  <ul class="recap">
+    <li>Price = 100 − rate. Buyers profit when rates fall.</li>
+    <li>Fair rate = OIS forward over the IMM quarter + convexity adjustment ½σ²T₁T₂.</li>
+    <li>PV = price change × 100 × tick value × lots, with $25 per bp for 3M SOFR.</li>
+    <li>Risk sits in one forward quarter. A pack of four hedges a 1-year swap.</li>
+    <li>ERIS swap futures are a cleared swap in futures form. Price them as a receiver swap.</li>
+  </ul>
+</section>
+
+</main>
+</div>
+<script src="assets/course.js"></script>
+<script>
+(function () {
+  const t1 = 205 / 365, t2 = 296 / 365, fix = [];
+  for (let k = 0; k <= 13; k++) fix.push({ t: t1 + (t2 - t1) * k / 13, a: 0.6, label: '', tip: 'Daily SOFR fixing, compounded into R' });
+  fix[0].label = 'SOFR fixings';
+  C.legs('#legs-stir', {
+    tMin: 0, tMax: 0.95, ticks: [0, 0.25, 0.5, 0.75], tickFmt: t => C.fmt(t, 2), height: 100,
+    events: [{ t: 0, label: 'Trade 23 Nov 26' }, { t: t1, label: '16 Jun 27' }, { t: t2, label: '15 Sep 27' }],
+    legs: [
+      { name: 'Daily SOFR fixings set R (you gain if R comes in low)', dir: 1, style: 'float', flows: fix },
+      { name: 'Final settlement 100 − R vs 96.40, net of margin already paid', dir: -1, style: 'contingent', flows: [{ t: t2 + 0.03, a: 0.6, label: 'settle', tip: 'Final variation margin at 100 − R' }] },
+    ],
+  });
+
+  const pre = { sofr: [25, '$'], euribor: [25, '€'], saron: [25, 'CHF'], sonia: [12.5, '£'] };
+  C.calc('#calc-stir', {
+    title: 'STIR futures pricer',
+    inputs: [
+      { id: 'ctr', label: 'Contract', value: 'sofr', options: [['sofr', '3M SOFR (CME)'], ['euribor', '3M Euribor (ICE)'], ['saron', '3M SARON (ICE)'], ['sonia', '3M SONIA (ICE)']] },
+      { id: 'd1', label: 'Days to quarter start', value: 205, step: 1, min: 0 },
+      { id: 'len', label: 'Quarter length', unit: 'days', value: 91, step: 1, min: 1 },
+      { id: 'z', label: 'OIS zero rate', unit: '%', value: 3.55, step: 0.01 },
+      { id: 'vol', label: 'Normal vol', unit: 'bp/yr', value: 90, step: 5, min: 0 },
+      { id: 'Pt', label: 'Trade price', value: 96.40, step: 0.005 },
+      { id: 'n', label: 'Lots (− = short)', value: 20, step: 1 },
+    ],
+    compute: v => {
+      const [TV, ccy] = pre[v.ctr], z = v.z / 100, s = v.vol / 1e4;
+      const t1 = v.d1 / 365, t2 = (v.d1 + v.len) / 365, tau = v.len / 360;
+      const F = (Math.exp(-z * t1) / Math.exp(-z * t2) - 1) / tau, ca = 0.5 * s * s * t1 * t2;
+      const P = 100 - 100 * (F + ca), pv = (P - v.Pt) * 100 * TV * v.n;
+      return {
+        out: [
+          ['Forward OIS rate F', C.pct(F, 4)],
+          ['Convexity adjustment', C.fmt(ca * 1e4, 2) + 'bp'],
+          ['Fair futures price', C.fmt(P, 4)],
+          ['Position PV', ccy + ' ' + C.fmt(pv, 0), true],
+          ['DV01 (rates +1bp)', ccy + ' ' + C.fmt(-TV * v.n, 2)],
+        ],
+        chart: {
+          x: [0, 10], height: 200, xLabel: 'years to quarter start', yLabel: 'convexity adjustment (bp)',
+          xFmt: x => C.fmt(x, 0), yFmt: y => C.fmt(y, 1), tipFmt: y => C.fmt(y, 2) + 'bp',
+          series: [{ name: 'Convexity adjustment', f: T => 0.5 * s * s * T * (T + 0.25) * 1e4, color: 1 }],
+          marks: [{ x: Math.min(t1, 10), label: 'this contract' }],
+        },
+        note: 'Flat OIS curve, ACT/365 curve time, ACT/360 accrual. Convexity from the Ho-Lee model without mean reversion; desks calibrate it to swaption or futures option vols.',
+      };
+    },
+  });
+})();
+</script>
+</body>
+</html>

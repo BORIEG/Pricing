@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bond Futures</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=JetBrains+Mono:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..600&display=swap">
+<link rel="stylesheet" href="assets/course.css">
+</head>
+<body data-page="bond-futures.html">
+<div class="shell">
+<aside class="toc" id="toc"></aside>
+<main class="page">
+
+<header class="ph">
+  <p class="eyebrow">Part 2 · Futures</p>
+  <h1>Bond futures</h1>
+  <p class="lede">A future where the seller delivers a government bond of their choice from a basket. Pricing it means finding the bond the seller will pick, the cheapest-to-deliver, and working out what it costs to hold that bond until delivery.</p>
+  <div class="ptypes" data-ptypes data-eg="US 20yr Bond Mar27"></div>
+</header>
+
+<section class="lvl" id="idea">
+  <h2><span class="lv">Level 1</span> The idea</h2>
+  <div class="prose">
+    <p>Suppose you buy a future that says "in March you will receive a US Treasury bond with 15 to 25 years left". Many bonds qualify, each with a different coupon. The seller chooses which one to hand over, so they will pick whichever is cheapest for them. That bond is the <b>cheapest-to-deliver</b>, or <b>CTD</b>.</p>
+    <p>To make different bonds comparable, the exchange gives each one a <b>conversion factor</b> (CF), roughly its price if all yields were 6%, per 1 of face value. A high-coupon bond is worth more, so it has a bigger CF and the buyer pays more for it.</p>
+  </div>
+  <aside class="analogy"><p>A shop promises to deliver "a bag of apples, any variety". Each variety has a fixed exchange rate: one bag of Gala counts as 0.85 of the standard bag. The shop will deliver whichever variety is cheapest after applying those rates. To price the promise you price that one variety.</p></aside>
+</section>
+
+<section class="lvl" id="cashflows">
+  <h2><span class="lv">Level 2</span> The cashflows</h2>
+  <div class="prose">
+    <p>Day to day a bond future is margined like any future: $1,000 per point per contract (face value $100,000), with prices quoted in 32nds. 118-24 means 118 + 24/32 = 118.75.</p>
+    <p>At delivery the seller hands over $100,000 face of the chosen bond. The buyer pays the <b>invoice price</b>:</p>
+  </div>
+  <div class="f"><span class="lbl">Invoice amount per 100 face</span>
+    Invoice = <var>F</var> × CF + AI<sub>del</sub>
+  </div>
+  <p>To see why the futures price is what it is, look at the trade arbitrageurs run, the <b>cash-and-carry</b>. Buy the CTD today, collect its coupon, and deliver it into the future.</p>
+  <figure class="fig">
+    <div class="fig-title">Cash-and-carry on the CTD, per 100 face (4.625% bond, delivery 31 Mar 2027)</div>
+    <div id="legs-bf"></div>
+    <figcaption>Pay the <b>dirty price</b> today (borrowed in repo at 3.70%). Receive the <b>coupon</b> in February. Receive the <b>invoice amount</b> at delivery. In a fair market these net to zero after repo interest. Any leftover is profit.</figcaption>
+  </figure>
+</section>
+
+<section class="lvl" id="pv">
+  <h2><span class="lv">Level 3</span> The PV formula</h2>
+  <h3>Step 1 · Forward price of the CTD</h3>
+  <div class="prose"><p>Holding the bond to delivery costs repo interest and earns the coupon. The <b>forward dirty price</b> is what you must get back at delivery to break even:</p></div>
+  <div class="f"><span class="lbl">Forward dirty price at delivery (repo is simple, ACT/360)</span>
+    <var>B</var><sub>fwd</sub> = (<var>P</var> + AI<sub>0</sub>)(1 + <var>r</var><sub>repo</sub> <span class="frac"><span><var>d</var></span><span>360</span></span>) − <var>c</var> (1 + <var>r</var><sub>repo</sub> <span class="frac"><span><var>d</var><sub>c</sub></span><span>360</span></span>)
+  </div>
+  <dl class="where">
+    <dt><var>P</var>, AI<sub>0</sub></dt><dd>clean price and accrued interest of the CTD today</dd>
+    <dt><var>d</var></dt><dd>days from today's settlement to delivery</dd>
+    <dt><var>c</var>, <var>d</var><sub>c</sub></dt><dd>coupon paid before delivery and days from that coupon to delivery (reinvested at repo)</dd>
+  </dl>
+  <h3>Step 2 · Fair futures price</h3>
+  <div class="f"><span class="lbl">Invoice must equal the forward price</span>
+    <var>F</var><sub>fair</sub> = <span class="frac"><span><var>B</var><sub>fwd</sub> − AI<sub>del</sub></span><span>CF</span></span>
+  </div>
+  <p>The market future trades slightly <em>below</em> this, because the seller owns valuable choices (which bond, which day). That gap is the <b>delivery option</b> value.</p>
+  <h3>Step 3 · Basis and implied repo, the trader's dashboard</h3>
+  <div class="f left"><span class="lbl">Three numbers every bond-futures trader watches</span>
+    Gross basis = <var>P</var> − <var>F</var> × CF<br>
+    Net basis = Gross basis − carry,&nbsp;&nbsp; carry = <var>P</var> − (<var>B</var><sub>fwd</sub> − AI<sub>del</sub>)<br>
+    Implied repo = ( <span class="frac"><span><var>F</var>×CF + AI<sub>del</sub> + <var>c</var>(1 + <var>r</var><sub>repo</sub><var>d</var><sub>c</sub>/360)</span><span><var>P</var> + AI<sub>0</sub></span></span> − 1 ) × <span class="frac"><span>360</span><span><var>d</var></span></span>
+  </div>
+  <p>The CTD is the bond with the <b>highest implied repo</b>, which is the same as the lowest net basis. Net basis is roughly the price of the delivery options.</p>
+  <h3>Step 4 · Position value</h3>
+  <div class="f"><span class="lbl">Like every future</span>
+    PV = (<var>F</var><sub>now</sub> − <var>F</var><sub>trade</sub>)/100 × $100,000 × <var>n</var>
+  </div>
+</section>
+
+<section class="lvl" id="desk">
+  <h2><span class="lv">Level 4</span> Desk reality</h2>
+  <ul>
+    <li><b>Conversion factor formula.</b> CBOT computes CF as the price per $1 of the bond at a 6% yield, with maturity measured from the first day of the delivery month and rounded down to whole quarters. It is fixed for the life of the contract and published by the exchange. Our bond has 17 years and 9 months after rounding, giving 0.8510.</li>
+    <li><b>Which bond is CTD?</b> When yields are below 6%, low-duration bonds tend to be CTD. Above 6%, high-duration bonds tend to be. A big yield move can switch the CTD, which gives the future negative convexity.</li>
+    <li><b>Delivery options.</b> The seller picks the bond (quality option), the day in the delivery month (timing option) and can deliver after the futures market closes (wild card). These are all worth something to the short, which is why net basis &gt; 0.</li>
+    <li><b>Contract family.</b> CBOT 2Y, 5Y, 10Y, Ultra 10Y, Bond and Ultra Bond, plus Eurex Schatz, Bobl, Bund, Buxl and ICE Long Gilt. Each has its own basket rule and notional coupon (6% for US, 6% for Bund, 4% for Gilt).</li>
+    <li><b>Naming.</b> <code>US 20yr Bond Mar27</code> is the March 2027 contract on the long Treasury basket. The CTD's static data and repo come from the bond and repo pages of the system.</li>
+  </ul>
+</section>
+
+<section class="sec" id="greeks">
+  <h2>Greeks that matter</h2>
+  <div class="tbl greeks"><table>
+    <thead><tr><th>Greek</th><th>What it measures</th><th>For a bond future</th></tr></thead>
+    <tbody>
+      <tr><td>DV01</td><td>PV change if yields move +1bp</td><td>≈ CTD DV01 ÷ CF. Here $124.65 ÷ 0.8510 = <b>$146.48 per contract</b>. A long loses when yields rise.</td></tr>
+      <tr><td>Hedge ratio</td><td>Futures needed to hedge a bond</td><td>Bond DV01 ÷ futures DV01. To hedge $10m of a bond with DV01 $9,000 you would sell about 61 contracts.</td></tr>
+      <tr><td>Repo sensitivity</td><td>PV change if repo moves +1bp</td><td>Higher repo raises the forward price, so the future rises. Small for a 4-month contract.</td></tr>
+      <tr><td>Convexity</td><td>How DV01 changes as yields move</td><td>Slightly negative near a CTD switch, because the short's option to switch bonds caps the buyer's gains.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="sec" id="example">
+  <h2>Worked example</h2>
+  <p>On 23 Nov 2026 (settlement 24 Nov) you are long 25 US Bond Mar27 futures bought at 118-08. The market is 118-24. The CTD is a hypothetical 4.625% Treasury maturing 15 Feb 2045 at a clean price of 101.50, and repo is 3.70%. The last coupon was 15 Aug 2026 (101 days ago, in a 184-day period). The next coupon of 2.3125 is paid on 15 Feb 2027. Delivery is 31 Mar 2027, 127 days away and 44 days after that coupon, inside a 181-day period.</p>
+  <ol class="steps">
+    <li><span>Accrued interest and dirty price today.</span>
+      <div class="calc-line">AI0 = 2.3125 × 101/184 = 1.2694      dirty = 101.50 + 1.2694 = 102.7694</div></li>
+    <li><span>Forward dirty price at delivery.</span>
+      <div class="calc-line">Bfwd = 102.7694 × (1 + 0.037×127/360) − 2.3125 × (1 + 0.037×44/360) = 101.7878</div></li>
+    <li><span>Accrued at delivery and forward clean price.</span>
+      <div class="calc-line">AIdel = 2.3125 × 44/181 = 0.5622      forward clean = 101.7878 − 0.5622 = 101.2257</div></li>
+    <li><span>Fair futures price, ignoring delivery options.</span>
+      <div class="calc-line">Ffair = 101.2257 / 0.8510 = 118.949  (≈ 118-30)</div></li>
+    <li><span>Basis at the market price 118.75.</span>
+      <div class="calc-line">gross = 101.50 − 118.75×0.8510 = 0.4438   carry = 0.2743   net = 0.1694   implied repo = 3.23%</div>
+      <span>Implied repo (3.23%) is below actual repo (3.70%). The 0.17 net basis is what the market pays for the short's delivery options.</span></li>
+    <li><span>Position value and DV01.</span>
+      <div class="calc-line">PV = (118.75 − 118.25)/100 × 100,000 × 25 = $12,500      DV01 = 146.48 × 25 = $3,662</div></li>
+  </ol>
+  <p class="answer">PV <b>+$12,500</b>. Position DV01 is <b>$3,662 per bp</b>, lost if yields rise.</p>
+</section>
+
+<section class="sec" id="try">
+  <h2>Try it</h2>
+  <p>Change the repo rate to see how financing moves the fair futures price. The dashed line marks the market price.</p>
+  <div id="calc-bf"></div>
+</section>
+
+<section class="sec" id="recap">
+  <h2>Remember</h2>
+  <ul class="recap">
+    <li>The seller delivers the cheapest bond, so price the future off the CTD.</li>
+    <li>Fair price = (CTD forward dirty − accrued at delivery) ÷ conversion factor.</li>
+    <li>The CTD has the highest implied repo. Net basis ≈ delivery option value.</li>
+    <li>DV01 per contract = CTD DV01 ÷ CF. Hedge ratio = bond DV01 ÷ futures DV01.</li>
+  </ul>
+</section>
+
+</main>
+</div>
+<script src="assets/course.js"></script>
+<script>
+(function () {
+  const to32 = x => { const w = Math.floor(x + 1e-9), t = (x - w) * 32; return w + '-' + String(Math.floor(t + 1e-9)).padStart(2, '0') + (t - Math.floor(t + 1e-9) >= 0.5 - 1e-9 ? '+' : ''); };
+  C.legs('#legs-bf', {
+    tMin: 0, tMax: 0.4, ticks: [0, 0.1, 0.2, 0.3], tickFmt: t => C.fmt(t, 1),
+    events: [{ t: 0, label: 'Buy CTD 24 Nov 26' }, { t: 83 / 365, label: 'Coupon 15 Feb' }, { t: 127 / 365, label: 'Delivery 31 Mar' }],
+    legs: [
+      { name: 'Coupon and invoice received', dir: 1, style: 'fixed', flows: [
+        { t: 83 / 365, a: 2.3125, label: '2.31', tip: 'Coupon 4.625/2 = 2.3125' },
+        { t: 127 / 365, a: 101.62, label: '101.62', tip: 'Invoice = 118.75 × 0.8510 + 0.5622 = 101.62' }] },
+      { name: 'Dirty price paid (repo-financed)', dir: -1, style: 'fixed', flows: [{ t: 0.004, a: 102.77, label: '102.77', tip: 'Clean 101.50 + accrued 1.2694' }] },
+    ],
+  });
+
+  C.calc('#calc-bf', {
+    title: 'Bond futures: CTD carry, basis & position',
+    inputs: [
+      { id: 'P', label: 'CTD clean price', value: 101.50, step: 0.03125 },
+      { id: 'cpn', label: 'CTD coupon', unit: '%', value: 4.625, step: 0.125 },
+      { id: 'CF', label: 'Conversion factor', value: 0.8510, step: 0.0001 },
+      { id: 'repo', label: 'Repo rate', unit: '%', value: 3.70, step: 0.05 },
+      { id: 'ds', label: 'Days since last coupon', value: 101, step: 1 },
+      { id: 'dp', label: 'Days in coupon period', value: 184, step: 1 },
+      { id: 'dd', label: 'Days to delivery', value: 127, step: 1 },
+      { id: 'dc', label: 'Days coupon → delivery', unit: '0 = none', value: 44, step: 1, min: 0 },
+      { id: 'dp2', label: 'Days in next period', value: 181, step: 1 },
+      { id: 'dv', label: 'CTD DV01 per 100', value: 0.124654, step: 0.0001 },
+      { id: 'Fm', label: 'Market futures price', value: 118.75, step: 0.015625 },
+      { id: 'Ft', label: 'Your trade price', value: 118.25, step: 0.015625 },
+      { id: 'n', label: 'Lots (− = short)', value: 25, step: 1 },
+    ],
+    compute: v => {
+      const c = v.cpn / 2, r = v.repo / 100, ai0 = c * v.ds / v.dp, dirty = v.P + ai0;
+      const hasC = v.dc > 0;
+      const fwdD = r2 => dirty * (1 + r2 * v.dd / 360) - (hasC ? c * (1 + r2 * v.dc / 360) : 0);
+      const aiDel = hasC ? c * v.dc / v.dp2 : c * (v.ds + v.dd) / v.dp;
+      const fair = r2 => (fwdD(r2) - aiDel) / v.CF;
+      const gross = v.P - v.Fm * v.CF, carry = v.P - (fwdD(r) - aiDel), net = gross - carry;
+      const ir = ((v.Fm * v.CF + aiDel + (hasC ? c * (1 + r * v.dc / 360) : 0)) / dirty - 1) * 360 / v.dd;
+      const pv = (v.Fm - v.Ft) / 100 * 1e5 * v.n, dv = v.dv / v.CF * 1000;
+      return {
+        out: [
+          ['Forward dirty price', C.fmt(fwdD(r), 4)],
+          ['Fair futures (no options)', C.fmt(fair(r), 3) + '  (' + to32(fair(r)) + ')'],
+          ['Gross / net basis', C.fmt(gross, 4) + ' / ' + C.fmt(net, 4)],
+          ['Implied repo', C.pct(ir, 2)],
+          ['Position PV', '$' + C.fmt(pv, 0), true],
+          ['DV01 per contract / position', '$' + C.fmt(dv, 2) + ' / $' + C.fmt(dv * v.n, 0)],
+        ],
+        chart: {
+          x: [Math.max(0, v.repo - 2), v.repo + 2], height: 210, xLabel: 'repo rate (%)', yLabel: 'fair futures price', zero: false,
+          xFmt: x => C.fmt(x, 1), yFmt: y => C.fmt(y, 2), tipFmt: y => C.fmt(y, 3),
+          series: [{ name: 'Fair futures price', f: x => fair(x / 100), color: 1 }],
+          hmarks: [{ y: v.Fm, label: 'market ' + to32(v.Fm) }], marks: [{ x: v.repo, label: 'repo' }],
+        },
+        note: 'Single CTD, delivery on one date, repo ACT/360. The gap between fair and market price is the delivery option value.',
+      };
+    },
+  });
+})();
+</script>
+</body>
+</html>

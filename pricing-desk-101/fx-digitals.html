@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FX Digitals &amp; Touches</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=JetBrains+Mono:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..600&display=swap">
+<link rel="stylesheet" href="assets/course.css">
+</head>
+<body data-page="fx-digitals.html">
+<div class="shell">
+<aside class="toc" id="toc"></aside>
+<main class="page">
+
+<header class="ph">
+  <p class="eyebrow">Part 7 · Exotics &amp; volatility</p>
+  <h1>FX digitals, touches &amp; dual digitals</h1>
+  <p class="lede">Options that pay a fixed amount or nothing. A digital looks at the exchange rate once, at expiry. A touch watches it every moment. A dual digital needs two exchange rates to behave at the same time. All three come down to one question: what is the probability?</p>
+  <div class="ptypes" data-ptypes data-eg="Touch 6.812 B1:6.812 EUR:BRL|16/Mar/27 · DualDigital Put 7.9 EUR:CNH Call 1.72 EUR:AUD|18/Dec/26"></div>
+</header>
+
+<section class="lvl" id="idea">
+  <h2><span class="lv">Level 1</span> The idea</h2>
+  <div class="prose">
+    <p>A normal call option pays more the further the price ends above the strike. A <b>digital</b> (also called binary) option is simpler: it pays a fixed prize, say BRL 1 million, if the rate ends above the strike, and zero otherwise. One cent above the line or ten reais above, the prize is the same.</p>
+    <p>A <b>one-touch</b> pays the prize if the rate touches a level <em>at any moment</em> before expiry, even if it falls back later. A <b>dual digital</b> pays only if two conditions on two different currency pairs are both true at expiry.</p>
+  </div>
+  <aside class="analogy"><p>A digital is a bet that your team is winning when the final whistle blows. A one-touch is a bet that your team leads at any point in the match. The touch is easier to win, so it costs more. A dual digital is a bet that your team wins <em>and</em> it rains on match day. How likely that is depends on whether the two things tend to happen together.</p></aside>
+  <p>You need <a href="fx-options.html">FX vanilla options</a> (Garman-Kohlhagen) for this page. Everything here reuses its <var>d</var><sub>2</sub>.</p>
+</section>
+
+<section class="lvl" id="cashflows">
+  <h2><span class="lv">Level 2</span> The cashflows</h2>
+  <div class="prose">
+    <p>The buyer pays a premium today. At expiry there is at most one payment, of a size known in advance. What is unknown is <em>whether</em> it happens. That makes the payout a <b>contingent</b> cashflow.</p>
+  </div>
+  <figure class="fig">
+    <div class="fig-title">Buy a BRL 1m one-touch on EUR/BRL at 6.812, expiry 16 Mar 2027</div>
+    <div id="legs-touch"></div>
+    <figcaption>Solid arrow = premium, known today. Dotted arrow with "?" = the prize, paid at expiry only if EUR/BRL has touched 6.812 at some point. Hover an arrow for details.</figcaption>
+  </figure>
+  <figure class="fig">
+    <div class="fig-title">Digital call at 6.812: payoff at expiry and value today</div>
+    <div id="chart-dig"></div>
+    <figcaption>The <b>blue</b> payoff jumps from 0 to the full prize at the strike. The <b>orange dashed</b> value today is a smooth S-curve, because there is still time for the rate to cross. The steeper the S near expiry, the harder the trade is to hedge.</figcaption>
+  </figure>
+</section>
+
+<section class="lvl" id="pv">
+  <h2><span class="lv">Level 3</span> The PV formula</h2>
+  <h3>Digital: price = discounted probability</h3>
+  <div class="prose"><p>If a game pays a prize <var>P</var> with probability <var>p</var>, its fair price is <var>p</var> × <var>P</var>, discounted to today. In Garman-Kohlhagen, the risk-neutral probability that spot ends above <var>K</var> is <var>N</var>(<var>d</var><sub>2</sub>):</p></div>
+  <div class="f"><span class="lbl">Cash-or-nothing digital paying P in the domestic currency</span>
+    Call: PV = <var>P</var> · <var>D</var><sub>d</sub> · <var>N</var>(<var>d</var><sub>2</sub>) &nbsp;&nbsp;&nbsp;
+    Put: PV = <var>P</var> · <var>D</var><sub>d</sub> · <var>N</var>(−<var>d</var><sub>2</sub>)<br>
+    <var>d</var><sub>2</sub> = <span class="frac"><span>ln(<var>S</var>/<var>K</var>) + (<var>r</var><sub>d</sub> − <var>r</var><sub>f</sub> − ½<var>σ</var>²)<var>T</var></span><span><var>σ</var>√<var>T</var></span></span>
+  </div>
+  <dl class="where">
+    <dt><var>S</var>, <var>K</var></dt><dd>spot and strike (BRL per 1 EUR)</dd>
+    <dt><var>r</var><sub>d</sub>, <var>r</var><sub>f</sub></dt><dd>domestic (BRL) and foreign (EUR) interest rates, continuously compounded</dd>
+    <dt><var>D</var><sub>d</sub></dt><dd>domestic discount factor e<sup>−<var>r</var><sub>d</sub><var>T</var></sup></dd>
+    <dt><var>σ</var>, <var>T</var></dt><dd>volatility and years to expiry</dd>
+  </dl>
+  <h3>The smile correction: a digital is a very tight call spread</h3>
+  <div class="prose">
+    <p>Buy a call struck just below <var>K</var> and sell one just above. If spot ends above both, you earn the gap between them. Scale it up so the gap equals the prize and you have built a digital:</p>
+  </div>
+  <div class="f"><span class="lbl">Replication, h small</span>
+    Digital ≈ <var>P</var> × <span class="frac"><span>Call(<var>K</var> − <var>h</var>) − Call(<var>K</var> + <var>h</var>)</span><span>2<var>h</var></span></span>
+    &nbsp;=&nbsp; <var>P</var>·<var>D</var><sub>d</sub>·<var>N</var>(<var>d</var><sub>2</sub>) − <var>P</var> × Vega<sub>call</sub> × (smile slope at <var>K</var>)
+  </div>
+  <div class="prose"><p>The two calls are priced with <em>their own</em> smile vols. When the smile rises for higher strikes (common in USD/EM pairs like EUR/BRL), the call above costs relatively more, so the digital call is <em>cheaper</em> than the flat-vol <var>N</var>(<var>d</var><sub>2</sub>) formula says. Desks always price digitals off the smile this way.</p></div>
+
+  <h3>One-touch: probability of ever reaching the barrier</h3>
+  <div class="prose"><p>Write <var>b</var> = ln(<var>H</var>/<var>S</var>) for the distance to the barrier <var>H</var> and <var>ν</var> = <var>r</var><sub>d</sub> − <var>r</var><sub>f</sub> − ½<var>σ</var>² for the drift of log-spot. A mathematical shortcut called the <b>reflection principle</b> counts every path that crosses the barrier and then falls back. It gives a closed form for an upper barrier, paid at expiry:</p></div>
+  <div class="f"><span class="lbl">One-touch, upper barrier H &gt; S, prize P paid at expiry (Reiner–Rubinstein)</span>
+    PV = <var>P</var> · <var>D</var><sub>d</sub> · [ <var>N</var>( <span class="frac"><span>−<var>b</var> + <var>ν</var><var>T</var></span><span><var>σ</var>√<var>T</var></span></span> ) + e<sup>2<var>ν</var><var>b</var>/<var>σ</var>²</sup> · <var>N</var>( <span class="frac"><span>−<var>b</var> − <var>ν</var><var>T</var></span><span><var>σ</var>√<var>T</var></span></span> ) ]
+  </div>
+  <div class="prose">
+    <p>The first term is exactly the digital at <var>K</var> = <var>H</var>. The second counts paths that touched and came back. With no drift the two terms are equal, which is the trader's <b>rule of thumb: a touch costs about twice the digital</b>. A strong drift towards or away from the barrier moves this ratio. For a lower barrier, flip the signs: use <var>N</var>((<var>b</var> − <var>ν</var><var>T</var>)/<var>σ</var>√<var>T</var>) + e<sup>2<var>ν</var><var>b</var>/<var>σ</var>²</sup><var>N</var>((<var>b</var> + <var>ν</var><var>T</var>)/<var>σ</var>√<var>T</var>) with <var>b</var> &lt; 0.</p>
+  </div>
+
+  <h3>Dual digital: a joint probability</h3>
+  <div class="prose"><p>Two pairs, A and B, with forwards <var>F</var><sub>A</sub>, <var>F</var><sub>B</sub>. Each condition alone has a probability from its own <var>d</var><sub>2</sub>. Both together need the <b>bivariate normal</b> <var>N</var><sub>2</sub>(<var>x</var>, <var>y</var>, <var>ρ</var>): the chance that two bell-curve numbers with correlation <var>ρ</var> are below <var>x</var> and <var>y</var> at the same time.</p></div>
+  <div class="f"><span class="lbl">Dual digital paying P if both conditions hold at expiry</span>
+    PV = <var>P</var> · <var>D</var> · <var>N</var><sub>2</sub>( <var>s</var><sub>A</sub><var>d</var><sub>2,A</sub> , <var>s</var><sub>B</sub><var>d</var><sub>2,B</sub> , <var>s</var><sub>A</sub><var>s</var><sub>B</sub><var>ρ</var> )
+    &nbsp;&nbsp; <var>d</var><sub>2</sub> = <span class="frac"><span>ln(<var>F</var>/<var>K</var>) − ½<var>σ</var>²<var>T</var></span><span><var>σ</var>√<var>T</var></span></span>
+  </div>
+  <dl class="where">
+    <dt><var>s</var></dt><dd>+1 for a call condition (above <var>K</var>), −1 for a put condition (below <var>K</var>)</dd>
+    <dt><var>ρ</var></dt><dd>correlation between the daily moves of the two pairs</dd>
+  </dl>
+  <div class="prose"><p>If the two conditions "fight" the correlation, the joint chance is lower than the product of the single chances, and the dual digital is cheap. That cheapness is why clients buy them.</p></div>
+
+  <h3>Dual digital with a barrier: Monte Carlo</h3>
+  <div class="prose"><p>The  type adds barrier monitoring to the dual digital. Depending on the term sheet, a level is watched during the life and can cancel (knock out) the payout. Once two pairs and a path-dependent condition are combined, there is no neat formula. Desks use <b>Monte Carlo</b>:</p></div>
+  <ol>
+    <li>Simulate thousands of possible daily paths for both pairs. Each day, draw two correlated random moves with the right vols and correlation.</li>
+    <li>On each path, check the barrier every day and both conditions at expiry.</li>
+    <li>The fraction of paths that pay is the probability. Price = <var>P</var> × <var>D</var> × that fraction.</li>
+  </ol>
+</section>
+
+<section class="lvl" id="desk">
+  <h2><span class="lv">Level 4</span> Desk reality</h2>
+  <ul>
+    <li><b>Reading the trade description.</b> <code>Touch 6.812 B1:6.812 EUR:BRL|16/Mar/27</code> is a touch with barrier B1 at 6.812 on EUR/BRL expiring 16 Mar 2027. <code>DualDigital Put 7.9 EUR:CNH Call 1.72 EUR:AUD</code> pays if EUR/CNH &lt; 7.9 <em>and</em> EUR/AUD &gt; 1.72 at expiry.</li>
+    <li><b>Smile and vanna-volga.</b> Touches are priced with smile-aware models (local-stochastic vol, or the market shortcut "vanna-volga"). The flat-vol formula above is the starting point traders quote against.</li>
+    <li><b>Pay-at-hit or pay-at-expiry.</b> Some touches pay as soon as the barrier is hit. They are worth slightly more when rates are positive, because the money arrives earlier.</li>
+    <li><b>Barrier monitoring.</b> Continuous monitoring (any moment, any market) is the default in FX. Daily-fixing monitoring makes touching slightly less likely. A standard fix shifts the barrier away by 0.5826 × <var>σ</var> × √(1 day).</li>
+    <li><b>Quanto payout.</b> A dual digital on EUR/CNH and EUR/AUD that pays in USD needs a small quanto adjustment to the forwards. The calculator ignores it.</li>
+    <li><b>Pin risk.</b> Near expiry, with spot sitting at the strike, the digital's delta becomes enormous. Desks smooth this by booking the digital as a slightly wider call spread ("over-hedging").</li>
+  </ul>
+</section>
+
+<section class="sec" id="greeks">
+  <h2>Greeks that matter</h2>
+  <div class="tbl greeks"><table>
+    <thead><tr><th>Greek</th><th>What it measures</th><th>For these products</th></tr></thead>
+    <tbody>
+      <tr><td>Delta</td><td>PV change if spot moves 1%</td><td>Shaped like a hill centred on the strike or barrier. It becomes a spike near expiry. A touch's delta disappears the instant the barrier trades, because the outcome is then known.</td></tr>
+      <tr><td>Gamma</td><td>How delta changes with spot</td><td>Changes sign at the strike: positive on one side, negative on the other. Very large close to expiry.</td></tr>
+      <tr><td>Vega</td><td>PV change if vol moves +1 point</td><td>An out-of-the-money digital or touch gains from higher vol, because crossing becomes more likely. An in-the-money digital loses, because the rate may fall back.</td></tr>
+      <tr><td>Correlation (corr01)</td><td>PV change if <var>ρ</var> moves +0.01</td><td>Dual digitals only. Positive when both conditions point the same way relative to the correlation, negative when they fight it.</td></tr>
+      <tr><td>Theta</td><td>PV change per day</td><td>Out-of-the-money: decays towards zero. In-the-money digital: rises towards the full discounted prize.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="sec" id="example">
+  <h2>Worked example</h2>
+  <h3>A · Digital and one-touch on EUR/BRL</h3>
+  <p>Illustrative market on 23 Nov 2026: spot 6.30, barrier and strike 6.812, 113 days to 16 Mar 2027, BRL rate 13.5%, EUR rate 2.0%, vol 14%. The prize is BRL 1,000,000 paid at expiry.</p>
+  <ol class="steps">
+    <li><span>Time, drift, distance and discount factor.</span>
+      <div class="calc-line">T = 113/365 = 0.30959    ν = 0.135 − 0.02 − ½(0.14)² = 0.10520
+σ√T = 0.14 × √0.30959 = 0.077897    b = ln(6.812/6.30) = 0.078136    D = e^(−0.135×0.30959) = 0.959067</div></li>
+    <li><span>Digital call probability and price.</span>
+      <div class="calc-line">d2 = (−0.078136 + 0.10520×0.30959) / 0.077897 = −0.58497    N(d2) = 0.279284
+Digital = 1,000,000 × 0.959067 × 0.279284 = BRL 267,852</div></li>
+    <li><span>The touch's extra term: paths that touched and came back.</span>
+      <div class="calc-line">e^(2×0.10520×0.078136/0.14²) = 2.313514    N((−0.078136 − 0.032569)/0.077897) = N(−1.42118) = 0.077634
+extra = 2.313514 × 0.077634 = 0.179607</div></li>
+    <li><span>One-touch price.</span>
+      <div class="calc-line">Touch = 1,000,000 × 0.959067 × (0.279284 + 0.179607) = BRL 440,107</div></li>
+  </ol>
+  <p class="answer">Digital <b>BRL 267,852</b>, one-touch <b>BRL 440,107</b>. The ratio is 1.64 rather than 2. The high BRL carry pushes the EUR/BRL forward towards the barrier, so ending above it is relatively likely and the "touched but fell back" bonus is smaller.</p>
+
+  <h3>B · Dual digital on EUR/CNH and EUR/AUD</h3>
+  <p>The trade pays EUR 1,000,000 on 18 Dec 2026 (25 days) if EUR/CNH &lt; 7.90 <em>and</em> EUR/AUD &gt; 1.72. Forwards are 8.00 and 1.75, vols 6% and 8%, correlation +0.50 (both pairs rise when the euro rallies), EUR rate 2%.</p>
+  <ol class="steps">
+    <li><span>Each <var>d</var><sub>2</sub>. Here <var>T</var> = 25/365 = 0.068493.</span>
+      <div class="calc-line">d2,A = (ln(8.00/7.90) − ½·0.06²·T) / (0.06·√T) = 0.79321
+d2,B = (ln(1.75/1.72) − ½·0.08²·T) / (0.08·√T) = 0.81542</div></li>
+    <li><span>Single probabilities. The put on A uses −<var>d</var><sub>2,A</sub>.</span>
+      <div class="calc-line">P(A &lt; 7.90) = N(−0.79321) = 0.213829    P(B &gt; 1.72) = N(0.81542) = 0.792583
+If independent: 0.213829 × 0.792583 = 0.169477</div></li>
+    <li><span>Joint probability. The condition signs are −1 and +1, so the correlation input is −0.50.</span>
+      <div class="calc-line">N2(−0.79321, 0.81542, −0.50) = 0.119957</div></li>
+    <li><span>Price.</span>
+      <div class="calc-line">D = e^(−0.02×0.068493) = 0.998631    PV = 1,000,000 × 0.998631 × 0.119957 = EUR 119,793</div></li>
+  </ol>
+  <p class="answer">The dual digital costs <b>EUR 119,793</b>, about 30% less than if the pairs were independent (EUR 169,245). It needs EUR to fall against CNH while rising against AUD, which goes against their positive correlation.</p>
+</section>
+
+<section class="sec" id="try">
+  <h2>Try it</h2>
+  <p>First calculator: compare a digital with a touch at the same level. The chart shows both prices for every spot level. Push the BRL rate down to the EUR rate (no drift) and the ratio moves towards 2.</p>
+  <div id="calc-touch"></div>
+  <p>Second calculator: a dual digital, priced with the formula and with a 20,000-path Monte Carlo (seeded, so results repeat). Add a knock-out level on pair B to see what a barrier does. The chart shows how the price depends on correlation.</p>
+  <div id="calc-dual"></div>
+</section>
+
+<section class="sec" id="recap">
+  <h2>Remember</h2>
+  <ul class="recap">
+    <li>Fixed-prize options are priced as prize × discount factor × probability.</li>
+    <li>Digital: <var>N</var>(±<var>d</var><sub>2</sub>). It is a tight call spread, so the smile slope matters.</li>
+    <li>One-touch: the digital plus a reflection term. It costs roughly twice the digital when drift is small.</li>
+    <li>Dual digital: the bivariate normal <var>N</var><sub>2</sub>. Correlation can make it much cheaper than the product of the two probabilities.</li>
+    <li>Barriers on several pairs: Monte Carlo. Watch spiky delta and gamma near the strike and expiry.</li>
+  </ul>
+</section>
+
+</main>
+</div>
+<script src="assets/course.js"></script>
+<script>
+// Digital and one-touch (paid at expiry, domestic cash), Garman-Kohlhagen dynamics.
+function digTouch(o) {
+  const { S, H, T, rd, rf, vol, up } = o;
+  const D = Math.exp(-rd * T), nu = rd - rf - vol * vol / 2, sT = vol * Math.sqrt(T), b = Math.log(H / S);
+  const pDig = up ? C.N((-b + nu * T) / sT) : C.N((b - nu * T) / sT);
+  let pTouch;
+  if ((up && S >= H) || (!up && S <= H)) pTouch = 1;
+  else pTouch = up ? C.N((-b + nu * T) / sT) + Math.exp(2 * nu * b / (vol * vol)) * C.N((-b - nu * T) / sT)
+                   : C.N((b - nu * T) / sT) + Math.exp(2 * nu * b / (vol * vol)) * C.N((b + nu * T) / sT);
+  return { D, pDig, pTouch: Math.min(1, pTouch), dig: D * pDig, touch: D * Math.min(1, pTouch) };
+}
+// Seeded uniform RNG (mulberry32) and Box-Muller normals.
+function rng(seed) { let a = seed >>> 0; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+C.legs('#legs-touch', {
+  tMin: 0, tMax: 0.34, ticks: [0, 0.1, 0.2, 0.3], tickFmt: t => C.fmt(t, 1),
+  events: [{ t: 0, label: 'Trade 23 Nov 26' }, { t: 0.3096, label: 'Expiry 16 Mar 27' }],
+  legs: [
+    { name: 'Prize: you receive BRL 1m if 6.812 was touched', dir: 1, style: 'contingent', flows: [{ t: 0.3096, a: 1, label: '1,000,000 ?', tip: 'BRL 1,000,000 at expiry, only if EUR/BRL touched 6.812' }] },
+    { name: 'Premium: you pay today', dir: -1, style: 'fixed', flows: [{ t: 0, a: 0.44, label: '440,107', tip: 'Premium BRL 440,107 (flat-vol model price)' }] },
+  ],
+});
+
+C.chart('#chart-dig', {
+  x: [5.8, 7.8], xLabel: 'EUR/BRL', yLabel: 'BRL',
+  xFmt: x => C.fmt(x, 1), yFmt: y => C.fmt(y / 1e3, 0) + 'k', tipFmt: y => 'BRL ' + C.fmt(y, 0), height: 240, n: 400,
+  series: [
+    { name: 'Payoff at expiry', f: s => s >= 6.812 ? 1e6 : 0, color: 1 },
+    { name: 'Value today (113 days left)', f: s => 1e6 * digTouch({ S: s, H: 6.812, T: 113 / 365, rd: 0.135, rf: 0.02, vol: 0.14, up: true }).dig, color: 2, dashed: true },
+  ],
+  marks: [{ x: 6.812, label: 'K = 6.812' }, { x: 6.30, label: 'spot' }],
+});
+
+C.calc('#calc-touch', {
+  title: 'Digital vs one-touch (flat vol)',
+  inputs: [
+    { id: 'dir', label: 'Direction', value: 1, options: [[1, 'Up: call digital / up-touch'], [0, 'Down: put digital / down-touch']] },
+    { id: 'S', label: 'Spot', value: 6.30, step: 0.01 },
+    { id: 'H', label: 'Strike = barrier', value: 6.812, step: 0.01 },
+    { id: 'days', label: 'Days to expiry', value: 113, step: 1, min: 1 },
+    { id: 'rd', label: 'Domestic rate', unit: '%', value: 13.5, step: 0.25 },
+    { id: 'rf', label: 'Foreign rate', unit: '%', value: 2.0, step: 0.25 },
+    { id: 'vol', label: 'Volatility', unit: '%', value: 14, step: 0.5, min: 0.1 },
+    { id: 'P', label: 'Prize', unit: 'domestic', value: 1000000, step: 100000 },
+  ],
+  compute: v => {
+    const o = { S: v.S, H: v.H, T: v.days / 365, rd: v.rd / 100, rf: v.rf / 100, vol: v.vol / 100, up: v.dir === 1 };
+    const r = digTouch(o);
+    const bump = (k, h) => { const a = digTouch({ ...o, [k]: o[k] + h }), b = digTouch({ ...o, [k]: o[k] - h }); return [(a.dig - b.dig) / 2, (a.touch - b.touch) / 2]; };
+    const dS = bump('S', o.S * 0.01), dV = bump('vol', 0.01);
+    const lo = Math.min(v.S, v.H) * 0.85, hi = Math.max(v.S, v.H) * 1.12;
+    return {
+      out: [
+        ['Digital probability', C.pct(r.pDig, 2)],
+        ['Digital PV', C.fmt(v.P * r.dig, 0), true],
+        ['Touch probability', C.pct(r.pTouch, 2)],
+        ['One-touch PV', C.fmt(v.P * r.touch, 0), true],
+        ['Touch ÷ digital', C.fmt(r.touch / r.dig, 2) + '×'],
+        ['Delta per 1% spot (dig / touch)', C.fmt(v.P * dS[0], 0) + ' / ' + C.fmt(v.P * dS[1], 0)],
+        ['Vega per vol point (dig / touch)', C.fmt(v.P * dV[0], 0) + ' / ' + C.fmt(v.P * dV[1], 0)],
+      ],
+      chart: {
+        x: [lo, hi], xLabel: 'spot today', yLabel: 'PV (domestic currency)', n: 300,
+        xFmt: x => C.fmt(x, 2), yFmt: y => C.fmt(y / 1e3, 0) + 'k', tipFmt: y => C.fmt(y, 0),
+        series: [
+          { name: 'Digital', f: s => v.P * digTouch({ ...o, S: s }).dig, color: 1 },
+          { name: 'One-touch', f: s => v.P * digTouch({ ...o, S: s }).touch, color: 2 },
+        ],
+        marks: [{ x: v.H, label: 'barrier' }, { x: v.S, label: 'spot' }],
+      },
+      note: 'Flat volatility, continuous monitoring, prize paid at expiry in the domestic currency. Real desks add the smile (vanna-volga or local-stochastic vol).',
+    };
+  },
+});
+
+C.calc('#calc-dual', {
+  title: 'Dual digital: formula and Monte Carlo',
+  inputs: [
+    { id: 'sA', label: 'Pair A condition', value: -1, options: [[-1, 'A below K_A (put)'], [1, 'A above K_A (call)']] },
+    { id: 'FA', label: 'Forward A', value: 8.00, step: 0.01 },
+    { id: 'KA', label: 'Strike K_A', value: 7.90, step: 0.01 },
+    { id: 'volA', label: 'Vol A', unit: '%', value: 6, step: 0.5, min: 0.1 },
+    { id: 'sB', label: 'Pair B condition', value: 1, options: [[1, 'B above K_B (call)'], [-1, 'B below K_B (put)']] },
+    { id: 'FB', label: 'Forward B', value: 1.75, step: 0.005 },
+    { id: 'KB', label: 'Strike K_B', value: 1.72, step: 0.005 },
+    { id: 'volB', label: 'Vol B', unit: '%', value: 8, step: 0.5, min: 0.1 },
+    { id: 'rho', label: 'Correlation ρ', value: 0.5, step: 0.05, min: -0.99, max: 0.99 },
+    { id: 'days', label: 'Days to expiry', value: 25, step: 1, min: 1 },
+    { id: 'r', label: 'Payout-currency rate', unit: '%', value: 2, step: 0.25 },
+    { id: 'P', label: 'Prize', value: 1000000, step: 100000 },
+    { id: 'ko', label: 'Knock-out if B trades above (0 = none)', value: 0, step: 0.01, min: 0 },
+  ],
+  compute: v => {
+    const T = v.days / 365, D = Math.exp(-v.r / 100 * T), sa = v.volA / 100, sb = v.volB / 100;
+    const d2 = (F, K, s) => (Math.log(F / K) - s * s * T / 2) / (s * Math.sqrt(T));
+    const da = d2(v.FA, v.KA, sa), db = d2(v.FB, v.KB, sb);
+    const joint = rho => C.N2(v.sA * da, v.sB * db, v.sA * v.sB * rho);
+    const pA = C.N(v.sA * da), pB = C.N(v.sB * db), pJ = joint(v.rho);
+    // Monte Carlo on driftless forwards, daily steps (max 60 steps), 20,000 paths.
+    const steps = Math.min(60, Math.max(1, Math.round(v.days))), dt = T / steps, paths = 20000, rnd = rng(5);
+    const c = Math.sqrt(1 - v.rho * v.rho);
+    let hitEu = 0, hitKo = 0;
+    for (let p = 0; p < paths; p++) {
+      let la = Math.log(v.FA), lb = Math.log(v.FB), alive = true;
+      for (let k = 0; k < steps; k++) {
+        const u1 = rnd() || 1e-12, u2 = rnd();
+        const r = Math.sqrt(-2 * Math.log(u1)), z1 = r * Math.cos(2 * Math.PI * u2), z2 = r * Math.sin(2 * Math.PI * u2);
+        la += -0.5 * sa * sa * dt + sa * Math.sqrt(dt) * z1;
+        lb += -0.5 * sb * sb * dt + sb * Math.sqrt(dt) * (v.rho * z1 + c * z2);
+        if (v.ko > 0 && Math.exp(lb) >= v.ko) alive = false;
+      }
+      const ok = (v.sA > 0 ? la > Math.log(v.KA) : la < Math.log(v.KA)) && (v.sB > 0 ? lb > Math.log(v.KB) : lb < Math.log(v.KB));
+      if (ok) { hitEu++; if (alive) hitKo++; }
+    }
+    const pMC = hitEu / paths, pKO = hitKo / paths, se = Math.sqrt(pMC * (1 - pMC) / paths);
+    return {
+      out: [
+        ['P(condition A)', C.pct(pA, 2)],
+        ['P(condition B)', C.pct(pB, 2)],
+        ['Product if independent', C.pct(pA * pB, 2)],
+        ['Joint probability N2', C.pct(pJ, 2)],
+        ['Dual digital PV (formula)', C.fmt(v.P * D * pJ, 0), true],
+        ['Monte Carlo, no barrier', C.fmt(v.P * D * pMC, 0) + ' ± ' + C.fmt(v.P * D * 2 * se, 0)],
+        ['Monte Carlo with knock-out', v.ko > 0 ? C.fmt(v.P * D * pKO, 0) : 'no barrier set'],
+        ['Corr01 (ρ +0.01)', C.fmt(v.P * D * (joint(Math.min(0.999, v.rho + 0.01)) - pJ), 0)],
+      ],
+      chart: {
+        x: [-0.95, 0.95], xLabel: 'correlation ρ', yLabel: 'dual digital PV', n: 120,
+        xFmt: x => C.fmt(x, 1), yFmt: y => C.fmt(y / 1e3, 0) + 'k', tipFmt: y => C.fmt(y, 0),
+        series: [{ name: 'PV vs correlation', f: rho => v.P * D * joint(rho), color: 1 }, { name: 'Independent (ρ = 0)', f: () => v.P * D * pA * pB, color: 0, dashed: true }],
+        marks: [{ x: v.rho, label: 'ρ' }],
+      },
+      note: 'Forwards are simulated without drift (forward measure), daily steps capped at 60, barrier checked once per step. "±" is a 95% Monte Carlo error band. No quanto adjustment.',
+    };
+  },
+});
+</script>
+</body>
+</html>

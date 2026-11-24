@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cross-Currency Swaps</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=JetBrains+Mono:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..600&display=swap">
+<link rel="stylesheet" href="assets/course.css">
+</head>
+<body data-page="xccy.html">
+<div class="shell">
+<aside class="toc" id="toc"></aside>
+<main class="page">
+
+<header class="ph">
+  <p class="eyebrow">Part 3 · Swaps</p>
+  <h1>Cross-currency swaps</h1>
+  <p class="lede">Lend money in one currency and borrow the same value in another, then swap the interest back and forth until you hand the money back. Desks book three flavours: fixed notional, mark-to-market resetting, and non-deliverable.</p>
+  <div class="ptypes" data-ptypes data-eg="USD P SOFRCMP-1D/TRY R 37.55 % 19/Mar/27"></div>
+</header>
+
+<section class="lvl" id="idea">
+  <h2><span class="lv">Level 1</span> The idea</h2>
+  <div class="prose">
+    <p>A Turkish company has US dollars but needs Turkish lira (TRY) for a year. A bank has the opposite need. They swap: today the company hands over USD 10m and receives TRY 420m (the spot rate is 42 TRY per dollar). Each quarter, each side pays interest on the money it received. After a year they swap the same amounts back.</p>
+    <p>Each side ends up borrowing one currency against the other as collateral. Nobody is exposed to the exchange rate on the notional, because the same amounts come back at the same fixed rate.</p>
+  </div>
+  <aside class="analogy"><p>Two exchange students swap bikes for a year. Each pays the other a small rent each month for the bike they're riding, and at the end they swap back. The bikes are the notionals, and the rent is the interest on each leg.</p></aside>
+  <p>The three product types differ in two details: whether the notional is fixed or resets to the FX rate, and whether the payments are actually delivered in both currencies.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Product type</th><th>Notional</th><th>Settles in</th><th>Example</th></tr></thead>
+    <tbody>
+      <tr><td><code>CurrencySwap</code></td><td>Fixed for life in both currencies</td><td>Both currencies</td><td class="mono">USD P SOFRCMP-1D/TRY R 37.55 %</td></tr>
+      <tr><td><code>MTMCurrencySwap</code></td><td>USD leg resets each period to today's FX</td><td>Both currencies</td><td class="mono">MTM Swap ZAR P OISCMP-1D-0.16 %/USD R SOFRCMP-1D</td></tr>
+      <tr><td><code>CurrencyNds</code></td><td>Fixed</td><td>USD only, local leg converted at an FX fixing</td><td class="mono">USD P SOFRCMP-1D/R KRW KSDA-3M-0.73 %</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="lvl" id="cashflows">
+  <h2><span class="lv">Level 2</span> The cashflows</h2>
+  <h3>Fixed-notional swap (<code>CurrencySwap</code>)</h3>
+  <div class="prose"><p>You lend TRY and borrow USD: receive TRY fixed 37.55%, pay USD SOFR. There are three kinds of flow: the <b>initial exchange</b>, the <b>coupons</b> and the <b>final exchange</b>. Arrows are drawn in USD-equivalent size, so the notional exchanges dwarf the coupons.</p></div>
+  <figure class="fig">
+    <div class="fig-title">USD 10m vs TRY 420m, 1 year, quarterly coupons</div>
+    <div id="legs-ccs"></div>
+    <figcaption>Thick arrows are <b>notional exchanges</b>. At the start you pay TRY and receive USD, and at the end the reverse. In between you receive TRY fixed coupons of TRY 39.4m each and pay USD SOFR (dashed, unknown today).</figcaption>
+  </figure>
+  <h3>Mark-to-market resetting swap (<code>MTMCurrencySwap</code>)</h3>
+  <div class="prose"><p>Over a long trade the FX rate can move a lot, and then one side owes the other a large amount on the final exchange. An MTM swap avoids this build-up. At every coupon date the USD notional is reset to (ZAR notional ÷ today's FX fixing), and the <em>difference</em> between the old and new USD notional is paid at once. The ZAR notional never changes.</p></div>
+  <figure class="fig">
+    <div class="fig-title">Pay ZAR OIS − 0.16% on ZAR 180m, receive USD SOFR on a resetting USD notional, 2 years shown</div>
+    <div id="legs-mtm"></div>
+    <figcaption>Green dotted arrows are the <b>notional resets</b>. Their size and direction depend on how USD/ZAR moved that quarter. Both coupon legs are floating (dashed).</figcaption>
+  </figure>
+  <h3>Non-deliverable cross-currency swap (<code>CurrencyNds</code>)</h3>
+  <div class="prose"><p>The flows are the same as a fixed-notional swap, but the restricted-currency leg (KRW, TWD, INR) is never delivered. Each KRW amount, including any notional exchange, is converted to USD at the FX fixing a few days before payment and paid in USD. It works like the <a href="nds.html">NDS</a> with notional exchanges added.</p></div>
+</section>
+
+<section class="lvl" id="pv">
+  <h2><span class="lv">Level 3</span> The PV formula</h2>
+  <div class="prose"><p>The rule is simple: <b>price each leg in its own currency, on its own discount curve, then convert at today's spot.</b></p></div>
+  <div class="f"><span class="lbl">Step 1 · each leg, in its own currency, including notionals</span>
+    PV<sub>leg</sub> = <var>N</var> × [ − <var>D</var>(<var>t</var><sub>0</sub>) + <span class="sum"><span class="s">Σ</span><small>i</small></span> <var>c</var><sub><var>i</var></sub> <var>τ</var><sub><var>i</var></sub> <var>D</var>(<var>t</var><sub><var>i</var></sub>) + <var>D</var>(<var>t</var><sub><var>n</var></sub>) ]
+  </div>
+  <dl class="where">
+    <dt><var>c</var><sub><var>i</var></sub></dt><dd>coupon rate for period <var>i</var>: the fixed rate, or the forward floating rate <var>F</var><sub><var>i</var></sub> plus the spread</dd>
+    <dt>−<var>D</var>(<var>t</var><sub>0</sub>)</dt><dd>the initial exchange: you hand this notional over. Drop it once it has happened.</dd>
+    <dt>+<var>D</var>(<var>t</var><sub><var>n</var></sub>)</dt><dd>the notional coming back at maturity</dd>
+  </dl>
+  <div class="f"><span class="lbl">Step 2 · convert the foreign leg at spot and add (S = foreign units per USD)</span>
+    PV<sub>USD</sub> = PV<sub>USD leg</sub> + <span class="frac"><span>PV<sub>foreign leg</sub></span><span><var>S</var></span></span>
+  </div>
+  <aside class="key"><p>A floating leg plus its notional, discounted on the same curve that projects its rate, is worth exactly par. For a USD SOFR leg discounted on SOFR OIS, −1 + Σ <var>F</var><sub><var>i</var></sub><var>τ</var><sub><var>i</var></sub><var>D</var><sub><var>i</var></sub> + <var>D</var><sub><var>n</var></sub> = 0. So a fresh USD SOFR leg is worth zero and all the value sits on the other leg.</p></aside>
+  <h3>Which foreign discount curve? The cross-currency basis</h3>
+  <div class="prose">
+    <p>Trades are collateralised in USD, so foreign flows must be discounted on a curve that is consistent with FX forwards. That curve is read off the FX forward market:</p>
+  </div>
+  <div class="f"><var>D</var><sub>foreign</sub>(<var>t</var>) = <var>D</var><sub>USD</sub>(<var>t</var>) × <span class="frac"><span><var>S</var></span><span><var>X</var><sup>fwd</sup>(<var>t</var>)</span></span></div>
+  <div class="prose"><p>This implied curve is generally <em>not</em> the foreign onshore OIS curve. The gap is the <b>cross-currency basis</b>: the extra spread one side pays to borrow a currency through FX markets. In a float-for-float swap it shows up as the quoted spread on the non-USD leg, like the −0.16% in the ZAR example.</p></div>
+  <h3>MTM swap: why the USD leg drops out</h3>
+  <div class="prose"><p>Each period, the USD leg starts with a freshly reset notional, earns SOFR, and returns that notional. Every period is a little par loan, worth zero. Only the current period, whose notional is already set, carries value. So:</p></div>
+  <div class="f"><span class="lbl">Float-for-float MTM swap, paying the foreign leg at spread s</span>
+    PV<sub>USD</sub> ≈ <span class="frac"><span><var>N</var><sub>foreign</sub> × (<var>s</var><sub>mkt</sub> − <var>s</var>) × <var>A</var><sub>foreign</sub></span><span><var>S</var></span></span>
+    &nbsp;&nbsp; with &nbsp; <var>A</var><sub>foreign</sub> = Σ <var>τ</var><sub><var>i</var></sub> <var>D</var><sub>foreign</sub>(<var>t</var><sub><var>i</var></sub>)
+  </div>
+  <div class="prose"><p><var>s</var><sub>mkt</sub> is today's market basis spread for the remaining tenor. Exactly, <var>s</var><sub>mkt</sub> = Σ(<var>F</var><sup>D</sup><sub><var>i</var></sub> − <var>F</var><sub><var>i</var></sub>)<var>τ</var><sub><var>i</var></sub><var>D</var><sub><var>i</var></sub> ÷ <var>A</var>. Here <var>F</var><sup>D</sup> is the forward from the discount curve and <var>F</var> the forward from the projection curve.</p></div>
+  <h3>Non-deliverable: same answer, converted at fixings</h3>
+  <div class="f">PV<sub>USD</sub> = PV<sub>USD leg</sub> + <span class="sum"><span class="s">Σ</span><small>i</small></span> <span class="frac"><span>KRW flow<sub><var>i</var></sub></span><span><var>X</var><sup>fwd</sup>(<var>t</var><sub><var>i</var></sub>)</span></span> <var>D</var><sub>USD</sub>(<var>t</var><sub><var>i</var></sub>) = PV<sub>USD leg</sub> + <span class="frac"><span>PV<sub>KRW leg on NDF curve</sub></span><span><var>S</var></span></span></div>
+</section>
+
+<section class="lvl" id="desk">
+  <h2><span class="lv">Level 4</span> Desk reality</h2>
+  <ul>
+    <li><b>Reading the trade description.</b> <code>USD P SOFRCMP-1D/TRY R 37.55 %</code> means pay USD compounded SOFR, receive TRY fixed 37.55%. <code>OISCMP-1D-0.16 %</code> is the ZAR compounded overnight rate minus 16bp, and <code>KSDA-3M-0.73 %</code> is the KRW 3M CD rate minus 73bp.</li>
+    <li><b>Conventions.</b> USD SOFR legs are ACT/360, compounded in arrears with a payment lag. Each foreign leg follows its own market (ZAR ACT/365, KRW ACT/365 quarterly). Notional exchanges settle on spot-date conventions.</li>
+    <li><b>FX risk on the notional.</b> At inception, the initial and final exchanges nearly cancel. Once the initial exchange is done, you hold a foreign notional receivable and a USD payable, so the FX delta becomes large. MTM resets keep that exposure to one quarter's move.</li>
+    <li><b>Live trades.</b> For a trade booked at an old spot, the notionals still use the old rate. The PV then includes the FX gain or loss on the final exchange.</li>
+    <li><b>Curves in practice.</b> USD OIS, the foreign projection curve, and a foreign "discounted in USD" curve built from FX forwards and quoted basis swaps.</li>
+  </ul>
+</section>
+
+<section class="sec" id="greeks">
+  <h2>Greeks that matter</h2>
+  <div class="tbl greeks"><table>
+    <thead><tr><th>Greek</th><th>What it measures</th><th>For cross-currency swaps</th></tr></thead>
+    <tbody>
+      <tr><td>FX delta</td><td>PV change if the foreign currency moves 1% against USD</td><td>Small at inception. After the initial exchange it is ≈ 1% of the foreign leg's PV converted to USD. MTM swaps keep it small throughout.</td></tr>
+      <tr><td>Basis01</td><td>PV change if the cross-currency basis (the foreign discount curve) moves 1bp</td><td>≈ <var>N</var> × <var>A</var> × 0.0001. This is the main risk of float-for-float MTM swaps.</td></tr>
+      <tr><td>DV01 per currency</td><td>PV change if each currency's rate curve moves 1bp</td><td>A fixed leg has full DV01. A floating leg with notional has almost none.</td></tr>
+      <tr><td>Gamma, vega</td><td>Convexity, volatility</td><td>Near zero, apart from small FX-rate correlation effects on MTM resets.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="sec" id="example">
+  <h2>Worked example</h2>
+  <h3>Fixed notional: receive TRY fixed, pay USD SOFR</h3>
+  <p>Today USD/TRY spot is 42.00. You trade a fresh 1-year swap: USD 10m against TRY 420m. You receive TRY 37.55% fixed quarterly (¼ year per period) and pay USD SOFR flat. The TRY curve implied by FX forwards (basis included) is a flat 35% continuously compounded. USD is discounted on SOFR OIS.</p>
+  <ol class="steps">
+    <li><span>USD leg: +10m now, then −SOFR coupons, then −10m at the end. By the key idea above, this is worth exactly zero.</span>
+      <div class="calc-line">PV(USD leg) = 10m × (1 − 1) = 0</div></li>
+    <li><span>TRY discount factors and annuity.</span>
+      <div class="calc-line">D(0.25..1) = e^(−0.35 t)    A = Σ 0.25 × D(t_i) = 0.807373    D(1) = 0.704688</div></li>
+    <li><span>TRY leg: pay 420m now, receive four coupons of 420m × 37.55% × 0.25 = TRY 39,427,500, get 420m back.</span>
+      <div class="calc-line">PV(TRY) = 420m × (−1 + 0.3755 × 0.807373 + 0.704688) = TRY 3,299,728</div></li>
+    <li><span>Convert at spot.</span>
+      <div class="calc-line">PV = 3,299,728 / 42.00 = USD 78,565</div></li>
+    <li><span>Par fixed rate and risks.</span>
+      <div class="calc-line">K_par = (1 − 0.704688) / 0.807373 = 36.577%
+Basis01 ≈ −USD 886 per bp    FX delta (TRY 1% weaker) ≈ −USD 778</div></li>
+  </ol>
+  <p class="answer">The swap is worth <b>+USD 78,565</b> to you. You receive 37.55% where the market's fair rate is 36.58%.</p>
+  <h3>MTM float-for-float: pay ZAR OIS − 0.16%, receive USD SOFR</h3>
+  <ol class="steps">
+    <li><span>ZAR 180m (USD 10m at spot 18.00), 3 years quarterly. Illustrative curves: ZAR OIS projection 7.00% and ZAR-in-USD discount 7.10%, both continuously compounded.</span>
+      <div class="calc-line">quarterly forwards: F = 7.0616%   F^D = 7.1634%   A = 2.678117</div></li>
+    <li><span>Market basis spread, then PV.</span>
+      <div class="calc-line">s_mkt = 7.1634% − 7.0616% = +0.1018%
+PV = 180m × (0.1018% − (−0.16%)) × 2.678117 / 18.00 = USD 70,107</div></li>
+  </ol>
+  <p class="answer">Paying ZAR at −16bp when the market charges +10.2bp is worth <b>+USD 70,107</b>. Spread01 ≈ USD 2,678 per bp.</p>
+</section>
+
+<section class="sec" id="try">
+  <h2>Try it</h2>
+  <p>Fixed-notional swap. Flip <i>Initial exchange done</i> to see how the FX delta jumps once you hold the foreign notional.</p>
+  <div id="calc-ccs"></div>
+  <p>MTM float-for-float swap. The chart shows PV against the spread you trade at. It crosses zero at the market spread.</p>
+  <div id="calc-mtm"></div>
+</section>
+
+<section class="sec" id="recap">
+  <h2>Remember</h2>
+  <ul class="recap">
+    <li>Price each leg in its own currency, with notionals, then convert at spot.</li>
+    <li>A floating leg plus notional on its own curve is worth par. That is why a USD SOFR leg is worth zero.</li>
+    <li>Foreign flows are discounted on the curve implied by FX forwards. Its gap to onshore OIS is the cross-currency basis.</li>
+    <li>MTM resets remove the FX build-up. Non-deliverable versions convert every local flow at an FX fixing.</li>
+  </ul>
+</section>
+
+</main>
+</div>
+<script src="assets/course.js"></script>
+<script>
+(function () {
+  const q4 = [0.25, 0.5, 0.75, 1];
+  C.legs('#legs-ccs', {
+    tMin: -0.12, tMax: 1.05, ticks: [0, 0.25, 0.5, 0.75, 1], tickFmt: t => C.fmt(t, 2), height: 130,
+    events: [{ t: 0, label: 'Initial exchange' }, { t: 1, label: 'Final exchange' }],
+    legs: [
+      { name: 'USD notional (receive now, repay at end)', dir: 1, style: 'notional', flows: [{ t: 0, a: 10, label: 'USD 10m' }] },
+      { name: 'TRY fixed 37.55% coupons', dir: 1, style: 'fixed', flows: q4.map((t, i) => ({ t, a: 0.94, label: i === 0 ? 'TRY 39.4m' : '', tip: 'TRY 420m × 37.55% × 0.25 = TRY 39,427,500 (≈ USD 0.94m)' })) },
+      { name: 'TRY notional back', dir: 1, style: 'notional', color: 'rec', flows: [{ t: 1, a: 10, label: 'TRY 420m' }] },
+      { name: 'TRY notional (pay now)', dir: -1, style: 'notional', flows: [{ t: 0, a: 10, label: 'TRY 420m' }] },
+      { name: 'USD SOFR coupons', dir: -1, style: 'float', flows: q4.map((t, i) => ({ t, a: 0.095, label: i === 0 ? 'SOFR' : '', tip: 'USD 10m × compounded SOFR × days/360 (unknown)' })) },
+      { name: 'USD notional repaid', dir: -1, style: 'notional', color: 'pay', flows: [{ t: 1, a: 10, label: 'USD 10m' }] },
+    ],
+  });
+  const q8 = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
+  C.legs('#legs-mtm', {
+    tMin: -0.22, tMax: 2.08, ticks: [0, 0.5, 1, 1.5, 2], height: 130,
+    events: [{ t: 0, label: 'Start' }, { t: 2, label: 'End' }],
+    legs: [
+      { name: 'ZAR notional (receive now)', dir: 1, style: 'notional', flows: [{ t: 0, a: 10, label: 'ZAR 180m' }] },
+      { name: 'USD SOFR on the reset notional', dir: 1, style: 'float', flows: q8.map((t, i) => ({ t, a: 1, label: i === 0 ? 'SOFR' : '', tip: 'USD notional (ZAR 180m ÷ FX at last reset) × SOFR × days/360' })) },
+      { name: 'USD notional back at end (last reset)', dir: 1, style: 'notional', color: 'rec', flows: [{ t: 2, a: 10, label: 'USD N₈' }] },
+      { name: 'USD notional reset payment (either way)', dir: 1, style: 'contingent', color: 'aqua', flows: q8.slice(0, 7).map(t => ({ t, a: 3, tip: 'USD notional change: ZAR 180m ÷ new FX fixing − old USD notional. Sign unknown.' })) },
+      { name: 'USD notional (pay now)', dir: -1, style: 'notional', flows: [{ t: 0, a: 10, label: 'USD 10m' }] },
+      { name: 'ZAR OIS − 0.16% coupons', dir: -1, style: 'float', flows: q8.map((t, i) => ({ t, a: 1.2, label: i === 0 ? 'OIS−16bp' : '', tip: 'ZAR 180m × (compounded ZAR overnight − 0.16%) × days/365' })) },
+      { name: 'ZAR notional repaid', dir: -1, style: 'notional', color: 'pay', flows: [{ t: 2, a: 10, label: 'ZAR 180m' }] },
+    ],
+  });
+
+  C.calc('#calc-ccs', {
+    title: 'Fixed-notional cross-currency swap (receive foreign fixed, pay USD SOFR)',
+    inputs: [
+      { id: 'side', label: 'Position', value: 1, options: [[1, 'Receive foreign fixed'], [-1, 'Pay foreign fixed']] },
+      { id: 'Nu', label: 'USD notional', unit: 'USD m', value: 10, step: 1 },
+      { id: 'S0', label: 'FX at trade (notional)', unit: 'per USD', value: 42, step: 0.1 },
+      { id: 'S', label: 'FX spot today', unit: 'per USD', value: 42, step: 0.1 },
+      { id: 'K', label: 'Foreign fixed rate', unit: '%', value: 37.55, step: 0.05 },
+      { id: 'yrs', label: 'Remaining tenor', unit: 'years', value: 1, step: 0.25, min: 0.25 },
+      { id: 'zf', label: 'Foreign zero (FX-implied)', unit: '%', value: 35, step: 0.1 },
+      { id: 'done', label: 'Initial exchange done', value: 0, options: [[0, 'No (fresh trade)'], [1, 'Yes (live trade)']] },
+    ],
+    compute: v => {
+      const Nf = v.Nu * 1e6 * v.S0, n = Math.max(1, Math.round(v.yrs * 4)), K = v.K / 100;
+      const price = (z, S) => {
+        let A = 0; const rows = [];
+        for (let i = 1; i <= n; i++) { const t = i / 4, D = Math.exp(-z * t); A += 0.25 * D; rows.push([C.fmt(t, 2), C.fmt(v.side * Nf * K * 0.25 + (i === n ? v.side * Nf : 0), 0), C.fmt(D, 6), C.fmt(v.side * (Nf * K * 0.25 + (i === n ? Nf : 0)) * D / S, 0)]); }
+        const DT = Math.exp(-z * n / 4);
+        const fLeg = v.side * Nf * ((v.done ? 0 : -1) + K * A + DT);
+        const uLeg = v.done ? -v.side * v.Nu * 1e6 : 0; // SOFR leg + notional at par
+        return { pv: uLeg + fLeg / S, fLeg, A, DT, rows };
+      };
+      const z = v.zf / 100, b = price(z, v.S);
+      const b01 = price(z + 1e-4, v.S).pv - b.pv, fx = price(z, v.S * 1.01).pv - b.pv;
+      return {
+        out: [
+          ['Foreign notional', C.fmt(Nf, 0)],
+          ['Par foreign fixed rate', C.pct((1 - b.DT) / b.A, 3)],
+          ['PV of foreign leg (foreign ccy)', C.fmt(b.fLeg, 0)],
+          ['PV', 'USD ' + C.fmt(b.pv, 0), true],
+          ['Basis01 (foreign curve +1bp)', 'USD ' + C.fmt(b01, 0)],
+          ['FX delta (foreign 1% weaker)', 'USD ' + C.fmt(fx, 0)],
+        ],
+        table: { head: ['t (yrs)', 'Foreign flow', 'D foreign', 'PV in USD'], rows: b.rows, num: [0, 1, 2, 3] },
+        note: 'Quarterly periods of ¼ year. USD SOFR leg discounted on its own curve, so with its notional it is worth par. Foreign curve is the one implied by FX forwards (basis included).',
+      };
+    },
+  });
+
+  C.calc('#calc-mtm', {
+    title: 'MTM float-for-float swap (pay foreign OIS + spread, receive USD SOFR)',
+    inputs: [
+      { id: 'side', label: 'Position', value: 1, options: [[1, 'Pay foreign leg'], [-1, 'Receive foreign leg']] },
+      { id: 'Nf', label: 'Foreign notional', unit: 'm', value: 180, step: 10 },
+      { id: 'S', label: 'FX spot', unit: 'per USD', value: 18, step: 0.1 },
+      { id: 's', label: 'Traded spread s', unit: 'bp', value: -16, step: 1 },
+      { id: 'yrs', label: 'Tenor', unit: 'years', value: 3, step: 0.25, min: 0.25 },
+      { id: 'zp', label: 'Foreign OIS (projection)', unit: '%', value: 7.00, step: 0.01 },
+      { id: 'zd', label: 'Foreign in USD (discount)', unit: '%', value: 7.10, step: 0.01 },
+    ],
+    compute: v => {
+      const N = v.Nf * 1e6, n = Math.max(1, Math.round(v.yrs * 4)), zp = v.zp / 100, zd = v.zd / 100;
+      let A = 0, basisSum = 0;
+      for (let i = 1; i <= n; i++) {
+        const t = i / 4, D = Math.exp(-zd * t), Fp = (Math.exp(zp * 0.25) - 1) / 0.25, Fd = (Math.exp(zd * 0.25) - 1) / 0.25;
+        A += 0.25 * D; basisSum += (Fd - Fp) * 0.25 * D;
+      }
+      const smkt = basisSum / A, pvAt = s => v.side * N * (smkt - s) * A / v.S;
+      const s = v.s / 1e4;
+      return {
+        out: [
+          ['Market spread s_mkt', C.fmt(smkt * 1e4, 2) + 'bp'],
+          ['Foreign annuity A', C.fmt(A, 6)],
+          ['PV (foreign ccy)', C.fmt(pvAt(s) * v.S, 0)],
+          ['PV', 'USD ' + C.fmt(pvAt(s), 0), true],
+          ['Spread01 (s_mkt +1bp)', 'USD ' + C.fmt(v.side * N * 1e-4 * A / v.S, 0)],
+        ],
+        chart: {
+          x: [smkt - 0.006, smkt + 0.006], xLabel: 'traded spread', yLabel: 'PV in USD',
+          xFmt: x => C.fmt(x * 1e4, 0) + 'bp', yFmt: y => C.fmt(y / 1e3, 0) + 'k', tipFmt: y => 'USD ' + C.fmt(y, 0),
+          series: [{ name: 'PV', f: pvAt, color: 1 }],
+          marks: [{ x: smkt, label: 's_mkt' }, { x: s, label: 'traded' }],
+        },
+        note: 'USD leg resets every quarter, so each USD period is a par loan worth zero. The current-period notional effect is ignored for a fresh trade.',
+      };
+    },
+  });
+})();
+</script>
+</body>
+</html>

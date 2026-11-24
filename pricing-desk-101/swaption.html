@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Swaptions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=JetBrains+Mono:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..600&display=swap">
+<link rel="stylesheet" href="assets/course.css">
+</head>
+<body data-page="swaption.html">
+<div class="shell">
+<aside class="toc" id="toc"></aside>
+<main class="page">
+
+<header class="ph">
+  <p class="eyebrow">Part 6 · Vanilla options</p>
+  <h1>Swaptions</h1>
+  <p class="lede">An option to enter an interest rate swap at a fixed rate agreed today. It is one option on one number, the forward swap rate, scaled by the swap's annuity.</p>
+  <div class="ptypes" data-ptypes data-eg="European 5Y USD  P SOFRCMP-1D/R 4.5 % 26/Jan/27 · European 5Y TWD  P TDCCON-3M/R 2.815 % 19/Feb/30"></div>
+</header>
+
+<section class="lvl" id="idea">
+  <h2><span class="lv">Level 1</span> The idea</h2>
+  <div class="prose">
+    <p>A pension fund knows it will receive new cash in two months. It wants to invest it at a fixed rate for 5 years, and it fears rates will fall before then. It buys a <b>receiver swaption</b>: the right, on 26 Jan 2027, to enter a 5-year swap where it <em>receives</em> 4.5% fixed and pays SOFR.</p>
+    <p>If in January the market 5-year swap rate is below 4.5%, exercising gives it a swap that pays more than the market. If rates are higher, it walks away and invests at the better market rate.</p>
+    <ul>
+      <li><b>Payer swaption</b>: the right to <em>pay</em> fixed <var>K</var>. Worth more when rates rise. It is a call on the swap rate.</li>
+      <li><b>Receiver swaption</b>: the right to <em>receive</em> fixed <var>K</var>. Worth more when rates fall. It is a put on the swap rate.</li>
+    </ul>
+  </div>
+  <aside class="analogy"><p>A mortgage rate lock with an exit. The bank promises you can fix your mortgage at 4.5% when you sign in two months' time, but you are free to take a better rate if one appears. You pay a small fee today for that promise.</p></aside>
+  <div class="prose">
+    <p>"2M into 5Y" or "2M×5Y" means a swaption expiring in 2 months on a 5-year swap. The <b>expiry</b> is the option's life. The <b>tenor</b> is the life of the swap you get.</p>
+  </div>
+</section>
+
+<section class="lvl" id="cashflows">
+  <h2><span class="lv">Level 2</span> The cashflows</h2>
+  <div class="prose">
+    <p>Today the buyer <span class="pay-c">pays a premium</span>. At expiry, if exercised, a whole swap appears: <span class="rec-c">five annual fixed payments of 4.5%</span> and <span class="pay-c">five annual SOFR payments</span>. Every one of those flows is contingent on the exercise decision.</p>
+  </div>
+  <figure class="fig">
+    <div class="fig-title">Long USD 100m receiver swaption, 2M × 5Y, strike 4.5%</div>
+    <div id="legs-sw"></div>
+    <figcaption>All dotted arrows are <b>contingent</b>. They exist only if the swaption is exercised on 26 Jan 2027. The floating leg is drawn hollow because its amounts are also unknown.</figcaption>
+  </figure>
+  <figure class="fig">
+    <div class="fig-title">Payoff at expiry and value today, by the 5-year swap rate at expiry</div>
+    <div id="pay-sw"></div>
+    <figcaption>USD. At expiry the receiver is worth <var>N</var> × <var>A</var> × max(<var>K</var> − <var>S</var>, 0). Today's forward swap rate is 4.03%, so the option is already 47bp in the money.</figcaption>
+  </figure>
+</section>
+
+<section class="lvl" id="pv">
+  <h2><span class="lv">Level 3</span> The PV formula</h2>
+  <h3>Step 1 · The annuity: the value of 1bp a year</h3>
+  <div class="prose"><p>The <b>annuity</b> <var>A</var> is the PV of receiving 1 (per unit of notional) on every fixed payment date, weighted by each period's year fraction:</p></div>
+  <div class="f"><var>A</var> = <span class="sum"><span class="s">Σ</span><small>i</small></span> <var>τ</var><sub>i</sub> × <var>D</var>(<var>t</var><sub>i</sub>)</div>
+  <div class="prose"><p>Multiply it by notional × 0.0001 and you get the DV01 of the swap. For a 5-year swap <var>A</var> ≈ 4.5: 1bp a year for 5 years is worth about 4.5bp today.</p></div>
+  <h3>Step 2 · The forward swap rate</h3>
+  <div class="prose"><p>The forward swap rate <var>S</var> is the fixed rate that makes the forward-starting swap worth zero. For an OIS swap like SOFR, the floating leg is worth <var>D</var>(start) − <var>D</var>(end), so:</p></div>
+  <div class="f"><var>S</var> = <span class="frac"><span><var>D</var>(<var>t</var><sub>start</sub>) − <var>D</var>(<var>t</var><sub>end</sub>)</span><span><var>A</var></span></span></div>
+  <div class="prose"><p>With a separate projection curve (TWD 3M, EURIBOR), replace the numerator by the PV of the projected floating leg (see <a href="irs.html">swaps</a>).</p></div>
+  <h3>Step 3 · What the swap is worth at expiry</h3>
+  <div class="prose"><p>A receiver swap at <var>K</var> is worth fixed leg minus floating leg. The fixed leg is <var>N</var> × <var>A</var> × <var>K</var>. The floating leg is, by definition of <var>S</var>, <var>N</var> × <var>A</var> × <var>S</var>. So at expiry:</p></div>
+  <div class="f">Receiver payoff = <var>N</var> × <var>A</var> × max(<var>K</var> − <var>S</var>, 0) &nbsp;&nbsp;&nbsp; Payer payoff = <var>N</var> × <var>A</var> × max(<var>S</var> − <var>K</var>, 0)</div>
+  <h3>Step 4 · Bachelier on the swap rate, with the annuity as discount factor</h3>
+  <div class="prose"><p>The payoff is an option on <var>S</var> multiplied by <var>A</var>. Quants proved that you can price it with Bachelier and simply use <var>A</var> where a discount factor would normally go. This is the "annuity measure", and it is how every rates desk prices swaptions.</p></div>
+  <div class="f"><span class="lbl">European swaption, normal model</span>
+    <var>d</var> = <span class="frac"><span><var>S</var> − <var>K</var></span><span><var>σ</var><sub>N</sub>√<var>T</var></span></span><br>
+    Payer = <var>N</var> × <var>A</var> × [ (<var>S</var> − <var>K</var>) <var>N</var>(<var>d</var>) + <var>σ</var><sub>N</sub>√<var>T</var> <var>n</var>(<var>d</var>) ]<br>
+    Receiver = <var>N</var> × <var>A</var> × [ (<var>K</var> − <var>S</var>) <var>N</var>(−<var>d</var>) + <var>σ</var><sub>N</sub>√<var>T</var> <var>n</var>(<var>d</var>) ]
+  </div>
+  <dl class="where">
+    <dt><var>T</var></dt><dd>time to option expiry in years</dd>
+    <dt><var>σ</var><sub>N</sub></dt><dd>normal vol for this expiry, tenor and strike, in bp per year (95bp = 0.0095)</dd>
+    <dt><var>n</var>(<var>d</var>)</dt><dd>height of the bell curve, see <a href="toolkit.html#black">the toolkit</a></dd>
+  </dl>
+  <aside class="key"><p><b>Payer − receiver = forward swap.</b> Long a payer and short a receiver at the same strike is a forward-starting payer swap: <var>N</var> × <var>A</var> × (<var>S</var> − <var>K</var>). Use it to check your numbers.</p></aside>
+</section>
+
+<section class="lvl" id="flavours">
+  <h2><span class="lv">Level 4</span> The two flavours</h2>
+  <h3>Swaption · USD SOFR, physically settled</h3>
+  <div class="prose">
+    <p><code>European 5Y USD P SOFRCMP-1D/R 4.5 % 26/Jan/27</code> reads: European exercise, 5-year underlying swap, USD. The holder would <b>P</b>ay daily-compounded SOFR and <b>R</b>eceive 4.5%, so it is a receiver swaption. It expires on 26 Jan 2027. On exercise, a real SOFR swap is booked and cleared. The worked example below prices this trade with illustrative market data.</p>
+  </div>
+  <h3>NDSwaption · non-deliverable, settled in USD</h3>
+  <div class="prose">
+    <p><code>European 5Y TWD P TDCCON-3M/R 2.815 % 19/Feb/30</code>: a receiver swaption on a 5-year Taiwan dollar swap against a 3-month TWD floating rate (<code>TDCCON-3M</code>), strike 2.815%, expiring 19 Feb 2030. TWD cannot be freely delivered offshore. So the underlying is a <a href="nds.html">non-deliverable swap</a>, and on exercise the option is <b>cash-settled in USD</b>.</p>
+    <p>The pricing formula is the same, with TWD curves and quarterly ACT/365 fixed periods. Convert the TWD PV into USD at the FX rate. Example: TWD 1bn notional, flat TWD zero 2.0%, so <var>A</var> = 4.4499 and <var>S</var> = 2.005%. Expiry in 3.244 years, normal vol 45bp. Then <var>d</var> = −0.999 and the rate value is 0.8776%, giving PV = TWD 39.05m = <b>USD 1.24m</b> at 31.50 TWD per USD.</p>
+  </div>
+</section>
+
+<section class="lvl" id="desk">
+  <h2><span class="lv">Level 5</span> Desk reality</h2>
+  <ul>
+    <li><b>The vol cube.</b> Each swaption has its own vol for its expiry, its tenor and its strike. Desks store an ATM grid (expiry × tenor) and a smile at each point. Pick the vol for <em>your</em> 2M × 5Y at <em>your</em> strike.</li>
+    <li><b>Quoting.</b> Brokers quote ATM swaptions in bp normal vol, and premiums in bp of notional ("2M5Y receivers at 222bp upfront"). Premium is paid on the spot date.</li>
+    <li><b>Settlement.</b> USD swaptions settle physically into a cleared swap. EUR and GBP often settle in cash using a formula agreed by the market. Non-deliverable currencies settle in USD cash. The settlement style changes the annuity you should use a little, but desks treat it as a small adjustment.</li>
+    <li><b>Expiry time.</b> 11am New York for USD, 11am London for EUR. Exercise must be notified before then.</li>
+    <li><b>Beyond European.</b> Bermudan swaptions (exercisable on several dates) need a full model such as Hull-White. They sit inside callable bonds and cancellable swaps.</li>
+  </ul>
+</section>
+
+<section class="sec" id="greeks">
+  <h2>Greeks that matter</h2>
+  <div class="tbl greeks"><table>
+    <thead><tr><th>Greek</th><th>What it measures</th><th>For a swaption</th></tr></thead>
+    <tbody>
+      <tr><td>Delta (DV01)</td><td>PV change if the forward swap rate rises 1bp</td><td><var>N</var> × <var>A</var> × <var>N</var>(<var>d</var>) × 0.0001 for a payer. In practice you hedge with a forward swap: delta 0.88 means a receiver swaption behaves like 88% of a forward receiver swap. In the example, −USD 39,527 per bp.</td></tr>
+      <tr><td>Vega</td><td>PV change for +1bp of normal vol</td><td><var>N</var> × <var>A</var> × √<var>T</var> × <var>n</var>(<var>d</var>) × 0.0001. USD 3,666 per bp here. Bucketed by expiry and tenor on the vol grid.</td></tr>
+      <tr><td>Gamma</td><td>How delta changes as rates move</td><td>Positive for the buyer, largest at the money close to expiry.</td></tr>
+      <tr><td>Theta</td><td>PV change from one day passing</td><td>Negative for the buyer: −USD 2,721 a day here.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="sec" id="example">
+  <h2>Worked example</h2>
+  <p>Valuation date 23 Nov 2026. Long USD 100m receiver swaption, strike 4.5%, expiry 26 Jan 2027 (64 days, <var>T</var> = 0.17534). The swap starts on 28 Jan 2027 with five annual fixed payments, ACT/360. Illustrative flat SOFR zero curve 4.00% (continuous, ACT/365). Normal vol 95bp.</p>
+  <ol class="steps">
+    <li><span>Fixed-leg schedule and discount factors.</span>
+      <div class="calc-line">28 Jan 28  τ 1.01389  D 0.953865
+28 Jan 29  τ 1.01667  D 0.916363
+28 Jan 30  τ 1.01389  D 0.880432
+28 Jan 31  τ 1.01389  D 0.845910
+28 Jan 32  τ 1.01389  D 0.812741</div></li>
+    <li><span>Annuity.</span>
+      <div class="calc-line">A = Σ τ × D = 4.473098</div></li>
+    <li><span>Forward swap rate.</span>
+      <div class="calc-line">S = (D(28 Jan 27) − D(28 Jan 32)) / A = (0.992793 − 0.812741) / 4.473098 = 4.0252%</div></li>
+    <li><span>Bachelier inputs.</span>
+      <div class="calc-line">σN√T = 0.0095 × √0.17534 = 0.003978
+d = (0.040252 − 0.045) / 0.003978 = −1.19351    N(−d) = 0.883665    n(d) = 0.195700</div></li>
+    <li><span>Receiver rate value.</span>
+      <div class="calc-line">(0.045 − 0.040252) × 0.883665 + 0.003978 × 0.195700 = 0.0041955 + 0.0007785 = 0.0049740</div></li>
+    <li><span>Scale by notional and annuity.</span>
+      <div class="calc-line">PV = 100,000,000 × 4.473098 × 0.0049740 = USD 2,224,909
+intrinsic = 100,000,000 × 4.473098 × 0.0047478 = USD 2,123,744 → time value USD 101,165</div></li>
+  </ol>
+  <p class="answer">The receiver swaption is worth <b>USD 2,224,909</b>, or 222.5bp of notional. Most of it is intrinsic value, because the market rate (4.03%) is already 47bp below the strike.</p>
+</section>
+
+<section class="sec" id="try">
+  <h2>Try it</h2>
+  <p>Defaults are the worked example. For the TWD NDSwaption: 1,184 days to expiry, quarterly, ACT/365, zero 2.0%, strike 2.815, vol 45, notional 1,000 and FX 31.50.</p>
+  <div id="calc-sw"></div>
+</section>
+
+<section class="sec" id="recap">
+  <h2>Remember</h2>
+  <ul class="recap">
+    <li>A swaption is an option on the forward swap rate. Payer = call on the rate, receiver = put.</li>
+    <li>Annuity <var>A</var> = Σ <var>τ</var><sub>i</sub><var>D</var>(<var>t</var><sub>i</sub>). Forward swap rate <var>S</var> = PV(floating leg) ÷ <var>A</var>.</li>
+    <li>PV = <var>N</var> × <var>A</var> × Bachelier(<var>S</var>, <var>K</var>, <var>T</var>, <var>σ</var><sub>N</sub>). Payer − receiver = forward swap.</li>
+    <li>Vol comes from the cube: expiry × tenor × strike. Delta is quoted in DV01, vega per bp of normal vol.</li>
+    <li>NDSwaptions price the same way in local currency, then convert to USD cash settlement.</li>
+  </ul>
+</section>
+
+</main>
+</div>
+<script src="assets/course.js"></script>
+<script>
+(function () {
+  const TODAY = '2026-11-23';
+  function swaption(o) {
+    const expiry = C.addDays(TODAY, o.days), start = C.addDays(expiry, 2), T = o.days / 365;
+    const P = d => Math.exp(-o.z * C.days(TODAY, d) / 365);
+    const n = Math.round(o.tenor * 12 / o.freq), rows = []; let A = 0, prev = start;
+    for (let i = 1; i <= n; i++) {
+      const d = C.addMonths(start, o.freq * i), tau = C.yearFrac(prev, d, o.dc), D = P(d);
+      A += tau * D; rows.push({ d, tau, D, t: C.days(TODAY, d) / 365 }); prev = d;
+    }
+    const S = (P(start) - P(rows[rows.length - 1].d)) / A;
+    const b = C.bachelier({ F: S, K: o.K, T, volN: o.vol, df: 1, call: o.payer });
+    return { expiry, start, T, A, S, b, rows, pv: o.N * A * b.pv };
+  }
+  const ex = { days: 64, tenor: 5, freq: 12, dc: 'ACT/360', z: 0.04, K: 0.045, vol: 0.0095, N: 100e6, payer: false };
+  const r0 = swaption(ex);
+  const tExp = r0.T;
+
+  C.legs('#legs-sw', {
+    tMin: -0.15, tMax: 5.4, ticks: [0, 1, 2, 3, 4, 5], tickFmt: t => C.fmt(t, 0),
+    events: [{ t: tExp, label: 'Expiry 26 Jan 27' }],
+    legs: [
+      { name: 'Receive 4.5% fixed, annual (contingent on exercise)', dir: 1, style: 'contingent', flows: r0.rows.map(x => ({ t: x.t, a: 1, label: C.fmt(4.5 * x.tau, 3) + 'm', tip: `Fixed: 100m × 4.5% × ${C.fmt(x.tau, 5)} on ${C.iso(x.d)}` })) },
+      { name: 'Premium USD 2.22m', dir: -1, style: 'fixed', flows: [{ t: 0, a: 0.5, label: '2.22m', tip: 'Premium USD 2,224,909' }] },
+      { name: 'Pay SOFR compounded, annual (contingent, amount unknown)', dir: -1, style: 'contingent', flows: r0.rows.map(x => ({ t: x.t, a: 0.9, label: 'SOFR', tip: `Floating: 100m × compounded SOFR × ${C.fmt(x.tau, 5)} on ${C.iso(x.d)}` })) },
+    ],
+  });
+
+  C.chart('#pay-sw', {
+    x: [0.025, 0.06], xLabel: '5Y swap rate at expiry', yLabel: 'receiver value (USD)',
+    xFmt: x => C.pct(x, 1), yFmt: y => C.fmt(y / 1e6, 1) + 'm', tipFmt: y => 'USD ' + C.fmt(y, 0),
+    series: [
+      { name: 'Payoff at expiry', f: s => ex.N * r0.A * Math.max(ex.K - s, 0), color: 1 },
+      { name: 'Value today', f: s => ex.N * r0.A * C.bachelier({ F: s, K: ex.K, T: tExp, volN: ex.vol, df: 1, call: false }).pv, color: 3, dashed: true },
+    ],
+    marks: [{ x: 0.045, label: 'K = 4.5%' }, { x: r0.S, label: 'S' }],
+  });
+
+  C.calc('#calc-sw', {
+    title: 'European swaption pricer (normal model)',
+    inputs: [
+      { id: 'type', label: 'Type', value: 'rec', options: [['pay', 'Payer (pay fixed)'], ['rec', 'Receiver (receive fixed)']] },
+      { id: 'N', label: 'Notional', unit: 'm', value: 100, step: 10 },
+      { id: 'K', label: 'Strike', unit: '%', value: 4.5, step: 0.05 },
+      { id: 'days', label: 'Days to expiry', value: 64, step: 1, min: 1 },
+      { id: 'tenor', label: 'Swap tenor', unit: 'years', value: 5, step: 1, min: 1, max: 30 },
+      { id: 'freq', label: 'Fixed frequency', value: 12, options: [[12, 'Annual'], [6, 'Semi-annual'], [3, 'Quarterly']] },
+      { id: 'dc', label: 'Fixed day count', value: 'ACT/360', options: [['ACT/360', 'ACT/360'], ['ACT/365F', 'ACT/365F'], ['30/360', '30/360']] },
+      { id: 'z', label: 'Zero rate (flat)', unit: '%', value: 4.0, step: 0.05 },
+      { id: 'vol', label: 'Normal vol', unit: 'bp', value: 95, step: 1, min: 1 },
+      { id: 'fx', label: 'FX for settlement', unit: 'local per USD', value: 1, step: 0.01, min: 0.0001 },
+    ],
+    compute: v => {
+      const o = { days: v.days, tenor: v.tenor, freq: v.freq, dc: v.dc, z: v.z / 100, K: v.K / 100, vol: v.vol / 1e4, N: v.N * 1e6, payer: v.type === 'pay' };
+      const r = swaption(o), intr = o.N * r.A * Math.max(o.payer ? r.S - o.K : o.K - r.S, 0);
+      return {
+        out: [
+          ['Expiry / swap start', C.iso(r.expiry) + ' / ' + C.iso(r.start)],
+          ['Annuity A', C.fmt(r.A, 6)],
+          ['Forward swap rate S', C.pct(r.S, 4)],
+          ['d', C.fmt(r.b.d, 5)],
+          ['PV (local ccy)', C.fmt(r.pv, 0), true],
+          ['PV in USD', C.fmt(r.pv / v.fx, 0)],
+          ['Premium in bp of notional', C.fmt(r.pv / o.N * 1e4, 1) + 'bp'],
+          ['Intrinsic / time value', C.fmt(intr, 0) + ' / ' + C.fmt(r.pv - intr, 0)],
+          ['Delta per bp (A fixed)', C.fmt(o.N * r.A * r.b.delta * 1e-4, 0)],
+          ['Vega per bp normal vol', C.fmt(o.N * r.A * r.b.vega, 0)],
+          ['Theta per day', C.fmt(o.N * r.A * r.b.theta, 0)],
+        ],
+        table: {
+          head: ['Fixed payment', 'τ', 'D(t)', 'τ × D'], num: [1, 2, 3],
+          rows: r.rows.map(x => [C.iso(x.d), C.fmt(x.tau, 5), C.fmt(x.D, 6), C.fmt(x.tau * x.D, 6)]),
+          foot: ['Annuity', '', '', C.fmt(r.A, 6)],
+        },
+        chart: {
+          x: [Math.max(-0.01, o.K - 0.02), o.K + 0.02], xLabel: 'swap rate at expiry', yLabel: 'value (local ccy)',
+          xFmt: x => C.pct(x, 1), yFmt: y => C.fmt(y / 1e6, 1) + 'm', tipFmt: y => C.fmt(y, 0),
+          series: [
+            { name: 'Payoff at expiry', f: s => o.N * r.A * Math.max(o.payer ? s - o.K : o.K - s, 0), color: 1 },
+            { name: 'Value today', f: s => o.N * r.A * C.bachelier({ F: s, K: o.K, T: r.T, volN: o.vol, df: 1, call: o.payer }).pv, color: 3, dashed: true },
+          ],
+          marks: [{ x: o.K, label: 'K' }, { x: r.S, label: 'S' }],
+        },
+        note: 'Single flat OIS curve for projection and discounting (exact for SOFR swaps). Swap starts two calendar days after expiry; no business-day adjustment.',
+      };
+    },
+  });
+})();
+</script>
+</body>
+</html>

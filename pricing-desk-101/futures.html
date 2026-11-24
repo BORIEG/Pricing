@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Futures Basics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=JetBrains+Mono:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..600&display=swap">
+<link rel="stylesheet" href="assets/course.css">
+</head>
+<body data-page="futures.html">
+<div class="shell">
+<aside class="toc" id="toc"></aside>
+<main class="page">
+
+<header class="ph">
+  <p class="eyebrow">Part 2 · Futures</p>
+  <h1>Futures: the basics</h1>
+  <p class="lede">A promise to buy or sell something later at a price fixed today, traded on an exchange and settled up every single day. Index, commodity, FX, single-stock and dividend futures all work the same way. Only the fair-value formula changes.</p>
+  <div class="ptypes" data-ptypes data-eg="YEN DENOM NIKKEI Dec26 · YELLOW MAIZE-SAF Mar27 · USD/CNH Dec26 · S&amp;P 500 Qtr Div Dec26"></div>
+</header>
+
+<section class="lvl" id="idea">
+  <h2><span class="lv">Level 1</span> The idea</h2>
+  <div class="prose">
+    <p>A farmer will harvest maize in March. A mill will need maize in March. Neither wants to gamble on what the price will be. So today they agree a price for March delivery. That agreement is a <b>forward</b>.</p>
+    <p>A <b>future</b> is the same agreement with three changes. It is standardised (fixed size, fixed dates). It trades on an exchange, so anyone can buy or sell it. And a clearing house stands in the middle, collecting gains and losses <b>every day</b> so nobody can run away owing money.</p>
+  </div>
+  <aside class="analogy"><p>Picture a bet with a friend on a football season, where you settle up after every match instead of at the end. If your team wins on Saturday, your friend pays you on Sunday. By the end of the season nobody owes anything big, because it was paid as you went. That daily settling is called <b>variation margin</b>.</p></aside>
+  <p>Because gains and losses are paid every evening, an open futures position is worth roughly zero after each day's settlement. What a trader calls the "PV" of a futures position is the profit since the trade was done, part of which has already landed in the margin account.</p>
+</section>
+
+<section class="lvl" id="cashflows">
+  <h2><span class="lv">Level 2</span> The cashflows</h2>
+  <div class="prose">
+    <p>You buy (go <b>long</b>) 10 Nikkei futures at 38,200. Each index point is worth ¥500 per contract, so each point is worth ¥5,000 on your position. Every evening the exchange publishes a <b>settlement price</b>. You receive the rise, or pay the fall, times ¥5,000.</p>
+  </div>
+  <figure class="fig">
+    <div class="fig-title">Daily variation margin: long 10 YEN DENOM NIKKEI Dec26 bought at 38,200</div>
+    <div id="legs-vm"></div>
+    <figcaption>Each arrow is one evening's cash. Settlements: 38,350 → 38,290 → 38,420 → 38,390 → 38,480. The arrows add up to (38,480 − 38,200) × ¥5,000 = <b>¥1,400,000</b>, the same as one payment at the end, only paid in instalments.</figcaption>
+  </figure>
+  <div class="f"><span class="lbl">Cash on day i (long position)</span>
+    VM<sub><var>i</var></sub> = (<var>F</var><sub><var>i</var></sub> − <var>F</var><sub><var>i</var>−1</sub>) × <var>M</var> × <var>n</var>
+  </div>
+  <dl class="where">
+    <dt><var>F</var><sub><var>i</var></sub></dt><dd>exchange settlement price on day <var>i</var> (<var>F</var><sub>0</sub> = your trade price)</dd>
+    <dt><var>M</var></dt><dd>multiplier: money per 1.00 of price per contract (¥500 per Nikkei point here)</dd>
+    <dt><var>n</var></dt><dd>number of contracts (lots); negative if you sold</dd>
+  </dl>
+  <p>You also post <b>initial margin</b>, a deposit the exchange holds as a safety cushion. You get it back when you close. It is collateral and has no PV of its own.</p>
+</section>
+
+<section class="lvl" id="pv">
+  <h2><span class="lv">Level 3</span> The PV formula</h2>
+  <h3>Step 1 · Value of a position you already hold</h3>
+  <div class="f"><span class="lbl">Unrealised P&amp;L since trade (before today's margin is paid)</span>
+    PV = (<var>F</var><sub>now</sub> − <var>F</var><sub>trade</sub>) × <var>M</var> × <var>n</var>
+  </div>
+  <p>No discount factor: the money moves tonight. This is the formula for every listed future in the course.</p>
+  <h3>Step 2 · What should the futures price be? (fair value by cost of carry)</h3>
+  <div class="prose">
+    <p>Compare two ways to own the thing at expiry <var>T</var>. Buy it now and hold it, or buy the future. Holding it costs interest on the money (<var>r</var>), may earn income (dividends, foreign interest), and may cost storage. If the future were cheaper or dearer than "spot plus carry", traders would buy one and sell the other for free money. So:</p>
+  </div>
+  <div class="f"><span class="lbl">General cost-of-carry rule (continuous rates, T in years)</span>
+    <var>F</var> = <var>S</var> × e<sup>(<var>r</var> − <var>income</var> + <var>storage</var>) × <var>T</var></sup>
+  </div>
+  <div class="tbl"><table>
+    <thead><tr><th>Product type</th><th>Fair value</th><th>What the letters are</th></tr></thead>
+    <tbody>
+      <tr><td><code>EquityIndexFuture</code></td><td><var>F</var> = <var>S</var> e<sup>(<var>r</var>−<var>q</var>)<var>T</var></sup></td><td><var>q</var> = dividend yield of the index; <var>r</var> = OIS rate of the index currency</td></tr>
+      <tr><td><code>EquityFuture</code></td><td><var>F</var> = (<var>S</var> − PV(divs)) e<sup><var>rT</var></sup></td><td>single stocks pay a few known dividends, so subtract their present value</td></tr>
+      <tr><td><code>FXFuture</code></td><td><var>F</var> = <var>S</var> e<sup>(<var>r</var><sub>d</sub>−<var>r</var><sub>f</sub>)<var>T</var></sup></td><td>USD/CNH is quoted CNH per USD: <var>r</var><sub>d</sub> = CNH rate, <var>r</var><sub>f</sub> = USD rate (see <a href="fx-forward.html">FX forwards</a>)</td></tr>
+      <tr><td><code>CommodityFuture</code></td><td><var>F</var> = <var>S</var> e<sup>(<var>r</var>+<var>u</var>−<var>y</var>)<var>T</var></sup></td><td><var>u</var> = storage cost yield, <var>y</var> = convenience yield (the benefit of having the barrel in hand)</td></tr>
+      <tr><td><code>DividendEquityIndexFuture</code></td><td><var>F</var> = expected dividends paid in the period</td><td>settles on the dividends actually paid (index points); traders read it off dividend swap and option markets</td></tr>
+    </tbody>
+  </table></div>
+  <aside class="key"><p>For index, FX and single-stock futures the carry formula is a hard arbitrage: the price cannot drift far from it. For commodities you often cannot borrow or store the physical easily, so <var>y</var> is backed out of the market price instead. The futures curve then tells you about supply and demand.</p></aside>
+</section>
+
+<section class="lvl" id="desk">
+  <h2><span class="lv">Level 4</span> Desk reality</h2>
+  <ul>
+    <li><b>Contract specs are the whole game.</b> Multiplier, tick size, expiry rule and settlement type (cash or physical) are set in the exchange contract specification. CME's yen Nikkei is ¥500 × index in 5-point ticks. JSE SAFEX white and yellow maize are 100 tonnes, quoted in ZAR per tonne. CME USD/CNH is USD 100,000 per lot, quoted CNH per USD.</li>
+    <li><b>Contango and backwardation.</b> When later months trade above spot (storage costs dominate), the curve is in <b>contango</b>. When they trade below (tight supply, high convenience yield), it is in <b>backwardation</b>. Crude oil flips between the two.</li>
+    <li><b>Basis.</b> Basis = <var>F</var> − <var>S</var>. It shrinks to zero at expiry (convergence). An index basis trade is long cash stocks, short futures, earning <var>r</var> − <var>q</var>.</li>
+    <li><b>Futures vs forwards.</b> Daily margining makes a future very slightly different from a forward when rates and the underlying are correlated. That is negligible for equity and FX, but it matters for rate futures (see <a href="stir-futures.html">STIR futures</a>).</li>
+    <li><b>Dividend futures.</b> <code>S&amp;P 500 Qtr Div Dec26</code> pays the index dividend points accrued in that quarter. Its delta is to <em>dividends</em>, not to the index level.</li>
+    <li><b>Roll.</b> Positions are moved from the front month to the next before expiry. The roll costs (or earns) the calendar spread between the two months.</li>
+  </ul>
+</section>
+
+<section class="sec" id="greeks">
+  <h2>Greeks that matter</h2>
+  <div class="tbl greeks"><table>
+    <thead><tr><th>Greek</th><th>What it measures</th><th>For a future</th></tr></thead>
+    <tbody>
+      <tr><td>Delta (points)</td><td>PV change if the futures price moves 1.00</td><td><var>M</var> × <var>n</var>. That is ¥5,000 per Nikkei point on 10 lots.</td></tr>
+      <tr><td>Spot-equivalent delta</td><td>How much of the underlying you are effectively holding</td><td><var>n</var> × <var>M</var> × <var>F</var>/<var>S</var> units of spot. The notional is <var>n</var> × <var>M</var> × <var>F</var>, about ¥192m for 10 Nikkei lots.</td></tr>
+      <tr><td>Rho / carry</td><td>PV change if <var>r</var> moves +1bp</td><td>Tiny for short expiries: <var>S</var> × <var>T</var> × 0.0001 per unit of underlying.</td></tr>
+      <tr><td>Dividend / storage sensitivity</td><td>PV change if <var>q</var> (or <var>u</var>, <var>y</var>) moves</td><td>Mirror of rho with the opposite sign. Main risk for dividend futures.</td></tr>
+      <tr><td>Gamma, vega</td><td>Curvature, volatility</td><td>Zero. A future is linear.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="sec" id="example">
+  <h2>Worked example</h2>
+  <p>On 23 Nov 2026 you are long 10 YEN DENOM NIKKEI Dec26 bought at 38,200. The Nikkei is at 38,500. Expiry is 11 Dec 2026, 18 days away. JPY OIS is 0.75% and the index dividend yield over the period is 1.80%. Assume the future trades at its fair value.</p>
+  <ol class="steps">
+    <li><span>Time to expiry in years.</span>
+      <div class="calc-line">T = 18 / 365 = 0.049315</div></li>
+    <li><span>Fair futures price by cost of carry.</span>
+      <div class="calc-line">F = 38,500 × e^((0.0075 − 0.018) × 0.049315) = 38,500 × 0.999482 = 38,480.07</div></li>
+    <li><span>Basis. It is negative because dividends (1.80%) exceed the funding rate (0.75%).</span>
+      <div class="calc-line">F − S = 38,480.07 − 38,500 = −19.93 points</div></li>
+    <li><span>Position value.</span>
+      <div class="calc-line">PV = (38,480.07 − 38,200) × ¥500 × 10 = 280.07 × 5,000 = ¥1,400,348</div></li>
+  </ol>
+  <p class="answer">Unrealised P&amp;L <b>+¥1,400,348</b>, almost all of it already received through daily margin. Delta is <b>¥5,000 per index point</b>.</p>
+  <h3>The other types, in one line each</h3>
+  <ul>
+    <li><b>USD/CNH Dec26</b>: spot 7.1200, CNH rate 1.60%, USD rate 3.90%, 21 days. F = 7.12 × e<sup>(0.016−0.039)×21/365</sup> = <b>7.11058</b>, so forward points are −94. A long lot of USD 100,000 makes CNH 1,000 per 0.01 move.</li>
+    <li><b>YELLOW MAIZE-SAF Mar27</b>: spot ZAR 3,950/t, <var>r</var> = 7.5%, storage 3%, convenience 1%, 115 days. F = 3,950 × e<sup>(0.075+0.03−0.01)×115/365</sup> = <b>ZAR 4,070/t</b> (contango). One lot is 100 t, so ZAR 100 per R1 move.</li>
+  </ul>
+</section>
+
+<section class="sec" id="try">
+  <h2>Try it</h2>
+  <p>Pick a type to pre-fill typical inputs, then change any field. The chart shows your P&amp;L for any futures price.</p>
+  <div id="calc-fut"></div>
+</section>
+
+<section class="sec" id="recap">
+  <h2>Remember</h2>
+  <ul class="recap">
+    <li>Futures are forwards with daily cash settlement through a clearing house.</li>
+    <li>Position value = (current price − trade price) × multiplier × lots. No discounting.</li>
+    <li>Fair price = spot grown at funding cost, minus income, plus storage.</li>
+    <li>Risk is pure delta: multiplier × lots per point. No gamma, no vega.</li>
+  </ul>
+</section>
+
+</main>
+</div>
+<script src="assets/course.js"></script>
+<script>
+(function () {
+  const px = [38200, 38350, 38290, 38420, 38390, 38480];
+  const flows = px.slice(1).map((p, i) => ({ t: i + 1, d: (p - px[i]) * 5000 }));
+  C.legs('#legs-vm', {
+    tMin: 0, tMax: 5.4, ticks: [0, 1, 2, 3, 4, 5], tickFmt: t => t === 0 ? 'Trade' : 'Day ' + t, axisLabel: 'trading days',
+    events: [{ t: 0, label: 'Buy at 38,200' }],
+    legs: [
+      { name: 'Margin received (price rose)', dir: 1, style: 'fixed', flows: flows.filter(f => f.d > 0).map(f => ({ t: f.t, a: f.d, label: '+' + C.fmt(f.d / 1e3, 0) + 'k', tip: `Day ${f.t}: settle ${C.fmt(px[f.t], 0)}, receive ¥${C.fmt(f.d, 0)}` })) },
+      { name: 'Margin paid (price fell)', dir: -1, style: 'fixed', flows: flows.filter(f => f.d < 0).map(f => ({ t: f.t, a: -f.d, label: C.fmt(f.d / 1e3, 0) + 'k', tip: `Day ${f.t}: settle ${C.fmt(px[f.t], 0)}, pay ¥${C.fmt(-f.d, 0)}` })) },
+    ],
+  });
+
+  const presets = {
+    index: { S: 38500, r: 0.75, inc: 1.80, sto: 0, days: 18, Ft: 38200, n: 10, M: 500, ccy: '¥' },
+    fx: { S: 7.12, r: 1.60, inc: 3.90, sto: 0, days: 21, Ft: 7.10, n: 10, M: 100000, ccy: 'CNH' },
+    comm: { S: 3950, r: 7.5, inc: 1.0, sto: 3.0, days: 115, Ft: 4000, n: 10, M: 100, ccy: 'ZAR' },
+  };
+  let lastType = 'index';
+  C.calc('#calc-fut', {
+    title: 'Futures fair value & position P&L',
+    inputs: [
+      { id: 'type', label: 'Type (pre-fills)', value: 'index', options: [['index', 'Equity index (Nikkei)'], ['fx', 'FX (USD/CNH)'], ['comm', 'Commodity (maize)']] },
+      { id: 'S', label: 'Spot S', value: 38500, step: 'any' },
+      { id: 'r', label: 'Funding rate r', unit: '%', value: 0.75, step: 0.05 },
+      { id: 'inc', label: 'Income q / r_f / y', unit: '%', value: 1.80, step: 0.05 },
+      { id: 'sto', label: 'Storage u', unit: '%', value: 0, step: 0.1 },
+      { id: 'days', label: 'Days to expiry', value: 18, step: 1, min: 0 },
+      { id: 'Ft', label: 'Your trade price', value: 38200, step: 'any' },
+      { id: 'n', label: 'Lots (− = short)', value: 10, step: 1 },
+      { id: 'M', label: 'Multiplier', value: 500, step: 'any' },
+    ],
+    compute: v => {
+      if (v.type !== lastType) {
+        lastType = v.type;
+        const p = presets[v.type], root = document.getElementById('calc-fut');
+        ['S', 'r', 'inc', 'sto', 'days', 'Ft', 'n', 'M'].forEach(k => { root.querySelector('#calc-fut-' + k).value = p[k]; v[k] = p[k]; });
+      }
+      const ccy = presets[v.type].ccy, T = v.days / 365;
+      const F = v.S * Math.exp((v.r - v.inc + v.sto) / 100 * T);
+      const dp = v.S < 50 ? 5 : 2;
+      const pnl = (F - v.Ft) * v.M * v.n;
+      const lo = Math.min(F, v.Ft) * 0.97, hi = Math.max(F, v.Ft) * 1.03;
+      return {
+        out: [
+          ['Fair futures price F', C.fmt(F, dp)],
+          ['Basis F − S', C.signed(F - v.S, dp)],
+          ['Curve shape', F > v.S ? 'Contango (F above spot)' : 'Backwardation (F below spot)'],
+          ['Position P&L at fair F', ccy + ' ' + C.fmt(pnl, 0), true],
+          ['Delta per 1.00 of price', ccy + ' ' + C.fmt(v.M * v.n, 0)],
+          ['Notional n × M × F', ccy + ' ' + C.fmt(v.n * v.M * F, 0)],
+        ],
+        chart: {
+          x: [lo, hi], xLabel: 'futures price', yLabel: 'position P&L (' + ccy + ')',
+          xFmt: x => C.fmt(x, dp > 2 ? 3 : 0), yFmt: y => C.fmt(y / 1e6, 2) + 'm', tipFmt: y => ccy + ' ' + C.fmt(y, 0),
+          series: [{ name: 'P&L', f: x => (x - v.Ft) * v.M * v.n, color: 1 }],
+          marks: [{ x: v.Ft, label: 'trade' }, { x: F, label: 'fair F' }],
+        },
+        note: 'Continuous carry rates, ACT/365. The P&L is what daily variation margin has paid (or will pay tonight) since the trade.',
+      };
+    },
+  });
+})();
+</script>
+</body>
+</html>

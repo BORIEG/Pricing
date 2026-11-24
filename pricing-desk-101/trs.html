@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Total Return Swaps</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=JetBrains+Mono:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..600&display=swap">
+<link rel="stylesheet" href="assets/course.css">
+</head>
+<body data-page="trs.html">
+<div class="shell">
+<aside class="toc" id="toc"></aside>
+<main class="page">
+
+<header class="ph">
+  <p class="eyebrow">Part 3 · Swaps</p>
+  <h1>Total return &amp; equity-linked swaps</h1>
+  <p class="lede">Get everything an asset pays, its income and its price change, without buying it. In exchange you pay interest as if you had borrowed the money to buy it. Desks book bond versions as <code>TRS</code> and equity, index and basket versions as <code>ELS</code>.</p>
+  <div class="ptypes" data-ptypes data-eg="TRS T 4.625 02/15/35 · ELS CSI 500 NTR"></div>
+</header>
+
+<section class="lvl" id="idea">
+  <h2><span class="lv">Level 1</span> The idea</h2>
+  <div class="prose">
+    <p>Suppose you think a US Treasury bond will rally. You could borrow USD 10m and buy it. Or a bank could buy it and promise to pass you everything it does: every coupon, and any rise or fall in its price. In return you pay the bank interest on the money it spent, at SOFR plus a small spread.</p>
+    <p>Economically you own the bond on borrowed money. You never hold it, you put up little cash, and the bank keeps it on its balance sheet. That is a <b>total return swap</b>. You are the <em>total return receiver</em>, and the bank is the <em>total return payer</em>.</p>
+    <p>An <b>equity-linked swap</b> (ELS) is the same deal on a share, an index such as the CSI 500 (Chinese mid-caps), or a custom basket designed by a bank.</p>
+  </div>
+  <aside class="analogy"><p>It's like renting a car on a deal where, when you hand it back, you get any rise in its resale value and pay any fall. You pay the owner a monthly fee equal to interest on the car's price. You drive it as if it were yours, without paying for it up front.</p></aside>
+</section>
+
+<section class="lvl" id="cashflows">
+  <h2><span class="lv">Level 2</span> The cashflows</h2>
+  <h3>Bond TRS (<code>TRS</code>)</h3>
+  <div class="prose">
+    <p>The trade runs in periods, often a month or a quarter. At the start of each period the bond's price is recorded (<var>P</var><sub>0</sub>, the <b>reset price</b>). During the period any coupon is passed to you. At the end:</p>
+    <ul>
+      <li>the <span class="rec-c">total return leg</span> pays you <var>P</var><sub>end</sub> − <var>P</var><sub>0</sub>. If the price fell, this is negative and you pay it;</li>
+      <li>the <span class="pay-c">funding leg</span> charges you <var>P</var><sub>0</sub> × (SOFR + <var>s</var>) × days/360.</li>
+    </ul>
+    <p>Then the price resets and the next period starts from the new price.</p>
+  </div>
+  <figure class="fig">
+    <div class="fig-title">Bond TRS receiver, 1 year with quarterly resets, per 100 face</div>
+    <div id="legs-trs"></div>
+    <figcaption><b>Blue solid</b> = coupons passed through (known). <b>Green dotted</b> = price performance at each reset (could go either way). <b>Orange dashed</b> = funding at SOFR + spread on the reset price.</figcaption>
+  </figure>
+  <h3>Equity-linked swap (<code>ELS</code>)</h3>
+  <div class="prose"><p>Same structure. The performance leg pays <var>N</var> × (<var>I</var><sub>end</sub> ÷ <var>I</var><sub>0</sub> − 1), where <var>I</var> is the share, index or basket level. Dividends are added if the index is a price index. They are already inside the level for a <b>net total return</b> (NTR) index such as <code>CSI 500 NTR</code>. You pay SOFR + spread on <var>N</var>.</p></div>
+</section>
+
+<section class="lvl" id="pv">
+  <h2><span class="lv">Level 3</span> The PV formula</h2>
+  <div class="prose"><p>We price one period. A multi-period trade is just the current period, because each later period restarts from the market price and is worth roughly zero apart from its spread.</p></div>
+  <h3>Bond TRS</h3>
+  <div class="f"><span class="lbl">Step 1 · the expected price at the end is the bond's forward price</span>
+    <var>P</var><sup>fwd</sup> = <span class="frac"><span><var>P</var><sub>now</sub> − <var>c</var> × <var>D</var><sub>repo</sub>(<var>t</var><sub><var>c</var></sub>)</span><span><var>D</var><sub>repo</sub>(<var>T</var>)</span></span>
+  </div>
+  <div class="prose"><p>This is what it costs to buy the bond today, financed in the repo market (see <a href="repo.html">repo</a>), minus the coupon you'd collect on the way. The repo rate is the bond's own financing rate.</p></div>
+  <div class="f"><span class="lbl">Step 2 · total return leg, discounted on SOFR OIS</span>
+    PV<sub>TR</sub> = (<var>P</var><sup>fwd</sup> − <var>P</var><sub>0</sub>) × <var>D</var>(<var>T</var>) + <var>c</var> × <var>D</var>(<var>t</var><sub><var>c</var></sub>)
+  </div>
+  <div class="f"><span class="lbl">Step 3 · funding leg: compounded SOFR + spread on P₀</span>
+    PV<sub>fund</sub> = <var>P</var><sub>0</sub> × [ (1 − <var>D</var>(<var>T</var>)) + <var>s</var> <var>τ</var> <var>D</var>(<var>T</var>) ]
+  </div>
+  <div class="f"><span class="lbl">Step 4 · PV for the total return receiver</span>
+    PV = <span class="frac"><span><var>N</var></span><span>100</span></span> × ( PV<sub>TR</sub> − PV<sub>fund</sub> )
+  </div>
+  <aside class="key"><p>At the reset (<var>P</var><sub>now</sub> = <var>P</var><sub>0</sub>) the algebra collapses to PV ≈ <var>N</var>/100 × <var>P</var><sub>0</sub> × <var>τ</var> × <var>D</var> × (repo − SOFR − <var>s</var>). So the <b>fair TRS spread ≈ the bond's repo rate − SOFR</b>. The receiver pays what it would cost the bank to finance the bond, plus any balance-sheet charge.</p></aside>
+  <h3>Equity-linked swap</h3>
+  <div class="f"><span class="lbl">Forward of the underlying</span>
+    <var>F</var> = <var>I</var><sub>now</sub> × e<sup>(<var>r</var> − <var>q</var>)<var>T</var></sup>
+    &nbsp;&nbsp; or, for a futures underlier, &nbsp; <var>F</var> = futures price
+  </div>
+  <div class="f"><span class="lbl">PV for the performance receiver</span>
+    PV = <var>N</var> × [ <var>D</var>(<var>T</var>) (<span class="frac"><span><var>F</var></span><span><var>I</var><sub>0</sub></span></span> − 1) − (1 − <var>D</var>(<var>T</var>)) − <var>s</var> <var>τ</var> <var>D</var>(<var>T</var>) ]
+    = <var>N</var> × [ <span class="frac"><span><var>I</var><sub>now</sub></span><span><var>I</var><sub>0</sub></span></span> e<sup>−<var>q</var><var>T</var></sup> − 1 − <var>s</var> <var>τ</var> <var>D</var>(<var>T</var>) ]
+  </div>
+  <dl class="where">
+    <dt><var>q</var></dt><dd>carry of the underlying: the dividend yield for a price index, about 0 for a total-return index, or the yield implied by futures when futures trade away from fair value (common for CSI 500)</dd>
+    <dt><var>s</var></dt><dd>spread over SOFR. Its fair value is (e<sup>−<var>q</var><var>T</var></sup> − 1) ÷ (<var>τ</var><var>D</var>). Anything above that is the bank's hedging and balance-sheet charge.</dd>
+  </dl>
+</section>
+
+<section class="lvl" id="desk">
+  <h2><span class="lv">Level 4</span> Desk reality</h2>
+  <ul>
+    <li><b>Reading the trade description.</b> <code>TRS T 4.625 02/15/35</code> is a TRS on the US Treasury 4.625% February 2035. ELS underliers seen live include dealer custom baskets (for example a US wage-growth basket), the <code>CSI 500 NTR</code> index, and even a futures contract (<code>SHFE Deformed Bar Fut</code>, steel rebar).</li>
+    <li><b>Live periods.</b> Midway through a period, the SOFR already accrued since the reset is known. Add it as a fixed amount, and use only the remaining days in the formulas.</li>
+    <li><b>Clean vs dirty.</b> Bond TRS contracts specify whether performance is measured on clean or dirty price. With dirty prices the coupon drops out of the price on payment day and is paid separately. Count it once.</li>
+    <li><b>Dividends and tax.</b> On price-return equity swaps the receiver typically gets a percentage of gross dividends (net of withholding tax). An NTR index has net dividends already reinvested.</li>
+    <li><b>Funding curve.</b> SOFR (or €STR or SONIA) compounded, ACT/360, paid at each reset. Spreads reflect the bank's balance-sheet cost and, for markets like China A-shares, quota and access costs.</li>
+    <li><b>Collateral.</b> These trades usually carry an independent amount (initial margin) that the receiver posts, sized to a few days of the asset's volatility.</li>
+  </ul>
+</section>
+
+<section class="sec" id="greeks">
+  <h2>Greeks that matter</h2>
+  <div class="tbl greeks"><table>
+    <thead><tr><th>Greek</th><th>What it measures</th><th>For TRS and ELS receivers</th></tr></thead>
+    <tbody>
+      <tr><td>Delta</td><td>PV change if the asset price moves</td><td>Bond: ≈ <var>N</var>/100 per price point (USD 100,000 per point on USD 10m). Equity: ≈ <var>N</var> × 1% per 1% move. Same as owning the asset.</td></tr>
+      <tr><td>DV01 (bond TRS)</td><td>PV change if yields rise 1bp</td><td>Equal to the bond's own DV01 × <var>N</var>/100. You carry the bond's full rate risk.</td></tr>
+      <tr><td>Spread01 / funding</td><td>PV change if the funding spread or the repo − SOFR gap moves 1bp</td><td>≈ <var>N</var> × <var>P</var><sub>0</sub>/100 × <var>τ</var> × <var>D</var> × 0.0001. Small per period, about USD 256 for 3 months on USD 10m.</td></tr>
+      <tr><td>Dividend / carry risk (ELS)</td><td>PV change if expected dividends or futures basis change</td><td>Through <var>q</var>: 1% more carry over a year costs about 1% of <var>N</var>.</td></tr>
+      <tr><td>Counterparty / jump</td><td>Loss on a sudden gap in the asset</td><td>Unlimited, as with owning on margin. This is why the independent amount exists.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="sec" id="example">
+  <h2>Worked example</h2>
+  <h3>Bond TRS receiver</h3>
+  <p>Today is the reset. You receive the total return on USD 10m face of T 4.625% Feb-35 for 92 days, paying SOFR + 15bp. Reset dirty price <var>P</var><sub>0</sub> = <var>P</var><sub>now</sub> = 101.20. A coupon of 2.3125 is paid in 84 days. SOFR 3.70%, the bond's repo rate 3.80%, both flat and continuously compounded (curve time ACT/365, funding accrual ACT/360).</p>
+  <ol class="steps">
+    <li><span>Forward price: finance the bond at repo, minus the coupon.</span>
+      <div class="calc-line">c × D_repo(84d) = 2.3125 × e^(−0.038×84/365) = 2.29236
+P_fwd = (101.20 − 2.29236) × e^(0.038×92/365) = 99.8595</div></li>
+    <li><span>Total return leg, discounted on SOFR.</span>
+      <div class="calc-line">D(92d) = e^(−0.037×92/365) = 0.990717
+PV_TR = (99.8595 − 101.20) × 0.990717 + 2.3125 × e^(−0.037×84/365) = 0.96487</div></li>
+    <li><span>Funding leg: SOFR part plus spread part.</span>
+      <div class="calc-line">101.20 × (1 − 0.990717) = 0.93941     101.20 × 0.0015 × 92/360 × 0.990717 = 0.03843
+PV_fund = 0.97784</div></li>
+    <li><span>PV for 10m face.</span>
+      <div class="calc-line">PV = 100,000 × (0.96487 − 0.97784) = −USD 1,297</div></li>
+    <li><span>Fair spread: the <var>s</var> that makes PV zero.</span>
+      <div class="calc-line">s_fair = (0.96487 − 0.93941) / (101.20 × 92/360 × 0.990717) = 9.94bp   (≈ repo − SOFR = 10bp)</div></li>
+  </ol>
+  <p class="answer">The receiver's TRS is worth <b>−USD 1,297</b>: paying 15bp against a fair 9.94bp costs 5.06bp × USD 256 per bp.</p>
+  <h3>ELS on CSI 500 NTR</h3>
+  <ol class="steps">
+    <li><span>USD 5m notional, 1 year, receive index performance, pay SOFR + 60bp. NTR index, so <var>q</var> = 0. SOFR 3.70%.</span>
+      <div class="calc-line">D(1y) = e^(−0.037) = 0.963676      τ = 365/360 = 1.013889</div></li>
+    <li><span>PV at the reset (<var>I</var><sub>now</sub> = <var>I</var><sub>0</sub>).</span>
+      <div class="calc-line">PV = 5,000,000 × (1 − 1 − 0.006 × 1.013889 × 0.963676) = −USD 29,312</div></li>
+  </ol>
+  <p class="answer">The receiver starts <b>−USD 29,312</b> down: the 60bp charge over the zero fair spread. Delta is USD 50,000 per 1% move in the index.</p>
+</section>
+
+<section class="sec" id="try">
+  <h2>Try it</h2>
+  <p>Bond TRS. Move the current price away from the reset price to see the performance leg take over.</p>
+  <div id="calc-trs"></div>
+  <p>Equity-linked swap.</p>
+  <div id="calc-els"></div>
+</section>
+
+<section class="sec" id="recap">
+  <h2>Remember</h2>
+  <ul class="recap">
+    <li>TRS receiver = owning the asset on borrowed money: gets income and price change, pays SOFR + spread.</li>
+    <li>PV = expected performance (from the forward price) + income − funding, all discounted on OIS.</li>
+    <li>Fair bond TRS spread ≈ repo − SOFR. Fair ELS spread depends on the carry <var>q</var>.</li>
+    <li>Delta is the full asset delta. The cash outlay is only the margin.</li>
+  </ul>
+</section>
+
+</main>
+</div>
+<script src="assets/course.js"></script>
+<script>
+(function () {
+  C.legs('#legs-trs', {
+    tMin: 0, tMax: 1.05, ticks: [0, 0.25, 0.5, 0.75, 1], tickFmt: t => C.fmt(t, 2), height: 120,
+    events: [{ t: 0, label: 'Reset P₀' }, { t: 0.25, label: 'Reset' }, { t: 0.5, label: 'Reset' }, { t: 0.75, label: 'Reset' }, { t: 1, label: 'End' }],
+    legs: [
+      { name: 'Coupons passed through', dir: 1, style: 'fixed', flows: [{ t: 0.23, a: 2.3125, label: '2.3125', tip: 'Feb coupon 2.3125 per 100' }, { t: 0.73, a: 2.3125, label: '2.3125', tip: 'Aug coupon 2.3125 per 100' }] },
+      { name: 'Price performance P_end − P₀ (either way)', dir: 1, style: 'contingent', color: 'aqua', flows: [0.25, 0.5, 0.75, 1].map(t => ({ t, a: 1.5, tip: 'Price change over the period, paid by whoever lost' })) },
+      { name: 'Funding: P₀ × (SOFR + s) × days/360', dir: -1, style: 'float', flows: [0.25, 0.5, 0.75, 1].map((t, i) => ({ t, a: 0.98, label: i === 0 ? 'SOFR+s' : '', tip: 'Reset price × (compounded SOFR + spread) × days/360' })) },
+    ],
+  });
+
+  C.calc('#calc-trs', {
+    title: 'Bond TRS, current period',
+    inputs: [
+      { id: 'side', label: 'Position', value: 1, options: [[1, 'Receive total return'], [-1, 'Pay total return']] },
+      { id: 'N', label: 'Face amount', unit: 'USD m', value: 10, step: 1 },
+      { id: 'P0', label: 'Reset dirty price P₀', value: 101.20, step: 0.05 },
+      { id: 'Pn', label: 'Dirty price now', value: 101.20, step: 0.05 },
+      { id: 'T', label: 'Days to period end', value: 92, step: 1, min: 1 },
+      { id: 'c', label: 'Coupon in period', unit: 'per 100', value: 2.3125, step: 0.0625 },
+      { id: 'tc', label: 'Days to coupon', value: 84, step: 1, min: 0 },
+      { id: 'r', label: 'SOFR zero', unit: '%', value: 3.70, step: 0.01 },
+      { id: 'rr', label: 'Bond repo rate', unit: '%', value: 3.80, step: 0.01 },
+      { id: 's', label: 'Spread s', unit: 'bp', value: 15, step: 1 },
+    ],
+    compute: v => {
+      const T = v.T / 365, tau = v.T / 360, r = v.r / 100, rr = v.rr / 100, has = v.c > 0 && v.tc > 0 && v.tc <= v.T, tc = v.tc / 365;
+      const D = Math.exp(-r * T);
+      const legsAt = (Pn, s) => {
+        const fwd = (Pn - (has ? v.c * Math.exp(-rr * tc) : 0)) * Math.exp(rr * T);
+        const tr = (fwd - v.P0) * D + (has ? v.c * Math.exp(-r * tc) : 0);
+        const fu = v.P0 * ((1 - D) + s * tau * D);
+        return { fwd, tr, fu, pv: v.side * v.N * 1e4 * (tr - fu) };
+      };
+      const b = legsAt(v.Pn, v.s / 1e4);
+      const sf = (b.tr - v.P0 * (1 - D)) / (v.P0 * tau * D);
+      return {
+        out: [
+          ['Forward dirty price', C.fmt(b.fwd, 4)],
+          ['PV total return leg', C.fmt(b.tr, 5) + ' per 100'],
+          ['PV funding leg', C.fmt(b.fu, 5) + ' per 100'],
+          ['PV', 'USD ' + C.fmt(b.pv, 0), true],
+          ['Fair spread', C.fmt(sf * 1e4, 2) + 'bp'],
+          ['Delta per price point', 'USD ' + C.fmt(legsAt(v.Pn + 0.5, v.s / 1e4).pv - legsAt(v.Pn - 0.5, v.s / 1e4).pv, 0)],
+          ['Spread01', 'USD ' + C.fmt(-v.side * v.N * 1e4 * v.P0 * tau * D * 1e-4, 0)],
+        ],
+        chart: {
+          x: [v.P0 - 4, v.P0 + 4], xLabel: 'dirty price now', yLabel: 'PV (USD)',
+          xFmt: x => C.fmt(x, 1), yFmt: y => C.fmt(y / 1e3, 0) + 'k', tipFmt: y => 'USD ' + C.fmt(y, 0),
+          series: [{ name: 'PV', f: P => legsAt(P, v.s / 1e4).pv, color: 1 }],
+          marks: [{ x: v.P0, label: 'P₀' }],
+        },
+        note: 'Set "Days to coupon" to 0 if no coupon falls in the period. SOFR accrued before today on a live period is not included.',
+      };
+    },
+  });
+
+  C.calc('#calc-els', {
+    title: 'Equity-linked swap, current period',
+    inputs: [
+      { id: 'side', label: 'Position', value: 1, options: [[1, 'Receive performance'], [-1, 'Pay performance']] },
+      { id: 'N', label: 'Notional', unit: 'USD m', value: 5, step: 0.5 },
+      { id: 'I0', label: 'Reset level I₀', value: 100, step: 1 },
+      { id: 'In', label: 'Level now', value: 100, step: 1 },
+      { id: 'T', label: 'Days to reset', value: 365, step: 1, min: 1 },
+      { id: 'r', label: 'SOFR zero', unit: '%', value: 3.70, step: 0.01 },
+      { id: 'q', label: 'Carry q', unit: '%', value: 0, step: 0.1 },
+      { id: 's', label: 'Spread s', unit: 'bp', value: 60, step: 5 },
+    ],
+    compute: v => {
+      const T = v.T / 365, tau = v.T / 360, r = v.r / 100, q = v.q / 100, D = Math.exp(-r * T), N = v.N * 1e6, s = v.s / 1e4;
+      const pvAt = In => v.side * N * ((In / v.I0) * Math.exp(-q * T) - 1 - s * tau * D);
+      const F = v.In * Math.exp((r - q) * T);
+      return {
+        out: [
+          ['Forward level F', C.fmt(F, 3)],
+          ['PV performance leg', 'USD ' + C.fmt(v.side * N * D * (F / v.I0 - 1), 0)],
+          ['PV funding leg', 'USD ' + C.fmt(v.side * N * ((1 - D) + s * tau * D), 0)],
+          ['PV', 'USD ' + C.fmt(pvAt(v.In), 0), true],
+          ['Fair spread', C.fmt((Math.exp(-q * T) - 1) / (tau * D) * 1e4, 1) + 'bp'],
+          ['Delta per 1% move', 'USD ' + C.fmt(pvAt(v.In * 1.01) - pvAt(v.In), 0)],
+        ],
+        chart: {
+          x: [v.I0 * 0.8, v.I0 * 1.2], xLabel: 'level now', yLabel: 'PV (USD)',
+          xFmt: x => C.fmt(x, 0), yFmt: y => C.fmt(y / 1e3, 0) + 'k', tipFmt: y => 'USD ' + C.fmt(y, 0),
+          series: [{ name: 'PV', f: pvAt, color: 1 }],
+          marks: [{ x: v.I0, label: 'I₀' }],
+        },
+        note: 'For a futures underlier set q = SOFR, so that F equals the level now (the futures price). The fair spread then comes out near −SOFR, because a future needs no funding. Swaps on futures usually have no SOFR leg at all.',
+      };
+    },
+  });
+})();
+</script>
+</body>
+</html>

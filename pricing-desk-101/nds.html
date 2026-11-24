@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Non-Deliverable Swaps</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=JetBrains+Mono:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..600&display=swap">
+<link rel="stylesheet" href="assets/course.css">
+</head>
+<body data-page="nds.html">
+<div class="shell">
+<aside class="toc" id="toc"></aside>
+<main class="page">
+
+<header class="ph">
+  <p class="eyebrow">Part 3 · Swaps</p>
+  <h1>Non-deliverable swaps</h1>
+  <p class="lede">An interest rate swap in a currency you are not allowed to pay or receive offshore. Every interest calculation happens in that currency, and every payment is made in US dollars.</p>
+  <div class="ptypes" data-ptypes data-eg="TWD P TDCC-3M/R3.12575 % 17/Sep/36 USD"></div>
+</header>
+
+<section class="lvl" id="idea">
+  <h2><span class="lv">Level 1</span> The idea</h2>
+  <div class="prose">
+    <p>Some countries, such as Taiwan, Korea, India and Brazil, restrict who can hold their currency outside the country. A fund in London can have a view on Taiwanese interest rates and still not be allowed to move Taiwan dollars (TWD) around.</p>
+    <p>The non-deliverable swap (NDS) solves this. You and the bank agree an ordinary interest rate swap in TWD, as on the <a href="irs.html">interest rate swaps</a> page: one side pays a fixed TWD rate, the other pays a floating TWD rate. On each payment date the two TWD amounts are netted. The net is then converted into US dollars at that day's official exchange rate, and only those dollars change hands.</p>
+  </div>
+  <aside class="analogy"><p>Imagine a bet with a friend abroad, scored in their country's game tokens. You can't send each other tokens, so at the end of each round you look up what the tokens are worth in dollars and settle in dollars. The score is kept in tokens. The money moves in dollars.</p></aside>
+  <p>So an NDS carries two risks: TWD interest rates (the score) and the USD/TWD exchange rate (the conversion).</p>
+</section>
+
+<section class="lvl" id="cashflows">
+  <h2><span class="lv">Level 2</span> The cashflows</h2>
+  <div class="prose">
+    <p>Take the receiver of a 2-year TWD NDS on TWD 500 million. Every quarter you are owed TWD 500m × 1.80% × ¼ at the fixed rate, and you owe TWD 500m × (3M fixing) × ¼ at the floating rate. There is no exchange of notional, because both legs are in the same currency.</p>
+    <p>A couple of business days before each payment, two things are observed: the TWD 3-month rate for the <em>next</em> period, and the USD/TWD fixing for <em>this</em> payment. The net TWD amount is divided by the FX fixing to get US dollars.</p>
+  </div>
+  <figure class="fig">
+    <div class="fig-title">TWD NDS receiver, TWD 500m, 2 years, quarterly, settled in USD</div>
+    <div id="legs-nds"></div>
+    <figcaption><b>Blue</b> = TWD fixed you are owed, <b>orange dashed</b> = TWD floating you owe (unknown today). The <b>green dotted</b> arrows are what actually moves: the net, converted to USD at the FX fixing. Its sign is unknown until the fixing, hence the question mark.</figcaption>
+  </figure>
+  <div class="f"><span class="lbl">USD payment on date <var>t</var><sub>i</sub>, for the fixed receiver</span>
+    USD<sub><var>i</var></sub> = <span class="frac"><span><var>N</var> × (<var>K</var> − <var>L</var><sub><var>i</var></sub>) × <var>τ</var><sub><var>i</var></sub></span><span><var>X</var><sub><var>i</var></sub></span></span>
+  </div>
+  <dl class="where">
+    <dt><var>N</var></dt><dd>TWD notional (500,000,000)</dd>
+    <dt><var>K</var></dt><dd>fixed TWD rate (1.80%)</dd>
+    <dt><var>L</var><sub><var>i</var></sub></dt><dd>the TWD 3-month fixing for period <var>i</var></dd>
+    <dt><var>τ</var><sub><var>i</var></sub></dt><dd>accrual fraction, days ÷ 365 for TWD</dd>
+    <dt><var>X</var><sub><var>i</var></sub></dt><dd>USD/TWD fixing for that payment (TWD per 1 USD, around 31.5)</dd>
+  </dl>
+</section>
+
+<section class="lvl" id="pv">
+  <h2><span class="lv">Level 3</span> The PV formula</h2>
+  <div class="prose">
+    <p>Two things are unknown in each payment: the rate <var>L</var><sub><var>i</var></sub> and the FX fixing <var>X</var><sub><var>i</var></sub>. We replace each by its market forward, then discount the dollars on the USD curve.</p>
+  </div>
+  <div class="f"><span class="lbl">Step 1 · forward TWD rate for each period (TWD projection curve)</span>
+    <var>F</var><sub><var>i</var></sub> = <span class="frac"><span>1</span><span><var>τ</var><sub><var>i</var></sub></span></span> ( <span class="frac"><span><var>P</var><sub>TWD</sub>(<var>t</var><sub><var>i</var>−1</sub>)</span><span><var>P</var><sub>TWD</sub>(<var>t</var><sub><var>i</var></sub>)</span></span> − 1 )
+  </div>
+  <div class="f"><span class="lbl">Step 2 · forward FX rate, read from the NDF market</span>
+    <var>X</var><sup>fwd</sup>(<var>t</var>) = <var>S</var> × <span class="frac"><span><var>D</var><sub>USD</sub>(<var>t</var>)</span><span><var>D</var><sub>TWD,NDF</sub>(<var>t</var>)</span></span>
+  </div>
+  <div class="prose"><p>Here <var>D</var><sub>TWD,NDF</sub> is the TWD discount curve <em>implied by NDF prices</em>. It is usually different from onshore TWD rates, because the offshore market cannot arbitrage the two. Now discount each converted payment with the USD OIS curve:</p></div>
+  <div class="f"><span class="lbl">Step 3 · PV in USD for the fixed receiver</span>
+    PV<sub>USD</sub> = <span class="sum"><span class="s">Σ</span><small>i</small></span> <span class="frac"><span><var>N</var> (<var>K</var> − <var>F</var><sub><var>i</var></sub>) <var>τ</var><sub><var>i</var></sub></span><span><var>X</var><sup>fwd</sup>(<var>t</var><sub><var>i</var></sub>)</span></span> <var>D</var><sub>USD</sub>(<var>t</var><sub><var>i</var></sub>)
+    = <span class="frac"><span>1</span><span><var>S</var></span></span> <span class="sum"><span class="s">Σ</span><small>i</small></span> <var>N</var> (<var>K</var> − <var>F</var><sub><var>i</var></sub>) <var>τ</var><sub><var>i</var></sub> <var>D</var><sub>TWD,NDF</sub>(<var>t</var><sub><var>i</var></sub>)
+  </div>
+  <aside class="key"><p>The two forms give the same number. Converting each future TWD amount at its FX forward and discounting in USD is the same as discounting in TWD on the NDF-implied curve and converting once at today's spot <var>S</var>. Use whichever is easier.</p></aside>
+  <div class="prose"><p>The par rate is the <var>K</var> that makes the PV zero. It works like an ordinary swap, with the NDF-implied curve as the discount curve:</p></div>
+  <div class="f"><var>K</var><sub>par</sub> = <span class="frac"><span>Σ <var>F</var><sub><var>i</var></sub> <var>τ</var><sub><var>i</var></sub> <var>D</var><sub>TWD,NDF</sub>(<var>t</var><sub><var>i</var></sub>)</span><span>Σ <var>τ</var><sub><var>i</var></sub> <var>D</var><sub>TWD,NDF</sub>(<var>t</var><sub><var>i</var></sub>)</span></span></div>
+</section>
+
+<section class="lvl" id="desk">
+  <h2><span class="lv">Level 4</span> Desk reality</h2>
+  <ul>
+    <li><b>Reading the trade description.</b> <code>TWD P TDCC-3M/R3.12575 % 17/Sep/36 USD</code> reads: TWD notional, you <b>P</b>ay the 3M floating index that systems label <code>TDCC-3M</code>, you <b>R</b>eceive 3.12575% fixed, maturity 17 Sep 2036, settled in <b>USD</b>. Korean versions use <code>KSDA-3M</code> (the KRW 3M CD rate).</li>
+    <li><b>Conventions (TWD).</b> Quarterly on both legs, ACT/365 fixed. The FX conversion uses the official Taipei fixing (TAIFX1), observed two business days before payment.</li>
+    <li><b>Three curves.</b> The onshore TWD curve projects the floating rate. The NDF-implied TWD curve (or equivalently USD OIS plus NDF forward points) converts and discounts. USD OIS discounts the dollars. Many systems bundle the second and third into one "TWD discounted in USD collateral" curve.</li>
+    <li><b>Quanto effect.</b> If TWD rates and USD/TWD move together, the average of "net amount ÷ FX" is not exactly "forward amount ÷ forward FX". The correction is tiny on short tenors. Desks either ignore it or add a small quanto adjustment based on the rate-FX correlation.</li>
+    <li><b>Accrued legs.</b> On a live trade the current period's floating rate has already fixed, so that coupon is known in TWD. Only its FX conversion is still unknown.</li>
+  </ul>
+</section>
+
+<section class="sec" id="greeks">
+  <h2>Greeks that matter</h2>
+  <div class="tbl greeks"><table>
+    <thead><tr><th>Greek</th><th>What it measures</th><th>For an NDS</th></tr></thead>
+    <tbody>
+      <tr><td>DV01 (TWD rates)</td><td>PV change if the TWD projection curve rises 1bp</td><td>≈ (<var>N</var> ÷ <var>S</var>) × Σ <var>τ</var><sub><var>i</var></sub><var>D</var><sub><var>i</var></sub> × 0.0001 in USD. About USD 3,100 per bp on TWD 500m 2y. The fixed receiver loses when TWD rates rise.</td></tr>
+      <tr><td>FX delta</td><td>PV change if USD/TWD moves 1%</td><td>Small: only the PV itself is exposed to FX. If USD/TWD rises 1% (TWD weaker), a positive USD PV shrinks by about 1%.</td></tr>
+      <tr><td>Basis / NDF curve risk</td><td>PV change if the NDF-implied curve moves while onshore rates don't</td><td>Second-order for a near-par swap. It grows as the swap moves away from par.</td></tr>
+      <tr><td>Gamma, vega</td><td>Convexity, volatility</td><td>Essentially zero. The product is linear apart from the small quanto term.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="sec" id="example">
+  <h2>Worked example</h2>
+  <p>On 23 Nov 2026 you are the receiver of a 2-year TWD NDS: TWD 500m, fixed 1.80%, quarterly. For simplicity every period is exactly ¼ year. Market (flat, continuously compounded): TWD onshore zero 1.70%, NDF-implied TWD zero 1.20%, USD OIS zero 3.80%, USD/TWD spot 31.50.</p>
+  <ol class="steps">
+    <li><span>Forward TWD rate. With a flat curve every quarter has the same forward.</span>
+      <div class="calc-line">F = (e^(0.017×0.25) − 1) / 0.25 = 1.70362%</div></li>
+    <li><span>Net TWD flow each quarter, for the receiver.</span>
+      <div class="calc-line">500,000,000 × (1.80% − 1.70362%) × 0.25 = TWD 120,478</div></li>
+    <li><span>First quarter (<var>t</var> = 0.25): convert at the FX forward and discount in USD.</span>
+      <div class="calc-line">X(0.25) = 31.50 × e^((0.012−0.038)×0.25) = 31.2959
+USD = 120,478 / 31.2959 = 3,849.64    × D_USD = e^(−0.038×0.25) = 0.990545  →  USD 3,813.24</div></li>
+    <li><span>Last quarter (<var>t</var> = 2): the TWD forward is lower, so each TWD buys more dollars.</span>
+      <div class="calc-line">X(2) = 29.9039    USD = 4,028.84    × D_USD = 0.926816  →  USD 3,734.00</div></li>
+    <li><span>Add all 8 quarters, or use the shortcut: discount at the NDF curve and convert at spot.</span>
+      <div class="calc-line">Σ τ·D_TWD,NDF = 1.97323
+PV = 500,000,000 × (1.80% − 1.70362%) × 1.97323 / 31.50 = USD 30,188</div></li>
+    <li><span>Risk.</span>
+      <div class="calc-line">DV01 ≈ −USD 3,145 per bp of TWD rates      FX delta ≈ −USD 299 if USD/TWD +1%</div></li>
+  </ol>
+  <p class="answer">The receiver's NDS is worth <b>+USD 30,188</b>. The fixed rate is 9.6bp above the 1.7036% par rate, and 9.6bp × USD 3,145 per bp ≈ USD 30,200.</p>
+</section>
+
+<section class="sec" id="try">
+  <h2>Try it</h2>
+  <p>The table shows every quarter: the TWD net flow, the FX forward used to convert it, and its USD present value.</p>
+  <div id="calc-nds"></div>
+</section>
+
+<section class="sec" id="recap">
+  <h2>Remember</h2>
+  <ul class="recap">
+    <li>An NDS is a normal swap scored in the restricted currency and settled in USD at an FX fixing.</li>
+    <li>PV = Σ net local flow ÷ FX forward × USD discount factor. That equals discounting on the NDF-implied curve and converting at spot.</li>
+    <li>Its main risk is local-currency DV01. FX risk applies only to the PV itself.</li>
+    <li>The cross-currency version, with notional exchanges, is on the <a href="xccy.html">cross-currency swaps</a> page.</li>
+  </ul>
+</section>
+
+</main>
+</div>
+<script src="assets/course.js"></script>
+<script>
+(function () {
+  const q = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
+  C.legs('#legs-nds', {
+    tMin: 0, tMax: 2.1, ticks: [0, 0.5, 1, 1.5, 2], axisLabel: 'years from today',
+    events: [{ t: 0, label: 'Trade' }, { t: 2, label: 'Maturity' }],
+    legs: [
+      { name: 'TWD fixed 1.80% (owed to you)', dir: 1, style: 'fixed', flows: q.map((t, i) => ({ t, a: 1, label: i === 0 ? '2.25m' : '', tip: 'TWD 500m × 1.80% × 0.25 = TWD 2,250,000' })) },
+      { name: 'TWD 3M floating (you owe)', dir: -1, style: 'float', flows: q.map((t, i) => ({ t, a: 0.95, label: i === 0 ? 'L×τ×N' : '', tip: 'TWD 500m × 3M fixing × 0.25 (unknown)' })) },
+      { name: 'Net, converted to USD at the FX fixing', dir: 1, color: 'aqua', style: 'contingent', flows: q.map(t => ({ t, a: 0.3, tip: 'USD = (fixed − floating) in TWD ÷ USD/TWD fixing' })) },
+    ],
+  });
+
+  C.calc('#calc-nds', {
+    title: 'TWD NDS pricer (settled in USD)',
+    inputs: [
+      { id: 'side', label: 'Position', value: 1, options: [[1, 'Receive fixed'], [-1, 'Pay fixed']] },
+      { id: 'N', label: 'Notional', unit: 'TWD m', value: 500, step: 50 },
+      { id: 'K', label: 'Fixed rate K', unit: '%', value: 1.80, step: 0.01 },
+      { id: 'yrs', label: 'Tenor', unit: 'years', value: 2, step: 1, min: 1, max: 15 },
+      { id: 'zp', label: 'TWD onshore zero', unit: '%', value: 1.70, step: 0.01 },
+      { id: 'zi', label: 'TWD NDF-implied zero', unit: '%', value: 1.20, step: 0.01 },
+      { id: 'ru', label: 'USD OIS zero', unit: '%', value: 3.80, step: 0.01 },
+      { id: 'S', label: 'USD/TWD spot', value: 31.50, step: 0.05 },
+    ],
+    compute: v => {
+      const N = v.N * 1e6, K = v.K / 100, n = Math.round(v.yrs * 4), tau = 0.25;
+      const price = (zp, zi, S) => {
+        let pv = 0, A = 0, FA = 0; const rows = [];
+        for (let i = 1; i <= n; i++) {
+          const t = i * tau, F = (Math.exp(zp * tau) - 1) / tau, net = v.side * N * (K - F) * tau;
+          const X = S * Math.exp((zi - v.ru / 100) * t), Du = Math.exp(-v.ru / 100 * t), usd = net / X;
+          pv += usd * Du; const Dn = Math.exp(-zi * t); A += tau * Dn; FA += F * tau * Dn;
+          rows.push([C.fmt(t, 2), C.pct(F, 4), C.fmt(net, 0), C.fmt(X, 4), C.fmt(usd, 2), C.fmt(Du, 6), C.fmt(usd * Du, 2)]);
+        }
+        return { pv, rows, par: FA / A };
+      };
+      const zp = v.zp / 100, zi = v.zi / 100, b = price(zp, zi, v.S);
+      const dv = price(zp + 1e-4, zi, v.S).pv - b.pv, fx = price(zp, zi, v.S * 1.01).pv - b.pv;
+      return {
+        out: [
+          ['Par fixed rate', C.pct(b.par, 4)],
+          ['PV', 'USD ' + C.fmt(b.pv, 0), true],
+          ['PV in TWD at spot', 'TWD ' + C.fmt(b.pv * v.S, 0)],
+          ['DV01 (TWD curve +1bp)', 'USD ' + C.fmt(dv, 0)],
+          ['FX delta (USD/TWD +1%)', 'USD ' + C.fmt(fx, 0)],
+        ],
+        table: { head: ['t (yrs)', 'TWD forward', 'Net TWD', 'FX forward', 'USD amount', 'D USD', 'PV USD'], rows: b.rows, num: [0, 1, 2, 3, 4, 5, 6] },
+        note: 'Flat continuously compounded curves; every period is ¼ year; quanto adjustment ignored.',
+      };
+    },
+  });
+})();
+</script>
+</body>
+</html>

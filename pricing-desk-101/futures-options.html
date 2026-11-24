@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Options on Futures</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=JetBrains+Mono:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..600&display=swap">
+<link rel="stylesheet" href="assets/course.css">
+</head>
+<body data-page="futures-options.html">
+<div class="shell">
+<aside class="toc" id="toc"></aside>
+<main class="page">
+
+<header class="ph">
+  <p class="eyebrow">Part 6 · Vanilla options</p>
+  <h1>Options on futures</h1>
+  <p class="lede">Listed options where the underlying is a futures contract: crude oil, Nasdaq, Treasury notes, SONIA. One formula, Black-76, prices all four. Most of the work is reading the contract specification correctly.</p>
+  <div class="ptypes" data-ptypes data-eg="Put Mon Crude Oil Wkly 23Nov26 80 · Put TUES NSDQ EMIN WK 24Nov26 25600 · Put US 5YR NOTE W2 OP Dec26 103-24 · Put SONIA 1yr MidCurve Jan27 94.8"></div>
+</header>
+
+<section class="lvl" id="idea">
+  <h2><span class="lv">Level 1</span> The idea</h2>
+  <div class="prose">
+    <p>On the <a href="options-intro.html">previous page</a> the option was on a share or an index. Here the option is on a <b>futures contract</b>. If you exercise a call, you become <em>long</em> one future at the strike price. If you exercise a put, you become <em>short</em> one future at the strike.</p>
+    <p>The future is then immediately marked to the market price <var>F</var>. So exercising a put struck at 80 when crude futures trade at 76 credits you 80 − 76 = $4 per barrel through the margin account. Then you can close the future.</p>
+  </div>
+  <aside class="analogy"><p>Imagine a voucher that lets you sign up for next season's football tickets at last year's price. The voucher does not give you a seat. It gives you a contract for a seat. If the new price is higher, the voucher is worth the difference.</p></aside>
+  <div class="prose"><p>Why trade options on futures instead of on the physical thing? Futures are where the liquidity is. Nobody wants to deliver 1,000 barrels of oil to settle an option. And the futures price already includes storage, interest and dividends, which makes pricing simpler.</p></div>
+</section>
+
+<section class="lvl" id="cashflows">
+  <h2><span class="lv">Level 2</span> The cashflows</h2>
+  <div class="prose">
+    <p>There are two styles of paying for the option. The style changes the cashflows and therefore the PV.</p>
+    <ul>
+      <li><b>Premium-style</b> (CME crude, Nasdaq and Treasury options): you <span class="pay-c">pay the premium</span> in cash the next day. At exercise you <span class="rec-c">receive</span> a futures position worth <var>F</var> − <var>K</var> (call) or <var>K</var> − <var>F</var> (put).</li>
+      <li><b>Futures-style</b> (ICE SONIA and Euribor options): nobody pays a premium. The option is marked to market every day like a future, and gains and losses flow through variation margin. At expiry the total of all those flows equals payoff minus the trade price.</li>
+    </ul>
+  </div>
+  <figure class="fig">
+    <div class="fig-title">Long 1 weekly WTI crude put, strike $80, premium-style, 7 days</div>
+    <div id="legs-fo"></div>
+    <figcaption>Solid = <b>premium</b>, known today. Dotted with "?" = <b>contingent</b>: the put is exercised into a short future only if crude ends below $80.</figcaption>
+  </figure>
+  <figure class="fig">
+    <div class="fig-title">Payoff at expiry and value today, by futures price</div>
+    <div id="pay-fo"></div>
+    <figcaption>Dollars per barrel. The dashed curve is today's value with 7 days left. With so little time, time value only matters within a few dollars of the strike.</figcaption>
+  </figure>
+</section>
+
+<section class="lvl" id="pv">
+  <h2><span class="lv">Level 3</span> The PV formula</h2>
+  <h3>Step 1 · The futures price is already the forward</h3>
+  <div class="prose">
+    <p>For a share, Black-Scholes first had to build the forward: <var>F</var> = <var>S</var>e<sup>(<var>r</var>−<var>q</var>)<var>T</var></sup>. For a futures option the market hands us <var>F</var> directly. Storage costs, interest and dividends are already inside it. The future costs nothing to enter, so there is no carry to adjust for.</p>
+  </div>
+  <h3>Step 2 · Black-76</h3>
+  <div class="f"><span class="lbl">Fischer Black, 1976: Black-Scholes written on a forward</span>
+    <var>d</var><sub>1</sub> = <span class="frac"><span>ln(<var>F</var> / <var>K</var>) + ½<var>σ</var><sup>2</sup><var>T</var></span><span><var>σ</var>√<var>T</var></span></span> &nbsp;&nbsp; <var>d</var><sub>2</sub> = <var>d</var><sub>1</sub> − <var>σ</var>√<var>T</var><br>
+    Call = <var>D</var> × [ <var>F</var> <var>N</var>(<var>d</var><sub>1</sub>) − <var>K</var> <var>N</var>(<var>d</var><sub>2</sub>) ]<br>
+    Put = <var>D</var> × [ <var>K</var> <var>N</var>(−<var>d</var><sub>2</sub>) − <var>F</var> <var>N</var>(−<var>d</var><sub>1</sub>) ]
+  </div>
+  <dl class="where">
+    <dt><var>F</var></dt><dd>futures price for the contract the option is on</dd>
+    <dt><var>σ</var></dt><dd>implied lognormal vol for this strike and expiry</dd>
+    <dt><var>D</var></dt><dd>discount factor to premium payment: e<sup>−<var>rT</var></sup> for premium-style, <b>1</b> for futures-style</dd>
+  </dl>
+  <aside class="key"><p>Why <var>D</var> = 1 for futures-style? Daily margining means you never lend or borrow the premium. All the money moves day by day, so there is nothing to discount. Get this wrong and a long-dated SONIA option is mispriced by the interest on its premium.</p></aside>
+  <h3>Step 3 · The normal (Bachelier) version for interest-rate futures</h3>
+  <div class="prose">
+    <p>A STIR future's price is 100 − rate. Rates can be close to zero, or even negative, so percentage moves make little sense. Rate desks assume the rate moves by a bell curve in <b>basis points</b> instead. That is the Bachelier model, with a <b>normal vol</b> <var>σ</var><sub>N</sub> in bp per year (see <a href="toolkit.html#black">the toolkit</a>):</p>
+  </div>
+  <div class="f">
+    <var>d</var> = <span class="frac"><span><var>F</var> − <var>K</var></span><span><var>σ</var><sub>N</sub>√<var>T</var></span></span> &nbsp;&nbsp;
+    Put = <var>D</var> × [ (<var>K</var> − <var>F</var>) <var>N</var>(−<var>d</var>) + <var>σ</var><sub>N</sub>√<var>T</var> × <var>n</var>(<var>d</var>) ]
+  </div>
+  <div class="prose"><p><var>n</var>(<var>d</var>) is the height of the bell curve at <var>d</var>: e<sup>−<var>d</var>²/2</sup> ÷ √(2π). Swap (<var>K</var> − <var>F</var>) for (<var>F</var> − <var>K</var>) and <var>N</var>(−<var>d</var>) for <var>N</var>(<var>d</var>) to get the call.</p></div>
+  <h3>Step 4 · From price to money</h3>
+  <div class="f">PV = quantity × option price × point value</div>
+  <div class="prose"><p>The <b>point value</b> is what a move of 1.00 in the quoted price is worth for one contract. It is specific to each contract. The next level lists it for every flavour.</p></div>
+</section>
+
+<section class="lvl" id="flavours">
+  <h2><span class="lv">Level 4</span> The four flavours</h2>
+  <p>Illustrative market data. The same calculator below prices all four: choose the model, the margining style and the point value.</p>
+
+  <h3>CommodityFutureListedOption · weekly crude oil</h3>
+  <div class="prose">
+    <p><code>Put Mon Crude Oil Wkly 23Nov26 80</code>: a put on the WTI crude future, strike $80, expiring on Monday 23 Nov 2026. CME weeklies expire every day of the week, so the day name is in the description. One contract is 1,000 barrels, so the point value is <b>$1,000 per $1/bbl</b>. Premium-style, American, priced with Black-76. This is the worked example below.</p>
+  </div>
+
+  <h3>EquityIndexFutureListedOption · weekly E-mini Nasdaq-100</h3>
+  <div class="prose">
+    <p><code>Put TUES NSDQ EMIN WK 24Nov26 25600</code>: a Tuesday weekly put on the E-mini Nasdaq-100 future, strike 25,600. The point value is <b>$20 per index point</b>. With the future at 25,900, 7 days left and 22% vol, Black-76 gives <var>d</var><sub>1</sub> = 0.398, a put worth <b>185.44 points = $3,708.86</b>, and delta −0.345.</p>
+  </div>
+
+  <h3>BondFutureListedOption · weekly Treasury note options</h3>
+  <div class="prose">
+    <p><code>Put US 5YR NOTE W2 OP Dec26 103-24</code>: a put on the 5-year Treasury note future, from the series expiring the second Friday ("W2") of December. Bond prices use 32nds of a point. <b>103-24 means 103 + 24/32 = 103.75</b>, not 103.24. Option premiums are quoted in <b>64ths</b>. The underlying is $100,000 face, so 1.00 point = <b>$1,000</b> and one 64th = $15.625.</p>
+    <p>With the future at 104-08 (104.25), 10 days left, 4.2% price vol and <var>r</var> = 3.6%, Black-76 gives 0.1047 points. That is 6.70/64, so it trades around "0-07" (7/64). Per contract: <b>$104.68</b>, delta −0.243.</p>
+  </div>
+
+  <h3>InterestFutureListedOption · SONIA mid-curve</h3>
+  <div class="prose">
+    <p><code>Put SONIA 1yr MidCurve Jan27 94.8</code>: an option expiring in January 2027 on the 3-month SONIA future that expires about one year later. "Mid-curve" means the option expires long before its underlying future. You trade the volatility of a rate one year forward, but with a short option.</p>
+    <p>The price is 100 − rate, so <b>a put on the price is a call on the rate</b>. The 94.8 put pays if the SONIA rate for that period ends above 5.20%. ICE 3M SONIA is £500,000 for 3 months, so 0.01 of price (1bp) = £12.50 and 1.00 point = <b>£1,250</b>. These options are <b>futures-style</b>: <var>D</var> = 1.</p>
+    <p>Example with a nearer strike: future 96.30 (rate 3.70%), put strike 96.25 (rate 3.75%), 53 days, normal vol 75bp. Bachelier gives <var>d</var> = 0.175 and a price of 0.0908 (9.08bp), or <b>£113.44</b> per contract, delta −0.431.</p>
+  </div>
+</section>
+
+<section class="lvl" id="desk">
+  <h2><span class="lv">Level 5</span> Desk reality</h2>
+  <ul>
+    <li><b>Which future?</b> Each option is written on one specific futures month, which is often not the nearest one. Crude weeklies use the front-month future. SONIA mid-curves use a contract a year or more away. Always price off the right <var>F</var>.</li>
+    <li><b>American on futures.</b> Most CME futures options are American. Early exercise of a premium-style option is worth a little only when it is deep in the money and rates are high. Desks often use Black-76 and add a small tree-based adjustment. Futures-style options are never worth exercising early.</li>
+    <li><b>The smile.</b> Crude puts trade at higher vols than calls when markets fear a crash, and the reverse during supply scares. Take <var>σ</var> for your strike from the vol surface.</li>
+    <li><b>Normal or lognormal.</b> STIR and bond desks quote normal vol in bp (Bachelier). Commodity and equity desks quote lognormal vol in % (Black-76). The calculator lets you choose.</li>
+    <li><b>Expiry day.</b> Weekly options expire in days, so theta and gamma are huge. A weekly can lose most of its value over a weekend.</li>
+  </ul>
+</section>
+
+<section class="sec" id="greeks">
+  <h2>Greeks that matter</h2>
+  <div class="tbl greeks"><table>
+    <thead><tr><th>Greek</th><th>What it measures</th><th>For options on futures</th></tr></thead>
+    <tbody>
+      <tr><td>Delta</td><td>PV change for a 1.00 move in the futures price</td><td><var>D</var> × <var>N</var>(<var>d</var><sub>1</sub>) for a call. It is quoted <b>in futures contracts</b>: delta −0.58 means you hedge by buying 0.58 futures per option.</td></tr>
+      <tr><td>Gamma</td><td>Change in delta per 1.00 move</td><td>Very large for weeklies near the strike. A $1 move in crude can swing delta by 0.10 per contract.</td></tr>
+      <tr><td>Vega</td><td>PV change for +1 vol point (or +1bp normal vol)</td><td>Small for weeklies and larger for mid-curves. For STIR options it is quoted per bp of normal vol.</td></tr>
+      <tr><td>Theta</td><td>PV change from one day passing</td><td>The dominant greek for short-dated options. The crude weekly below loses about $110 a day.</td></tr>
+      <tr><td>DV01 (STIR, bonds)</td><td>PV change if rates rise 1bp</td><td>Delta × the future's own DV01. A SONIA put on price gains when rates rise.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="sec" id="example">
+  <h2>Worked example</h2>
+  <p>A weekly WTI put. Strike $80, crude future <var>F</var> = $79.10, 7 days to expiry (<var>T</var> = 7/365 = 0.019178), implied vol 36%, USD rate 3.6%, premium-style, 1,000 barrels per contract.</p>
+  <ol class="steps">
+    <li><span>Volatility over the life of the option.</span>
+      <div class="calc-line">σ√T = 0.36 × √0.019178 = 0.049855</div></li>
+    <li><span><var>d</var><sub>1</sub> and <var>d</var><sub>2</sub>.</span>
+      <div class="calc-line">d1 = (ln(79.10/80) + ½ × 0.36² × 0.019178) / 0.049855 = (−0.011314 + 0.001243) / 0.049855 = −0.20201
+d2 = −0.20201 − 0.049855 = −0.25186</div></li>
+    <li><span>Probability table.</span>
+      <div class="calc-line">N(−d1) = N(0.20201) = 0.58004      N(−d2) = N(0.25186) = 0.59943</div></li>
+    <li><span>Inside the brackets.</span>
+      <div class="calc-line">K N(−d2) − F N(−d1) = 80 × 0.59943 − 79.10 × 0.58004 = 47.9541 − 45.8815 = 2.0726</div></li>
+    <li><span>Discount (premium-style).</span>
+      <div class="calc-line">D = e^(−0.036 × 0.019178) = 0.999310      Put = 0.999310 × 2.0726 = $2.0711 per barrel</div></li>
+    <li><span>Per contract and greeks.</span>
+      <div class="calc-line">PV = 2.0711 × 1,000 = $2,071.14
+delta −0.580 (short 0.58 futures) · vega $42.79 per vol point · theta −$110 per day</div></li>
+  </ol>
+  <p class="answer">One weekly crude 80 put is worth <b>$2.07/bbl = $2,071</b>. Intrinsic value is $0.90, so $1.17 of the price is time value, and the option will lose roughly $110 of it each day.</p>
+</section>
+
+<section class="sec" id="try">
+  <h2>Try it</h2>
+  <p>Defaults are the crude example. To price the SONIA mid-curve, choose Bachelier, futures-style, <var>F</var> 96.30, <var>K</var> 96.25, 53 days, vol 75bp and point value 1,250.</p>
+  <div id="calc-fo"></div>
+</section>
+
+<section class="sec" id="recap">
+  <h2>Remember</h2>
+  <ul class="recap">
+    <li>Exercising a futures option gives you a futures position at the strike, worth <var>F</var> − <var>K</var> or <var>K</var> − <var>F</var>.</li>
+    <li>Black-76 is Black-Scholes with the futures price as the forward and no carry.</li>
+    <li>Premium-style: discount with e<sup>−<var>rT</var></sup>. Futures-style: <var>D</var> = 1.</li>
+    <li>Rate futures use Bachelier and normal vol. A put on price is a call on the rate.</li>
+    <li>Read the contract: 103-24 = 103.75, premiums in 64ths, point values $1,000, $20 and £1,250.</li>
+  </ul>
+</section>
+
+</main>
+</div>
+<script src="assets/course.js"></script>
+<script>
+(function () {
+  const ex = { F: 79.10, K: 80, T: 7 / 365, vol: 0.36, df: Math.exp(-0.036 * 7 / 365) };
+  const today = f => C.black({ ...ex, F: f, call: false }).pv;
+
+  C.legs('#legs-fo', {
+    tMin: 0, tMax: 7.6, ticks: [0, 1, 2, 3, 4, 5, 6, 7], tickFmt: t => t === 0 ? 'today' : 'day ' + t,
+    axisLabel: 'days from today',
+    events: [{ t: 0, label: 'Trade' }, { t: 7, label: 'Expiry' }],
+    legs: [
+      { name: 'Exercise: short 1 future at $80, worth (80 − F) × 1,000 (contingent)', dir: 1, style: 'contingent', flows: [{ t: 7, a: 1.4, label: 'max(K − F, 0)', tip: 'Credited through futures margin only if crude ends below $80' }] },
+      { name: 'Premium paid on T+1', dir: -1, style: 'fixed', flows: [{ t: 1, a: 1, label: '$2,071', tip: 'Premium $2.0711 × 1,000 bbl, paid next business day' }] },
+    ],
+  });
+
+  C.chart('#pay-fo', {
+    x: [72, 88], xLabel: 'crude future at expiry ($/bbl)', yLabel: 'option value ($/bbl)',
+    series: [
+      { name: 'Payoff at expiry', f: f => Math.max(ex.K - f, 0), color: 1 },
+      { name: 'Value today (7 days left)', f: today, color: 3, dashed: true },
+    ],
+    marks: [{ x: 80, label: 'K = 80' }, { x: 79.10, label: 'F' }],
+  });
+
+  C.calc('#calc-fo', {
+    title: 'Futures option pricer',
+    inputs: [
+      { id: 'type', label: 'Type', value: 'put', options: [['call', 'Call on the future'], ['put', 'Put on the future']] },
+      { id: 'model', label: 'Model', value: 'black', options: [['black', 'Black-76 (lognormal %)'], ['bach', 'Bachelier (normal bp)']] },
+      { id: 'style', label: 'Margining', value: 'prem', options: [['prem', 'Premium-style'], ['fut', 'Futures-style (D = 1)']] },
+      { id: 'F', label: 'Futures price F', value: 79.10, step: 0.01 },
+      { id: 'K', label: 'Strike K', value: 80, step: 0.25 },
+      { id: 'days', label: 'Days to expiry', value: 7, step: 1, min: 0 },
+      { id: 'vol', label: 'Vol (% or bp)', value: 36, step: 0.5, min: 0.01 },
+      { id: 'r', label: 'Rate r', unit: '%', value: 3.6, step: 0.05 },
+      { id: 'pv', label: 'Point value', unit: 'per 1.00', value: 1000, step: 1 },
+    ],
+    compute: v => {
+      const call = v.type === 'call', T = v.days / 365, D = v.style === 'fut' ? 1 : Math.exp(-v.r / 100 * T);
+      const price = f => v.model === 'black'
+        ? C.black({ F: f, K: v.K, T, vol: v.vol / 100, df: D, call })
+        : C.bachelier({ F: f, K: v.K, T, volN: v.vol * 0.01, df: D, call });
+      const g = price(v.F);
+      // Vega per vol unit the desk quotes: per 1% (Black) or per 1bp = 0.01 price (Bachelier).
+      const vega = v.model === 'black' ? g.vega : D * Math.sqrt(T) * C.n(g.d) * 0.01;
+      const intr = Math.max(call ? v.F - v.K : v.K - v.F, 0);
+      const span = v.model === 'black' ? v.F * Math.max(0.06, 2.5 * v.vol / 100 * Math.sqrt(Math.max(T, 1 / 365))) : Math.max(0.25, 2.5 * v.vol * 0.01 * Math.sqrt(Math.max(T, 1 / 365)));
+      return {
+        out: [
+          ['Discount factor D', C.fmt(D, 6)],
+          [v.model === 'black' ? 'd1 / d2' : 'd', v.model === 'black' ? C.fmt(g.d1, 4) + ' / ' + C.fmt(g.d2, 4) : C.fmt(g.d, 4)],
+          ['Option price (points)', C.fmt(g.pv, 4), true],
+          ['Price in 64ths', C.fmt(g.pv * 64, 2)],
+          ['Per contract', C.fmt(g.pv * v.pv, 2)],
+          ['Intrinsic / time value', C.fmt(intr, 4) + ' / ' + C.fmt(g.pv - intr, 4)],
+          ['Delta (futures per option)', C.fmt(g.delta, 4)],
+          ['Gamma (delta change per 1.00)', C.fmt(g.gamma, 4)],
+          ['Vega per contract', C.fmt(vega * v.pv, 2)],
+          ['Theta per contract (per day)', C.fmt(g.theta * v.pv, 2)],
+        ],
+        chart: {
+          x: [v.K - span, v.K + span], xLabel: 'futures price', yLabel: 'option value (points)',
+          series: [
+            { name: 'Payoff at expiry', f: f => Math.max(call ? f - v.K : v.K - f, 0), color: 1 },
+            { name: 'Value today', f: f => price(f).pv, color: 3, dashed: true },
+          ],
+          marks: [{ x: v.K, label: 'K' }, { x: v.F, label: 'F' }],
+        },
+        note: 'Black vol in % (36 = 36%). Normal vol in bp of price, where 1bp = 0.01 (75 = 0.75 price points per year). "Price in 64ths" is useful for Treasury options; ignore it otherwise.',
+      };
+    },
+  });
+})();
+</script>
+</body>
+</html>

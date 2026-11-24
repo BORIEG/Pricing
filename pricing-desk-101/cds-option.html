@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CDS Index Options</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=JetBrains+Mono:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..600&display=swap">
+<link rel="stylesheet" href="assets/course.css">
+</head>
+<body data-page="cds-option.html">
+<div class="shell">
+<aside class="toc" id="toc"></aside>
+<main class="page">
+
+<header class="ph">
+  <p class="eyebrow">Part 6 · Vanilla options</p>
+  <h1>CDS index options</h1>
+  <p class="lede">The right, but not the obligation, to buy or sell protection on a CDS index at a spread fixed today. Credit traders use them to bet on, or hedge against, credit spreads blowing out.</p>
+  <div class="ptypes" data-ptypes data-eg="Sell Rec 225 16/Dec/26 iTraxx Europe Crossover Series 45 EUR 500 Jun 2031"></div>
+</header>
+
+<section class="lvl" id="idea">
+  <h2><span class="lv">Level 1</span> The idea</h2>
+  <div class="prose">
+    <p>On the <a href="cds-index.html">CDS index page</a> we bought or sold protection at today's spread. An option lets you decide <em>later</em>. You pay a premium today for the right to enter the index trade on the <b>expiry date</b> at a <b>strike spread</b> <var>K</var>.</p>
+    <ul>
+      <li>A <b>payer</b> option is the right to <em>buy</em> protection (pay the premium) at <var>K</var>. It pays off if spreads <b>widen</b> above <var>K</var>, so it is a call on the spread.</li>
+      <li>A <b>receiver</b> option is the right to <em>sell</em> protection (receive the premium) at <var>K</var>. It pays off if spreads <b>tighten</b> below <var>K</var>, so it is a put on the spread.</li>
+    </ul>
+    <p>The example trade <code>Sell Rec 225 16/Dec/26 iTraxx Europe Crossover Series 45 EUR 500 Jun 2031</code> means we <b>sold a receiver</b> struck at 225bp, expiring 16 Dec 2026. The underlying is the Crossover S45 index maturing June 2031, which has a 500bp coupon. We collected a premium. If Crossover trades tighter than 225bp at expiry, the buyer will exercise and we must sell them protection at 225bp, which is worse than the market.</p>
+  </div>
+  <aside class="analogy"><p>A payer option is like buying a ticket that lets you buy flood insurance next month at today's price. If a storm forecast appears and insurance becomes expensive, your ticket is valuable. If the weather stays calm, you throw the ticket away and lose only what you paid for it.</p></aside>
+</section>
+
+<section class="lvl" id="cashflows">
+  <h2><span class="lv">Level 2</span> The cashflows</h2>
+  <div class="prose">
+    <ol>
+      <li><b>Today</b>: the option buyer pays the premium, an upfront amount quoted in bp or cents of notional.</li>
+      <li><b>At expiry</b>: the buyer exercises if it is worth it. They then enter the index trade at spread <var>K</var>, which settles as an upfront cash amount.</li>
+      <li><b>After exercise</b>: the normal index cash flows run until maturity, with premiums against protection on defaults.</li>
+      <li><b>Defaults before expiry</b>: an index option does <em>not</em> knock out. A payer holder who exercises also receives the losses on names that defaulted between trade and expiry. This is the <b>front-end protection</b> (FEP).</li>
+    </ol>
+  </div>
+  <figure class="fig">
+    <div class="fig-title">Seller of a receiver 225, EUR 10m Crossover S45, if exercised</div>
+    <div id="legs-opt"></div>
+    <figcaption>Solid arrow = the <b>premium</b> received today. Dashed arrows = premiums at 225bp on the index, which we pay only <b>if the option is exercised</b> (we become the protection buyer at 225bp). Dotted arrow = <b>contingent</b> default payments we would then receive. They are worth less than what we pay when the market is tighter than 225bp.</figcaption>
+  </figure>
+</section>
+
+<section class="lvl" id="pv">
+  <h2><span class="lv">Level 3</span> The PV formula</h2>
+  <h3>Step 1 · The forward risky annuity</h3>
+  <div class="prose"><p>Once exercised, a trade at spread <var>K</var> versus a market spread <var>S</var> is worth (<var>S</var> − <var>K</var>) × RPV01 to the protection buyer. Seen from today, we need the RPV01 of a CDS <em>starting at expiry</em> <var>T</var><sub>e</sub>, weighted by survival from today. That is the <b>forward risky annuity</b> <var>A</var>:</p></div>
+  <div class="f"><span class="lbl">Forward risky annuity and forward spread</span>
+    <var>A</var> = <span class="sum"><span class="s">Σ</span><small>t<sub>i</sub> &gt; T<sub>e</sub></small></span> <var>τ</var><sub><var>i</var></sub> <var>D</var>(<var>t</var><sub><var>i</var></sub>) <span class="frac"><span><var>Q</var>(<var>t</var><sub><var>i</var>−1</sub>) + <var>Q</var>(<var>t</var><sub><var>i</var></sub>)</span><span>2</span></span>     <var>F</var> = <span class="frac"><span>(1 − <var>R</var>) Σ <var>D</var>(<var>t</var><sub><var>i</var></sub>)[<var>Q</var>(<var>t</var><sub><var>i</var>−1</sub>) − <var>Q</var>(<var>t</var><sub><var>i</var></sub>)]</span><span><var>A</var></span></span>
+  </div>
+  <h3>Step 2 · Add the front-end protection</h3>
+  <div class="prose"><p>Losses on defaults before expiry go to the payer holder on exercise. Their value today is (1 − <var>R</var>) × (chance of default before expiry) × <var>D</var>(<var>T</var><sub>e</sub>). Spread over the annuity, it raises the forward:</p></div>
+  <div class="f"><span class="lbl">Loss-adjusted forward spread</span>
+    FEP = (1 − <var>R</var>) <var>D</var>(<var>T</var><sub>e</sub>) [1 − <var>Q</var>(<var>T</var><sub>e</sub>)]      <var>F</var>′ = <var>F</var> + <span class="frac"><span>FEP</span><span><var>A</var></span></span>
+  </div>
+  <h3>Step 3 · Black's formula on the spread</h3>
+  <div class="prose"><p>Treat the spread at expiry as lognormal with volatility <var>σ</var>, exactly as in <a href="futures-options.html">Black-76</a>, and use <var>A</var> in place of the discount factor:</p></div>
+  <div class="f left"><span class="lbl">Option premium per unit notional</span>
+    <var>d</var><sub>1</sub> = <span class="frac"><span>ln(<var>F</var>′/<var>K</var>) + ½<var>σ</var><sup>2</sup><var>T</var><sub>e</sub></span><span><var>σ</var>√<var>T</var><sub>e</sub></span></span>      <var>d</var><sub>2</sub> = <var>d</var><sub>1</sub> − <var>σ</var>√<var>T</var><sub>e</sub><br>
+    Payer = <var>A</var> × [ <var>F</var>′ <var>N</var>(<var>d</var><sub>1</sub>) − <var>K</var> <var>N</var>(<var>d</var><sub>2</sub>) ]<br>
+    Receiver = <var>A</var> × [ <var>K</var> <var>N</var>(−<var>d</var><sub>2</sub>) − <var>F</var>′ <var>N</var>(−<var>d</var><sub>1</sub>) ]
+  </div>
+  <dl class="where">
+    <dt><var>T</var><sub>e</sub></dt><dd>time to expiry in years (ACT/365)</dd>
+    <dt><var>σ</var></dt><dd>lognormal spread volatility (Crossover often 40–60%)</dd>
+    <dt><var>Q</var>, <var>D</var></dt><dd>survival (flat hazard <var>λ</var> solved from the index spread) and OIS discount factors</dd>
+  </dl>
+  <aside class="key"><p>Check: Payer − Receiver = <var>A</var> × (<var>F</var>′ − <var>K</var>), the value of a forward index trade at <var>K</var> including front-end protection. This put-call parity is the quickest test that your pricer is wired correctly.</p></aside>
+</section>
+
+<section class="lvl" id="desk">
+  <h2><span class="lv">Level 4</span> Desk reality</h2>
+  <ul>
+    <li><b>Fixed coupon at exercise.</b> The index trades with a fixed 100bp or 500bp coupon, so exercise pays an upfront amount. The payer receives U(<var>S</var>) − U(<var>K</var>), where U(<var>x</var>) = (<var>x</var> − <var>c</var>) × RPV01(<var>x</var>) is computed with the standard flat-curve model at spread <var>x</var>. The strike's RPV01 is fixed by convention, not by the market. Dealers therefore use a slightly adjusted Black model (the Pedersen approach) that values this exact payoff. For a 3-week Crossover option the difference from Step 3 is small. For long-dated, far out-of-the-money options it matters.</li>
+    <li><b>Price-quoted strikes.</b> CDX HY options are struck in price (for example 104.5), not spread. Same model, different strike units.</li>
+    <li><b>Expiries</b> are monthly, usually on the third Wednesday (16 Dec 2026 here), and the options are European. Premium settles T+3. Most are quoted in cents upfront.</li>
+    <li><b>Vol surface.</b> Desks quote implied volatility by strike and expiry. Payers further out of the money usually carry higher vol (skew), because spreads blow out quickly in a crisis.</li>
+    <li><b>Delta exchange.</b> Options usually trade with an index hedge attached ("delta exchanged"), so the premium you see includes a hedge at a reference spread.</li>
+  </ul>
+</section>
+
+<section class="sec" id="greeks">
+  <h2>Greeks that matter</h2>
+  <div class="tbl greeks"><table>
+    <thead><tr><th>Greek</th><th>What it measures</th><th>For a CDS index option</th></tr></thead>
+    <tbody>
+      <tr><td>Delta (in CS01 terms)</td><td>PV change if the index spread rises 1bp</td><td>≈ <var>N</var> × <var>A</var> × <var>N</var>(<var>d</var><sub>1</sub>) × 0.0001 for a long payer. Usually quoted as a % of the index CS01 ("this payer is 40 delta"). Our sold receiver gains about EUR 880 per bp of widening.</td></tr>
+      <tr><td>Gamma</td><td>How delta changes as spreads move</td><td>Largest near the strike and close to expiry. The option seller is short gamma.</td></tr>
+      <tr><td>Vega</td><td>PV change if volatility rises 1 point</td><td><var>N</var> × <var>A</var> × <var>F</var>′ × <var>n</var>(<var>d</var><sub>1</sub>) × √<var>T</var><sub>e</sub> ÷ 100. Our short receiver loses about EUR 723 per vol point.</td></tr>
+      <tr><td>Theta</td><td>Value of one day passing</td><td>The seller earns time decay: about EUR 707 a day here, with 23 days left.</td></tr>
+      <tr><td>JTD</td><td>Effect of a default before expiry</td><td>Positive for payer holders (they collect the loss via FEP if they exercise), negative for payer sellers.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="sec" id="example">
+  <h2>Worked example</h2>
+  <p>Today is 23 Nov 2026. We have <b>sold</b> a EUR 10m <b>receiver</b> on iTraxx Crossover S45, strike 225bp, expiring 16 Dec 2026 (23 days). The underlying index matures 20 Jun 2031. The market has Crossover at 240bp, volatility 45%, <var>R</var> = 40% and EUR OIS 2.00%.</p>
+  <ol class="steps">
+    <li><span>Solve the flat hazard rate that prices the index at 240bp (as on the CDS page).</span>
+      <div class="calc-line">λ = 4.0556%     T_e = 23/365 = 0.063014</div></li>
+    <li><span>Survival and discount to expiry.</span>
+      <div class="calc-line">Q(T_e) = e^(−0.040556×0.063014) = 0.997448     D(T_e) = e^(−0.02×0.063014) = 0.998741</div></li>
+    <li><span>Forward annuity from expiry to maturity (19 dates, first period 16 → 20 Dec), and the forward spread.</span>
+      <div class="calc-line">A = 3.978022     forward protection = 0.095473     F = 0.095473 / 3.978022 = 240.00bp</div></li>
+    <li><span>Front-end protection and adjusted forward.</span>
+      <div class="calc-line">FEP = 0.6 × 0.998741 × (1 − 0.997448) = 0.0015295
+F′ = 240.00bp + 0.0015295 / 3.978022 = 240.00 + 3.84 = 243.84bp</div></li>
+    <li><span>Black's formula with <var>σ</var>√<var>T</var><sub>e</sub> = 0.45 × 0.251025 = 0.112961.</span>
+      <div class="calc-line">d1 = (ln(243.84/225) + ½ × 0.112961²) / 0.112961 = (0.080431 + 0.006380) / 0.112961 = 0.768506
+d2 = 0.768506 − 0.112961 = 0.655544     N(−d1) = 0.221093     N(−d2) = 0.256059</div></li>
+    <li><span>Receiver premium.</span>
+      <div class="calc-line">Receiver = 3.978022 × (0.0225 × 0.256059 − 0.0243845 × 0.221093) = 0.0014722  →  14.72bp of notional
+PV seller = −10,000,000 × 0.0014722 = −EUR 14,722</div></li>
+    <li><span>Parity check and Greeks.</span>
+      <div class="calc-line">Payer = 0.0089686     Payer − Receiver = 0.0074965 = 3.978022 × (0.0243845 − 0.0225)  ✓
+delta = +EUR 880 per bp     vega = −EUR 723 per vol pt     theta = +EUR 707 per day</div></li>
+  </ol>
+  <p class="answer">The receiver is worth <b>14.7bp</b> of notional. Having sold it, your position is marked at <b>−EUR 14,722</b>. That is the premium you collected, which you keep if Crossover stays above 225bp.</p>
+</section>
+
+<section class="sec" id="try">
+  <h2>Try it</h2>
+  <p>Flip between payer and receiver, move the strike, or lengthen the expiry to watch the front-end protection grow. The chart shows today's value (solid) against the payoff at expiry (dashed) for different index spreads.</p>
+  <div id="calc-opt"></div>
+</section>
+
+<section class="sec" id="recap">
+  <h2>Remember</h2>
+  <ul class="recap">
+    <li>Payer = call on the spread (buy protection at <var>K</var>). Receiver = put on the spread (sell protection at <var>K</var>).</li>
+    <li>Value = forward risky annuity × Black(<var>F</var>′, <var>K</var>, <var>σ</var>, <var>T</var><sub>e</sub>), with the forward raised by front-end protection.</li>
+    <li>Parity: payer − receiver = <var>A</var>(<var>F</var>′ − <var>K</var>).</li>
+    <li>Delta is measured against index CS01. Sellers are short vega and gamma and collect theta. Compare with <a href="swaption.html">swaptions</a>, which have the same structure with an interest-rate annuity.</li>
+  </ul>
+</section>
+
+</main>
+</div>
+<script src="assets/course.js"></script>
+<script>
+const TODAY = '2026-11-23';
+function sched(mat) {
+  const out = [], end = C.toDate(mat);
+  for (let k = 0; ; k++) { const d = C.addMonths('2026-12-20', 3 * k); if (d > end) break; out.push(d); }
+  return out;
+}
+function credit(mat, lam, R, r) {
+  let prev = TODAY, Qp = 1, rp = 0, pr = 0;
+  for (const d of sched(mat)) {
+    const t = C.days(TODAY, d) / 365, tau = C.days(prev, d) / 360, D = Math.exp(-r * t), Q = Math.exp(-lam * t);
+    rp += tau * D * (Qp + Q) / 2; pr += (1 - R) * D * (Qp - Q); prev = d; Qp = Q;
+  }
+  return { rp, pr };
+}
+function lamFor(mat, s, R, r) { return C.solve(l => { const x = credit(mat, l, R, r); return x.pr / x.rp - s; }, 1e-8, 5); }
+// Forward annuity, forward spread and front-end protection for expiry Te (date).
+function fwd(mat, Te, lam, R, r) {
+  const te = C.days(TODAY, Te) / 365, Qe = Math.exp(-lam * te), De = Math.exp(-r * te);
+  let prev = Te, Qp = Qe, A = 0, pr = 0;
+  for (const d of sched(mat)) {
+    if (d <= C.toDate(Te)) continue;
+    const t = C.days(TODAY, d) / 365, tau = C.days(prev, d) / 360, D = Math.exp(-r * t), Q = Math.exp(-lam * t);
+    A += tau * D * (Qp + Q) / 2; pr += (1 - R) * D * (Qp - Q); prev = d; Qp = Q;
+  }
+  const fep = (1 - R) * De * (1 - Qe);
+  return { te, Qe, De, A, F: pr / A, fep, Fa: (pr + fep) / A };
+}
+
+(function () {
+  const ds = sched('2031-06-20'); let prev = C.toDate('2026-12-16');
+  const cps = ds.map(d => { const a = 0.0225 * 10e6 * C.days(prev, d) / 360, t = C.days(TODAY, d) / 365; prev = d; return { t, a, label: '', tip: `If exercised: pay 225bp × τ × 10m = EUR ${C.fmt(a, 0)} on ${C.iso(d)}` }; });
+  C.legs('#legs-opt', {
+    tMin: 0, tMax: 4.7, ticks: [0, 1, 2, 3, 4],
+    events: [{ t: 0, label: 'Today → expiry 16 Dec 26' }, { t: 4.575, label: 'Maturity Jun 31' }],
+    legs: [
+      { name: 'Premium: you receive 14.7bp × 10m today', dir: 1, style: 'notional', flows: [{ t: 0.0, a: 14722, label: '14.7k' }] },
+      { name: 'Protection payments you would receive on defaults', dir: 1, style: 'contingent', flows: [{ t: 2.3, a: 93333, label: '93k per default', tip: 'Contingent: 10m ÷ 75 × (1 − 30%) per default, only after exercise' }] },
+      { name: 'If exercised: you pay 225bp × τ × 10m each quarter', dir: -1, style: 'float', flows: cps },
+    ],
+    height: 110,
+  });
+})();
+
+C.calc('#calc-opt', {
+  title: 'CDS index option pricer (Black on the loss-adjusted forward)',
+  inputs: [
+    { id: 'side', label: 'Position', value: -1, options: [[1, 'Buy option'], [-1, 'Sell option']] },
+    { id: 'type', label: 'Type', value: 'rec', options: [['pay', 'Payer (buy protection)'], ['rec', 'Receiver (sell protection)']] },
+    { id: 'N', label: 'Notional', unit: 'EUR m', value: 10, step: 1 },
+    { id: 'K', label: 'Strike', unit: 'bp', value: 225, step: 5, min: 1 },
+    { id: 's', label: 'Index spread', unit: 'bp', value: 240, step: 5, min: 1 },
+    { id: 'vol', label: 'Spread volatility', unit: '%', value: 45, step: 1, min: 1 },
+    { id: 'days', label: 'Days to expiry', value: 23, step: 1, min: 1, max: 1000 },
+    { id: 'mat', label: 'Index maturity', value: '2031-06-20', options: [['2030-12-20', '20 Dec 2030'], ['2031-06-20', '20 Jun 2031'], ['2031-12-20', '20 Dec 2031']] },
+    { id: 'R', label: 'Recovery', unit: '%', value: 40, step: 5, min: 0, max: 95 },
+    { id: 'r', label: 'OIS rate', unit: '%', value: 2.00, step: 0.05 },
+  ],
+  compute: v => {
+    const N = v.N * 1e6, K = v.K / 1e4, s = v.s / 1e4, vol = v.vol / 100, R = v.R / 100, r = v.r / 100, call = v.type === 'pay';
+    const Te = C.addDays(TODAY, v.days);
+    if (Te >= C.toDate(v.mat)) throw new Error('expiry must be before the index maturity');
+    const price = (sp, sig, te) => { const l = lamFor(v.mat, sp, R, r), f = fwd(v.mat, te || Te, l, R, r); const b = C.black({ F: f.Fa, K, T: f.te, vol: sig, df: f.A, call }); return { l, f, b }; };
+    const x = price(s, vol), up = price(s + 1e-4, vol);
+    const pv = v.side * N * x.b.pv;
+    return {
+      out: [
+        ['Hazard rate λ', C.pct(x.l, 3)],
+        ['Forward annuity A', C.fmt(x.f.A, 6)],
+        ['Forward spread F', C.fmt(x.f.F * 1e4, 2) + 'bp'],
+        ['Front-end protection', C.fmt(x.f.fep * 1e4, 2) + 'bp of notional'],
+        ['Adjusted forward F′', C.fmt(x.f.Fa * 1e4, 2) + 'bp'],
+        ['Premium', C.fmt(x.b.pv * 1e4, 2) + 'bp of notional'],
+        ['PV of position', 'EUR ' + C.fmt(pv, 0), true],
+        ['Delta (+1bp forward spread)', 'EUR ' + C.fmt(v.side * N * x.b.delta * 1e-4, 0)],
+        ['Delta, full reprice (+1bp index)', 'EUR ' + C.fmt(v.side * N * (up.b.pv - x.b.pv), 0)],
+        ['Vega (+1 vol point)', 'EUR ' + C.fmt(v.side * N * x.b.vega, 0)],
+        ['Theta (1 day)', 'EUR ' + C.fmt(v.side * N * x.b.theta, 0)],
+      ],
+      chart: {
+        x: [Math.max(10, v.K * 0.5), v.K * 1.6], n: 60, xLabel: 'index spread today (bp)', yLabel: 'PV of position (EUR)',
+        xFmt: q => C.fmt(q, 0), yFmt: y => C.fmt(y / 1e3, 0) + 'k', tipFmt: y => 'EUR ' + C.fmt(y, 0), zero: false,
+        series: [
+          { name: 'Value today', f: sp => v.side * N * price(sp / 1e4, vol).b.pv, color: 1 },
+          { name: 'Payoff at expiry (A × intrinsic)', f: sp => v.side * N * x.f.A * Math.max(call ? sp / 1e4 - K : K - sp / 1e4, 0), color: 2, dashed: true },
+        ],
+        marks: [{ x: v.K, label: 'strike' }, { x: v.s, label: 'spot' }],
+      },
+      note: 'Flat hazard rate solved to the index spread; forward annuity from expiry to maturity; front-end protection added to the forward; Black-76 with the annuity as numeraire. Delta, vega and theta are the Black closed forms holding the annuity fixed; the full-reprice delta also moves the hazard rate and annuity.',
+    };
+  },
+});
+</script>
+</body>
+</html>

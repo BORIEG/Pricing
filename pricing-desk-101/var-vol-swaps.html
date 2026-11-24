@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Variance &amp; Volatility Swaps</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=JetBrains+Mono:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..600&display=swap">
+<link rel="stylesheet" href="assets/course.css">
+</head>
+<body data-page="var-vol-swaps.html">
+<div class="shell">
+<aside class="toc" id="toc"></aside>
+<main class="page">
+
+<header class="ph">
+  <p class="eyebrow">Part 7 · Exotics &amp; volatility</p>
+  <h1>Variance &amp; volatility swaps</h1>
+  <p class="lede">A swap where one leg is how much the market actually moved. You agree a volatility today. At maturity you measure the real volatility from daily prices and settle the difference. No strikes, no delta hedging: a pure bet on movement.</p>
+  <div class="ptypes" data-ptypes data-eg="EquityIndexVarSwap JPY NIKKEI 225 29.7 18/Mar/27 · FxVolSwap NZD NZD:SGD 5.975 15/Feb/27"></div>
+</header>
+
+<section class="lvl" id="idea">
+  <h2><span class="lv">Level 1</span> The idea</h2>
+  <div class="prose">
+    <p>Options let you bet on volatility, but they come with baggage. Their value also depends on where the price goes, so you must keep hedging the direction (delta). A <b>volatility swap</b> removes the baggage. You agree a number today, say 5.975% for NZD/SGD. At maturity, someone computes how volatile NZD/SGD really was from its daily closing prices. If it was 7%, you win 7 − 5.975 = 1.025 "vol points" times your notional per point.</p>
+    <p>A <b>variance swap</b> is the same bet on vol <em>squared</em>. Squaring sounds odd, but variance is much easier to price and hedge with options, so variance swaps are the standard in equity indices like the Nikkei 225. Volatility swaps are common in FX.</p>
+  </div>
+  <aside class="analogy"><p>It is like betting on how bumpy a bus ride will be rather than on where the bus ends up. You fit a bump counter to the bus, and at the end of the trip you are paid for every bump above the number you agreed.</p></aside>
+</section>
+
+<section class="lvl" id="cashflows">
+  <h2><span class="lv">Level 2</span> The cashflows</h2>
+  <div class="prose">
+    <p>Nothing is paid at the start. Every trading day a closing price is recorded. At maturity, one net payment is made:</p>
+  </div>
+  <div class="f"><span class="lbl">Realised volatility, annualised, in vol points</span>
+    <var>σ</var><sub>real</sub> = 100 × <span class="big">√</span>( <span class="frac"><span>252</span><span><var>n</var></span></span> <span class="sum"><span class="s">Σ</span><small>i = 1…n</small></span> [ ln( <span class="frac"><span><var>S</var><sub><var>i</var></sub></span><span><var>S</var><sub><var>i</var>−1</sub></span></span> ) ]² )
+  </div>
+  <div class="f"><span class="lbl">Payments at maturity, to the buyer</span>
+    Variance swap: <var>N</var><sub>var</sub> × ( <var>σ</var><sub>real</sub>² − <var>K</var><sub>var</sub>² )<br>
+    Volatility swap: <var>N</var><sub>vega</sub> × ( <var>σ</var><sub>real</sub> − <var>K</var><sub>vol</sub> )
+  </div>
+  <dl class="where">
+    <dt><var>n</var></dt><dd>number of daily returns in the period; 252 = trading days per year</dd>
+    <dt><var>N</var><sub>vega</sub></dt><dd>money per vol point, e.g. NZD 100,000 per point</dd>
+    <dt><var>N</var><sub>var</sub></dt><dd>money per variance point; market convention <var>N</var><sub>var</sub> = <var>N</var><sub>vega</sub> ÷ (2<var>K</var><sub>var</sub>)</dd>
+  </dl>
+  <figure class="fig">
+    <div class="fig-title">Long Nikkei 225 variance swap, strike 29.7, maturity 18 Mar 2027</div>
+    <div id="legs-var"></div>
+    <figcaption>The small dotted arrows are daily prices being <b>recorded</b>, not paid. At maturity one amount is paid. It is positive if realised variance beat 29.7², negative otherwise.</figcaption>
+  </figure>
+  <figure class="fig">
+    <div class="fig-title">Payout at maturity for the same vega notional (JPY 10m per point), strike 29.7</div>
+    <div id="chart-convex"></div>
+    <figcaption>The <b>variance swap</b> (blue) curves upward: it pays more than the vol swap when vol explodes and loses less when vol collapses. That curvature is <b>convexity</b>. It has a price, and it is why a vol swap strike sits below the var swap strike.</figcaption>
+  </figure>
+</section>
+
+<section class="lvl" id="pv">
+  <h2><span class="lv">Level 3</span> The PV formula</h2>
+  <h3>Step 1 · Why N<sub>var</sub> = N<sub>vega</sub> ÷ 2K</h3>
+  <div class="prose"><p>Near the strike, <var>σ</var>² − <var>K</var>² = (<var>σ</var> − <var>K</var>)(<var>σ</var> + <var>K</var>) ≈ 2<var>K</var>(<var>σ</var> − <var>K</var>). Dividing by 2<var>K</var> makes a small move of 1 vol point worth about <var>N</var><sub>vega</sub>, the same as a vol swap. Traders talk in vega notional and let the system convert.</p></div>
+
+  <h3>Step 2 · Mid-life: mix what happened with what is expected</h3>
+  <div class="prose"><p>Variance adds up day by day. After <var>n</var><sub>e</sub> of the <var>n</var> days have passed, the final realised variance is a weighted average of the part already realised and the part still to come. The market's expectation for the remaining days is the <b>implied variance</b> for that period:</p></div>
+  <div class="f"><span class="lbl">Expected final variance</span>
+    E[<var>σ</var><sub>real</sub>²] = <span class="frac"><span><var>n</var><sub>e</sub> × <var>σ</var><sub>e</sub>² + (<var>n</var> − <var>n</var><sub>e</sub>) × <var>σ</var><sub>imp</sub>²</span><span><var>n</var></span></span>
+  </div>
+  <div class="f"><span class="lbl">Variance swap PV for the buyer</span>
+    PV<sub>var</sub> = <var>D</var>(<var>T</var>) × <var>N</var><sub>var</sub> × ( E[<var>σ</var><sub>real</sub>²] − <var>K</var><sub>var</sub>² )
+  </div>
+  <dl class="where">
+    <dt><var>σ</var><sub>e</sub></dt><dd>realised vol over the elapsed days, from the formula above</dd>
+    <dt><var>σ</var><sub>imp</sub></dt><dd>the variance-swap level the market quotes for the remaining period</dd>
+  </dl>
+
+  <h3>Step 3 · Where the fair variance strike comes from</h3>
+  <div class="prose">
+    <p>A remarkable result: a portfolio of out-of-the-money puts and calls across <em>all</em> strikes, each held in quantity proportional to 1/<var>K</var>², behaves exactly like variance. Its value is the fair variance strike. This is also how the VIX index is computed:</p>
+  </div>
+  <div class="f"><span class="lbl">Fair variance strike from option prices (VIX-style)</span>
+    <var>K</var><sub>var</sub>² ≈ <span class="frac"><span>2</span><span><var>T</var> · <var>D</var>(<var>T</var>)</span></span> <span class="sum"><span class="s">Σ</span><small>strikes</small></span> <span class="frac"><span>Δ<var>K</var></span><span><var>K</var>²</span></span> × OTM option price(<var>K</var>)
+  </div>
+  <div class="prose"><p>Low strikes get the biggest weight (1/<var>K</var>² is large there). Equity indices have a <b>skew</b>, where low-strike puts trade at high vols, so the variance strike usually sits a few points above the at-the-money vol. A Nikkei variance swap at 29.7 when ATM vol is around 25 is typical.</p></div>
+
+  <h3>Step 4 · Volatility swaps and the convexity adjustment</h3>
+  <div class="prose"><p>Vol is the square root of variance. A square root bends downward, so the average of √(variance) is <em>less</em> than √(average variance). The gap grows with how uncertain variance is. If <var>ν</var> is the relative uncertainty of realised variance (its standard deviation divided by its average):</p></div>
+  <div class="f"><span class="lbl">Fair volatility swap strike (second-order approximation)</span>
+    <var>K</var><sub>vol</sub><sup>fair</sup> ≈ √<var>K</var><sub>var</sub> − <span class="frac"><span>Var(<var>σ</var>²)</span><span>8 <var>K</var><sub>var</sub><sup>3/2</sup></span></span> = √<var>K</var><sub>var</sub> × ( 1 − <span class="frac"><span><var>ν</var>²</span><span>8</span></span> )
+  </div>
+  <div class="f"><span class="lbl">Volatility swap PV for the buyer</span>
+    PV<sub>vol</sub> = <var>D</var>(<var>T</var>) × <var>N</var><sub>vega</sub> × ( <var>K</var><sub>vol</sub><sup>fair</sup> − <var>K</var><sub>vol</sub> )
+  </div>
+  <div class="prose"><p>Here √<var>K</var><sub>var</sub> means the variance-swap level quoted in vol points (6.40 in the example, so <var>K</var><sub>var</sub> = 6.40²).</p></div>
+</section>
+
+<section class="lvl" id="desk">
+  <h2><span class="lv">Level 4</span> Desk reality</h2>
+  <ul>
+    <li><b>Reading the trade description.</b> <code>EquityIndexVarSwap JPY NIKKEI 225 29.7 18/Mar/27</code> is a JPY variance swap on the Nikkei 225 struck at 29.7 vol, maturing 18 Mar 2027. <code>FxVolSwap NZD NZD:SGD 5.975 15/Feb/27</code> is an FX vol swap, notional in NZD, strike 5.975 vol.</li>
+    <li><b>Caps.</b> Since 2008 index variance swaps are usually capped at 2.5 × strike (in vol terms), because a crash makes variance explode. The cap is a short option on variance and slightly lowers the fair strike.</li>
+    <li><b>Mean.</b> The standard formula does not subtract the average return. With daily data the difference is negligible.</li>
+    <li><b>Market disruption.</b> Missing fixings (holidays, exchange outages) are handled by the term sheet: <var>n</var> counts actual observations, 252 stays fixed.</li>
+    <li><b>Vol swaps need a model.</b> The convexity adjustment depends on vol of vol, which must come from a stochastic-vol model (Heston, SABR) calibrated to the smile. The <var>ν</var>²/8 shortcut gives the right size.</li>
+    <li><b>Daily P&amp;L.</b> Each day the buyer gains if that day's squared return × 252 beats the strike squared. A quiet day is a small loss, a big move a gain, with no delta hedging needed.</li>
+  </ul>
+</section>
+
+<section class="sec" id="greeks">
+  <h2>Greeks that matter</h2>
+  <div class="tbl greeks"><table>
+    <thead><tr><th>Greek</th><th>What it measures</th><th>Variance / volatility swap</th></tr></thead>
+    <tbody>
+      <tr><td>Vega</td><td>PV change if implied vol for the remaining period moves +1 point</td><td>Var swap: ≈ <var>D</var> × <var>N</var><sub>var</sub> × 2<var>σ</var><sub>imp</sub> × (remaining days ÷ total). It shrinks as days are realised, and it grows when vol is high. Vol swap: ≈ <var>D</var> × <var>N</var><sub>vega</sub> × remaining fraction.</td></tr>
+      <tr><td>Delta</td><td>PV change if spot moves 1%</td><td>Zero on paper. The hedge (an option strip) is delta-hedged by the dealer, not by you.</td></tr>
+      <tr><td>Gamma</td><td>Sensitivity to the size of moves</td><td>A var swap has the same "cash gamma" at every spot level, so a 2% move earns the same whether the Nikkei is at 30,000 or 50,000. This is what makes it a pure bet on realised variance.</td></tr>
+      <tr><td>Theta</td><td>PV change per day</td><td>Each day swaps one day of implied variance for one day of realised. Positive if realised beats implied that day.</td></tr>
+      <tr><td>Vol of vol</td><td>Uncertainty of future vol</td><td>Vol swap only: higher vol of vol lowers the fair vol strike (bigger convexity gap).</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="sec" id="example">
+  <h2>Worked example</h2>
+  <h3>A · Nikkei variance swap, mid-life</h3>
+  <p>Long JPY 10m vega notional, strike 29.7, maturing 18 Mar 2027. The swap covers 124 trading days, and 46 have passed with realised vol 24.0. The market quotes 27.0 for the remaining 78 days. JPY rate 0.75%, 115 calendar days to payment.</p>
+  <ol class="steps">
+    <li><span>Variance notional.</span>
+      <div class="calc-line">N_var = 10,000,000 / (2 × 29.7) = JPY 168,350 per variance point</div></li>
+    <li><span>Expected final variance.</span>
+      <div class="calc-line">E[σ²] = (46 × 24.0² + 78 × 27.0²) / 124 = (26,496 + 56,862) / 124 = 672.24   (√ = 25.93 vol)</div></li>
+    <li><span>Compare with the strike squared, then discount.</span>
+      <div class="calc-line">K² = 29.7² = 882.09        D = e^(−0.0075 × 115/365) = 0.997640</div></li>
+    <li><span>PV.</span>
+      <div class="calc-line">PV = 0.997640 × 168,350 × (672.24 − 882.09) = JPY −35,244,575</div></li>
+  </ol>
+  <p class="answer">The long variance swap is worth <b>−JPY 35.2m</b>. Expected vol of 25.9 is 3.8 points below the strike, and 3.8 × 10m ≈ 38m (variance convexity softens the loss). One more point of implied vol on the remaining period would add about JPY 5.8m.</p>
+
+  <h3>B · NZD/SGD volatility swap at inception</h3>
+  <p>Long NZD 100,000 vega notional, strike 5.975, maturing 15 Feb 2027 (84 days). The variance swap for the same dates trades at 6.40. Our estimate of the relative uncertainty of realised variance is <var>ν</var> = 35%. NZD rate 3.0%.</p>
+  <ol class="steps">
+    <li><span>Convexity adjustment.</span>
+      <div class="calc-line">6.40 × 0.35² / 8 = 0.098 vol points</div></li>
+    <li><span>Fair vol strike.</span>
+      <div class="calc-line">K_vol fair = 6.40 − 0.098 = 6.302</div></li>
+    <li><span>Discount and PV.</span>
+      <div class="calc-line">D = e^(−0.03 × 84/365) = 0.993120    PV = 0.993120 × 100,000 × (6.302 − 5.975) = NZD 32,475</div></li>
+  </ol>
+  <p class="answer">The vol swap is worth <b>+NZD 32,475</b> to the buyer. The fair vol strike of 6.302 is above the traded 5.975.</p>
+</section>
+
+<section class="sec" id="try">
+  <h2>Try it</h2>
+  <p>The first calculator simulates a daily price path whose realised vol over the elapsed days equals your input. The chart shows realised vol building up day by day and settling at the input level. Change the seed for a different path.</p>
+  <div id="calc-var"></div>
+  <p>The second calculator prices a vol swap from the var swap level. The chart compares the two payouts at maturity.</p>
+  <div id="calc-vol"></div>
+</section>
+
+<section class="sec" id="recap">
+  <h2>Remember</h2>
+  <ul class="recap">
+    <li>Realised vol = √(252/n × Σ daily log-return²), in vol points.</li>
+    <li>Var swap: N_var × (σ² − K²), with N_var = N_vega / 2K. Mid-life, mix realised and implied variance weighted by days.</li>
+    <li>The fair variance strike comes from a 1/K² strip of options, so skew pushes it above ATM vol.</li>
+    <li>Vol swap fair strike ≈ var strike × (1 − ν²/8). Variance is convex in vol, and that convexity has a price.</li>
+    <li>Main risk: vega, which shrinks as days are realised. No delta to manage.</li>
+  </ul>
+</section>
+
+</main>
+</div>
+<script src="assets/course.js"></script>
+<script>
+function rng(seed) { let a = seed >>> 0; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function normals(n, seed) { const r = rng(seed), out = []; while (out.length < n) { const u1 = r() || 1e-12, u2 = r(), m = Math.sqrt(-2 * Math.log(u1)); out.push(m * Math.cos(2 * Math.PI * u2), m * Math.sin(2 * Math.PI * u2)); } return out.slice(0, n); }
+
+C.legs('#legs-var', {
+  tMin: 0, tMax: 1.08, ticks: [0, 1, 2, 3, 4, 5, 6].map(k => k / 6), tickFmt: t => Math.round(t * 6) + ' mo',
+  axisLabel: 'months since start (6-month swap)',
+  events: [{ t: 0, label: 'Start' }, { t: 0.371, label: 'Today (46 of 124 days)' }, { t: 1, label: 'Maturity 18 Mar 27' }],
+  legs: [
+    { name: 'Daily closes recorded (not paid)', dir: 1, style: 'contingent', color: 'aqua', flows: Array.from({ length: 12 }, (_, i) => ({ t: (i + 1) / 13, a: 0.25, tip: 'A daily closing price is recorded' })) },
+    { name: 'Net payout: N_var × (σ_real² − 29.7²), either sign', dir: -1, style: 'float', flows: [{ t: 1, a: 1, label: 'N_var × (σ² − K²)', tip: 'One payment at maturity; sign depends on realised variance vs 29.7²' }] },
+  ],
+});
+
+C.chart('#chart-convex', {
+  x: [10, 50], xLabel: 'realised vol at maturity', yLabel: 'payout (JPY)',
+  xFmt: x => C.fmt(x, 0), yFmt: y => C.fmt(y / 1e6, 0) + 'm', tipFmt: y => 'JPY ' + C.fmt(y, 0), height: 250,
+  series: [
+    { name: 'Variance swap', f: s => 1e7 / (2 * 29.7) * (s * s - 29.7 * 29.7), color: 1 },
+    { name: 'Volatility swap', f: s => 1e7 * (s - 29.7), color: 2, dashed: true },
+  ],
+  marks: [{ x: 29.7, label: 'K = 29.7' }],
+});
+
+C.calc('#calc-var', {
+  title: 'Variance swap mid-life (with a simulated path)',
+  inputs: [
+    { id: 'Nv', label: 'Vega notional', unit: 'JPY m', value: 10, step: 1 },
+    { id: 'K', label: 'Strike', unit: 'vol', value: 29.7, step: 0.1 },
+    { id: 'n', label: 'Total trading days', value: 124, step: 1, min: 2 },
+    { id: 'ne', label: 'Days elapsed', value: 46, step: 1, min: 0 },
+    { id: 'se', label: 'Realised vol so far', unit: 'vol', value: 24, step: 0.5, min: 0 },
+    { id: 'si', label: 'Implied vol remaining', unit: 'vol', value: 27, step: 0.5, min: 0 },
+    { id: 'r', label: 'Discount rate', unit: '%', value: 0.75, step: 0.05 },
+    { id: 'dp', label: 'Calendar days to payment', value: 115, step: 1, min: 0 },
+    { id: 'seed', label: 'Path seed', value: 7, step: 1 },
+  ],
+  compute: v => {
+    const n = Math.max(2, Math.round(v.n)), ne = Math.min(n, Math.max(0, Math.round(v.ne))), nr = n - ne;
+    const Nvar = v.Nv * 1e6 / (2 * v.K), D = Math.exp(-v.r / 100 * v.dp / 365);
+    const pv = si => D * Nvar * ((ne * v.se ** 2 + nr * si ** 2) / n - v.K ** 2);
+    const E = (ne * v.se ** 2 + nr * v.si ** 2) / n, p0 = pv(v.si);
+    // Simulated daily log-returns, rescaled so the elapsed realised vol equals the input exactly.
+    let pts = [], check = NaN;
+    if (ne >= 2) {
+      const z = normals(ne, Math.round(v.seed) || 1), ss = z.reduce((a, x) => a + x * x, 0);
+      const scale = (v.se / 100) / Math.sqrt(252 * ss / ne), ret = z.map(x => x * scale);
+      let cum = 0; ret.forEach((x, i) => { cum += x * x; if (i >= 2) pts.push([i + 1, 100 * Math.sqrt(252 * cum / (i + 1))]); });
+      check = 100 * Math.sqrt(252 * cum / ne);
+    }
+    return {
+      out: [
+        ['Variance notional N_var', 'JPY ' + C.fmt(Nvar, 0)],
+        ['Realised vol of simulated path', ne >= 2 ? C.fmt(check, 2) : 'no days yet'],
+        ['Expected final variance', C.fmt(E, 2) + ' (vol ' + C.fmt(Math.sqrt(E), 2) + ')'],
+        ['Discount factor', C.fmt(D, 6)],
+        ['PV', 'JPY ' + C.fmt(p0, 0), true],
+        ['Vega (implied +1 point)', 'JPY ' + C.fmt(pv(v.si + 1) - p0, 0)],
+        ['Breakeven vol for remaining days', nr > 0 ? C.fmt(Math.sqrt(Math.max(0, (n * v.K ** 2 - ne * v.se ** 2) / nr)), 2) : '—'],
+      ],
+      chart: pts.length ? {
+        x: [3, ne], xLabel: 'trading day', yLabel: 'running realised vol', points: true,
+        xFmt: x => C.fmt(x, 0), yFmt: y => C.fmt(y, 0), tipFmt: y => C.fmt(y, 2),
+        series: [{ name: 'Running realised vol', points: pts, color: 1 }],
+        hmarks: [{ y: v.K, label: 'strike ' + v.K }, { y: v.se, label: 'target ' + v.se }],
+      } : null,
+      note: 'Realised variance uses 252/n × Σ r² without subtracting the mean. The simulated path is illustrative: only the elapsed realised vol and the implied vol enter the PV. No cap.',
+    };
+  },
+});
+
+C.calc('#calc-vol', {
+  title: 'Volatility swap from the variance swap level',
+  inputs: [
+    { id: 'Nv', label: 'Vega notional', unit: 'NZD k', value: 100, step: 10 },
+    { id: 'K', label: 'Vol swap strike', unit: 'vol', value: 5.975, step: 0.025 },
+    { id: 'kv', label: 'Var swap level', unit: 'vol', value: 6.40, step: 0.05 },
+    { id: 'nu', label: 'Uncertainty of variance ν', unit: '%', value: 35, step: 5, min: 0 },
+    { id: 'days', label: 'Days to maturity', value: 84, step: 1, min: 1 },
+    { id: 'r', label: 'Discount rate', unit: '%', value: 3.0, step: 0.1 },
+  ],
+  compute: v => {
+    const nu = v.nu / 100, fair = v.kv * (1 - nu * nu / 8), D = Math.exp(-v.r / 100 * v.days / 365), N = v.Nv * 1e3;
+    return {
+      out: [
+        ['Convexity adjustment', C.fmt(v.kv * nu * nu / 8, 4) + ' vol'],
+        ['Fair vol strike', C.fmt(fair, 4)],
+        ['Discount factor', C.fmt(D, 6)],
+        ['Vol swap PV', 'NZD ' + C.fmt(D * N * (fair - v.K), 0), true],
+        ['Vega (+1 vol point)', 'NZD ' + C.fmt(D * N * (1 - nu * nu / 8), 0)],
+      ],
+      chart: {
+        x: [Math.max(0.5, v.K * 0.3), v.K * 1.9], xLabel: 'realised vol at maturity', yLabel: 'payout (NZD)',
+        xFmt: x => C.fmt(x, 1), yFmt: y => C.fmt(y / 1e3, 0) + 'k', tipFmt: y => 'NZD ' + C.fmt(y, 0),
+        series: [
+          { name: 'Vol swap', f: s => N * (s - v.K), color: 2 },
+          { name: 'Var swap, same vega notional and strike', f: s => N / (2 * v.K) * (s * s - v.K * v.K), color: 1, dashed: true },
+        ],
+        marks: [{ x: v.K, label: 'K' }, { x: fair, label: 'fair' }],
+      },
+      note: 'Second-order convexity approximation: fair vol ≈ √K_var × (1 − ν²/8), where ν is the standard deviation of realised variance divided by its mean. Desks get ν from a stochastic-vol model.',
+    };
+  },
+});
+</script>
+</body>
+</html>

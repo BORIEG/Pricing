@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Shares, Preferreds & Warrants</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=JetBrains+Mono:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..600&display=swap">
+<link rel="stylesheet" href="assets/course.css">
+</head>
+<body data-page="equity.html">
+<div class="shell">
+<aside class="toc" id="toc"></aside>
+<main class="page">
+
+<header class="ph">
+  <p class="eyebrow">Part 1 · Cash products</p>
+  <h1>Shares, preferreds &amp; warrants</h1>
+  <p class="lede">The most vanilla product of all. A share is priced by the market every second, so its PV is just quantity times price. The work is in currencies, dividends and the share-like products built on top of it.</p>
+  <div class="ptypes" data-ptypes data-eg="ZYMEWORKS INC US · FNMA V8.25 PERP S · PARAMOUNT SKY-31"></div>
+</header>
+
+<section class="lvl" id="idea">
+  <h2><span class="lv">Level 1</span> The idea</h2>
+  <div class="prose">
+    <p>A company is split into millions of equal pieces called <b>shares</b>. Owning one share means owning a tiny slice of everything the company has and will earn. If the company pays out some profit, you get your slice as a <b>dividend</b>. If people think the company will earn more in future, they pay more for each slice and the share price rises.</p>
+    <p>Two cousins live on the same page because they are priced from the share:</p>
+    <ul>
+      <li>A <b>preferred share</b> pays a fixed dividend, like a bond that never matures. It ranks ahead of ordinary shares if the company gets into trouble.</li>
+      <li>A <b>warrant</b> is a right, issued by the company itself, to buy a new share at a fixed price before a deadline. It is a call option with a twist.</li>
+    </ul>
+  </div>
+  <aside class="analogy"><p>A share is a slice of a pizza that keeps growing. A preferred share is a coupon promising you one fixed slice a year. A warrant is a voucher to buy a slice later at today's agreed price. That voucher is valuable only if the pizza gets more expensive.</p></aside>
+</section>
+
+<section class="lvl" id="cashflows">
+  <h2><span class="lv">Level 2</span> The cashflows</h2>
+  <div class="prose">
+    <p>You <span class="pay-c">pay</span> the price on the settlement date. While you hold the share you <span class="rec-c">receive</span> dividends, whose size is not promised. When you sell, you receive whatever the market price is then.</p>
+  </div>
+  <figure class="fig">
+    <div class="fig-title">Buying 10,000 shares and holding them for three years</div>
+    <div id="legs-eq"></div>
+    <figcaption>Solid = <b>known today</b> (the purchase price). Dashed = <b>unknown</b> (dividends and the sale price). For a preferred, the dividends become fixed (solid) and there is no sale date unless the issuer calls it.</figcaption>
+  </figure>
+  <div class="prose">
+    <p>A <b>warrant</b> has just two cashflows: the premium you pay today and, if you exercise, the share (worth <var>S</var><sub>T</sub>) in exchange for the strike <var>K</var>. You only exercise when <var>S</var><sub>T</sub> &gt; <var>K</var>.</p>
+  </div>
+</section>
+
+<section class="lvl" id="pv">
+  <h2><span class="lv">Level 3</span> The PV formula</h2>
+  <h3>Ordinary shares (type Equity</code>)</h3>
+  <div class="prose">
+    <p>In theory a share is worth all its future dividends discounted. If the next dividend is <var>D</var><sub>1</sub>, dividends grow at <var>g</var> a year and investors want a return <var>k</var>, the sum of that endless list is the Gordon formula <var>P</var> = <var>D</var><sub>1</sub> ÷ (<var>k</var> − <var>g</var>). That explains <em>why</em> prices move. For pricing a position we never use it, because the exchange already tells us the price.</p>
+  </div>
+  <div class="f"><span class="lbl">Step 1 · value in the share's own currency</span>
+    PV<sub>local</sub> = <var>q</var> × <var>S</var>
+  </div>
+  <div class="f"><span class="lbl">Step 2 · convert to the book's base currency</span>
+    PV<sub>USD</sub> = <span class="frac"><span><var>q</var> × <var>S</var></span><span><var>X</var></span></span> &nbsp;&nbsp; (where <var>X</var> = local units per 1 USD, e.g. USDJPY = 150)
+  </div>
+  <dl class="where">
+    <dt><var>q</var></dt><dd>number of shares (negative if short)</dd>
+    <dt><var>S</var></dt><dd>last price or closing price on the exchange</dd>
+    <dt><var>X</var></dt><dd>FX rate quoted as local currency per USD. Some pairs (EURUSD, GBPUSD) are quoted the other way, so multiply instead.</dd>
+  </dl>
+  <div class="prose"><p>When you need the share's value at a <b>future</b> date (for a forward or a future), carry it forward at the funding rate <var>r</var> and take off the dividends you will miss, at a yield <var>y</var><sub>d</sub>:</p></div>
+  <div class="f"><span class="lbl">Equity forward price</span>
+    <var>F</var>(<var>T</var>) = <var>S</var> × e<sup>(<var>r</var> − <var>y</var><sub>d</sub>)<var>T</var></sup>
+    &nbsp;&nbsp; or, with known cash dividends, &nbsp;&nbsp;
+    <var>F</var>(<var>T</var>) = (<var>S</var> − PV(dividends)) ÷ <var>D</var>(<var>T</var>)
+  </div>
+
+  <h3>Preferred shares (type PreferredStock</code>)</h3>
+  <div class="prose"><p>A fixed dividend <var>d</var> paid forever, discounted at the yield <var>y</var> investors demand, adds up to a strikingly simple number. Most preferreds can be <b>called</b> (bought back) by the issuer at par, usually $25, so the price struggles to go much above par.</p></div>
+  <div class="f"><span class="lbl">Perpetual preferred, before call risk</span>
+    <var>P</var> = <span class="frac"><span><var>d</var></span><span><var>y</var></span></span>
+    &nbsp;&nbsp;&nbsp; with a call at par: &nbsp; <var>P</var> ≈ min( <span class="frac"><span><var>d</var></span><span><var>y</var></span></span> , call price )
+  </div>
+
+  <h3>Warrants (type Warrant</code>)</h3>
+  <div class="prose"><p>A warrant is a call option, so it is priced with Black-Scholes (see <a href="options-intro.html">Options &amp; Black-Scholes</a> and <a href="toolkit.html#black">the toolkit</a>). The twist is <b>dilution</b>. When warrants are exercised the company prints <var>M</var> new shares on top of its <var>N</var> existing ones, which shrinks every slice. The standard fix scales the option value down.</p></div>
+  <div class="f"><span class="lbl">Warrant value per warrant (one share per warrant)</span>
+    <var>W</var> = <span class="frac"><span><var>N</var></span><span><var>N</var> + <var>M</var></span></span> × [ <var>S</var>e<sup>−<var>y</var><sub>d</sub><var>T</var></sup> N(<var>d</var><sub>1</sub>) − <var>K</var>e<sup>−<var>r</var><var>T</var></sup> N(<var>d</var><sub>2</sub>) ]
+    <br><var>d</var><sub>1</sub> = <span class="frac"><span>ln(<var>S</var>/<var>K</var>) + (<var>r</var> − <var>y</var><sub>d</sub> + ½σ<sup>2</sup>)<var>T</var></span><span>σ√<var>T</var></span></span>
+    &nbsp; <var>d</var><sub>2</sub> = <var>d</var><sub>1</sub> − σ√<var>T</var>
+  </div>
+</section>
+
+<section class="lvl" id="desk">
+  <h2><span class="lv">Level 4</span> Desk reality</h2>
+  <ul>
+    <li><b>Settlement.</b> US and Canadian shares settle T+1 (since May 2024). Europe and most of Asia settle T+2. China A-shares bought through Stock Connect deliver the shares on T and the cash on T+1. The position counts from trade date. Cash moves on settlement date.</li>
+    <li><b>Which price.</b> End-of-day PV uses the official close. A position quoted in pence (GBp) or in lots needs scaling: LSE prices are in pence, so divide by 100.</li>
+    <li><b>Dividends.</b> On the ex-date the price drops by roughly the dividend and a receivable appears instead. Total PV does not jump.</li>
+    <li><b>Preferreds in practice.</b> <code>FNMA V8.25 PERP S</code> is a Fannie Mae preferred. Its dividends have been suspended since the 2008 conservatorship, so its price reflects legal and political outcomes, and the formula above does not apply. Live payers price off <var>d</var>/<var>y</var> and their call date.</li>
+    <li><b>PayToHold.</b> Desks book these alongside some positions, for example <code>PayToHold Open YUANJIE SEMICO-A CG</code>. They carry the cost of holding a position, such as a financing or access fee. Price each fee like a single cashflow: amount × discount factor.</li>
+  </ul>
+</section>
+
+<section class="sec" id="greeks">
+  <h2>Greeks that matter</h2>
+  <div class="tbl greeks"><table>
+    <thead><tr><th>Greek</th><th>What it measures</th><th>For these products</th></tr></thead>
+    <tbody>
+      <tr><td>Delta</td><td>PV change per 1% move in the share</td><td>Share: exactly 1% of the position value. Warrant: 1% × <var>S</var> × <var>q</var> × (dilution × N(<var>d</var><sub>1</sub>)).</td></tr>
+      <tr><td>FX delta</td><td>PV change in base currency per 1% move in the FX rate</td><td>A foreign share is also a foreign-currency position. If the local currency weakens 1%, the USD value falls about 1%.</td></tr>
+      <tr><td>Dividend risk</td><td>Forward value change if expected dividends change</td><td>Matters for forwards, futures and options, not for the cash share itself.</td></tr>
+      <tr><td>DV01 / credit</td><td>PV change per 1bp in yield</td><td>Preferred: PV × (1/<var>y</var>) × 0.0001, so long duration. A 9% perpetual at $22.92 moves about $0.025 per bp.</td></tr>
+      <tr><td>Gamma, vega, theta</td><td>Option risks</td><td>Warrants only. They behave like long-dated calls: large vega, slow theta.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="sec" id="example">
+  <h2>Worked example</h2>
+  <p>A USD fund holds 10,000 shares of a Tokyo-listed stock. The close is JPY 3,250 and USDJPY is 150.00.</p>
+  <ol class="steps">
+    <li><span>Local value.</span><div class="calc-line">PV_JPY = 10,000 × 3,250 = JPY 32,500,000</div></li>
+    <li><span>Convert to USD (USDJPY is yen per dollar, so divide).</span><div class="calc-line">PV_USD = 32,500,000 / 150 = USD 216,667</div></li>
+    <li><span>Equity delta: the stock rises 1%.</span><div class="calc-line">32,825,000 / 150 = 218,833   →   +USD 2,167</div></li>
+    <li><span>FX delta: the yen weakens 1% (USDJPY 151.50).</span><div class="calc-line">32,500,000 / 151.5 = 214,521   →   −USD 2,145</div></li>
+    <li><span>Preferred: $25 par, 8.25% dividend ($2.0625 a year), required yield 9%.</span><div class="calc-line">P = 2.0625 / 0.09 = $22.92   (below the $25 call price, so the call does not bind)</div></li>
+    <li><span>Warrant: <var>S</var> = 10, <var>K</var> = 12, 3 years, σ = 40%, <var>r</var> = 3%, no dividends, 100m shares and 10m warrants.</span>
+      <div class="calc-line">d1 = (ln(10/12) + (0.03 + 0.08)×3) / (0.40×√3) = 0.21316    d2 = −0.47966</div>
+      <div class="calc-line">Call = 10×N(0.21316) − 12e^(−0.09)×N(−0.47966) = 2.3813   W = 2.3813 × 100/110 = 2.1648</div></li>
+  </ol>
+  <p class="answer">The share position is worth <b>USD 216,667</b>. It moves about $2,167 per 1% in the stock and $2,145 per 1% in the yen. The preferred is worth <b>$22.92</b> and the warrant <b>2.1648</b>.</p>
+</section>
+
+<section class="sec" id="try">
+  <h2>Try it</h2>
+  <div id="calc-eq"></div>
+  <div id="calc-war"></div>
+</section>
+
+<section class="sec" id="recap">
+  <h2>Remember</h2>
+  <ul class="recap">
+    <li>Share PV = quantity × price ÷ FX. There is no model, because the market prices it.</li>
+    <li>A foreign share carries two risks: the stock (delta) and the currency (FX delta).</li>
+    <li>The forward price of a share is spot grown at the funding rate minus the dividends.</li>
+    <li>Preferred ≈ dividend ÷ yield, capped near the call price.</li>
+    <li>Warrant = Black-Scholes call × <var>N</var>/(<var>N</var> + <var>M</var>) dilution factor.</li>
+  </ul>
+</section>
+
+</main>
+</div>
+<script src="assets/course.js"></script>
+<script>
+C.legs('#legs-eq', {
+  tMin: -0.3, tMax: 3.2, ticks: [0, 1, 2, 3],
+  events: [{ t: 0, label: 'Buy (settle)' }, { t: 3, label: 'Sell' }],
+  legs: [
+    { name: 'Purchase price: you pay q × S (known)', dir: -1, style: 'fixed', flows: [{ t: 0, a: 100, label: 'q × S₀' }] },
+    { name: 'Dividends: you receive (unknown)', dir: 1, style: 'float', flows: [0.5, 1, 1.5, 2, 2.5, 3].map(t => ({ t, a: 8, label: t === 0.5 ? 'div' : '' })) },
+    { name: 'Sale price: you receive q × S_T (unknown)', dir: 1, style: 'float', flows: [{ t: 3, a: 100, label: 'q × S_T' }] },
+  ],
+});
+
+C.calc('#calc-eq', {
+  title: 'Share position in a foreign currency',
+  inputs: [
+    { id: 'q', label: 'Shares held', value: 10000, step: 100 },
+    { id: 'S', label: 'Share price', unit: 'local', value: 3250, step: 10 },
+    { id: 'X', label: 'FX: local per USD', value: 150, step: 0.5 },
+    { id: 'r', label: 'Local funding rate', unit: '%', value: 0.5, step: 0.05 },
+    { id: 'yd', label: 'Dividend yield', unit: '%', value: 2.0, step: 0.1 },
+    { id: 'T', label: 'Forward horizon', unit: 'years', value: 1, step: 0.25, min: 0 },
+  ],
+  compute: v => {
+    const pvL = v.q * v.S, pv = pvL / v.X;
+    return {
+      out: [
+        ['Value in local currency', C.fmt(pvL, 0)],
+        ['Value in USD', 'USD ' + C.fmt(pv, 0), true],
+        ['Equity delta: +1% in the share', 'USD ' + C.signed(pv * 0.01, 0)],
+        ['FX delta: local weakens 1%', 'USD ' + C.signed(pvL / (v.X * 1.01) - pv, 0)],
+        ['Forward price at T', C.fmt(v.S * Math.exp((v.r - v.yd) / 100 * v.T), 2)],
+      ],
+      chart: {
+        x: [v.S * 0.7, v.S * 1.3], xLabel: 'share price (local)', yLabel: 'position value (USD k)',
+        xFmt: x => C.fmt(x, 0), yFmt: y => C.fmt(y / 1e3, 0) + 'k', tipFmt: y => 'USD ' + C.fmt(y, 0),
+        series: [
+          { name: 'FX unchanged', f: s => v.q * s / v.X, color: 1 },
+          { name: 'Local currency 10% weaker', f: s => v.q * s / (v.X * 1.1), color: 2, dashed: true },
+        ],
+        marks: [{ x: v.S, label: 'today' }],
+      },
+    };
+  },
+});
+
+C.calc('#calc-war', {
+  title: 'Warrant pricer (Black-Scholes with dilution)',
+  inputs: [
+    { id: 'S', label: 'Share price S', value: 10, step: 0.25 },
+    { id: 'K', label: 'Strike K', value: 12, step: 0.25 },
+    { id: 'T', label: 'Years to expiry', value: 3, step: 0.25, min: 0 },
+    { id: 'vol', label: 'Volatility', unit: '%', value: 40, step: 1, min: 0 },
+    { id: 'r', label: 'Rate r', unit: '%', value: 3, step: 0.1 },
+    { id: 'yd', label: 'Dividend yield', unit: '%', value: 0, step: 0.1 },
+    { id: 'N', label: 'Shares outstanding', unit: 'm', value: 100, step: 1, min: 0 },
+    { id: 'M', label: 'Warrants outstanding', unit: 'm', value: 10, step: 1, min: 0 },
+  ],
+  compute: v => {
+    const dil = v.N / (v.N + v.M);
+    const p = S => C.bs({ S, K: v.K, T: v.T, r: v.r / 100, q: v.yd / 100, vol: v.vol / 100, call: true });
+    const o = p(v.S);
+    return {
+      out: [
+        ['Plain call value', C.fmt(o.pv, 4)],
+        ['Dilution factor N/(N+M)', C.fmt(dil, 4)],
+        ['Warrant value W', C.fmt(o.pv * dil, 4), true],
+        ['Delta per warrant', C.fmt(o.delta * dil, 4)],
+        ['Vega (per vol point)', C.fmt(o.vega * dil, 4)],
+        ['Theta (per day)', C.fmt(o.theta * dil, 5)],
+      ],
+      chart: {
+        x: [Math.max(0.01, v.K * 0.3), v.K * 2], xLabel: 'share price S', yLabel: 'warrant value',
+        xFmt: x => C.fmt(x, 0), yFmt: y => C.fmt(y, 1), tipFmt: y => C.fmt(y, 4),
+        series: [
+          { name: 'Exercise value today', f: s => dil * Math.max(s - v.K, 0), color: 0 },
+          { name: 'Warrant value', f: s => dil * p(s).pv, color: 1 },
+        ],
+        marks: [{ x: v.K, label: 'K' }, { x: v.S, label: 'S' }],
+      },
+    };
+  },
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Options &amp; Black-Scholes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=JetBrains+Mono:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..600&display=swap">
+<link rel="stylesheet" href="assets/course.css">
+</head>
+<body data-page="options-intro.html">
+<div class="shell">
+<aside class="toc" id="toc"></aside>
+<main class="page">
+
+<header class="ph">
+  <p class="eyebrow">Part 6 · Vanilla options</p>
+  <h1>Options &amp; Black-Scholes</h1>
+  <p class="lede">The right to buy or sell something at a fixed price, with no obligation to use it. Everything else in this part of the course reuses the formula you learn here.</p>
+  <div class="ptypes" data-ptypes data-eg="Put XLV 20Nov26 187.5 · Put European 900 KOSPI 200 INDEX|25/Nov/26 · Put VIX Option Jan27 20"></div>
+</header>
+
+<section class="lvl" id="idea">
+  <h2><span class="lv">Level 1</span> The idea</h2>
+  <div class="prose">
+    <p>Until now every product was a <em>promise</em>: both sides must pay whatever the market says. An option is different. One side buys a <b>right</b>. They use it only if it helps them.</p>
+    <p>A <b>call</b> is the right to <em>buy</em> at a fixed price, called the <b>strike</b> <var>K</var>. A <b>put</b> is the right to <em>sell</em> at the strike. The right lasts until the <b>expiry</b> date. The buyer pays for the right up front. That price is the <b>premium</b>.</p>
+    <p>A put on the KOSPI 200 index with strike 900 pays you 900 − <var>S</var> at expiry if the index <var>S</var> ends below 900, and nothing otherwise. It works like insurance against the market falling.</p>
+  </div>
+  <aside class="analogy"><p>Car insurance is a put on your car. If the car is wrecked (its value falls), the insurer pays you the difference. If nothing happens, you lose the premium and nothing more. The insurer's job is to work out a fair premium. That is exactly our job on this page.</p></aside>
+  <div class="prose">
+    <p>Two words you will hear all day:</p>
+    <ul>
+      <li><b>Intrinsic value</b>: what the option would pay if it expired right now. For a put: max(<var>K</var> − <var>S</var>, 0).</li>
+      <li><b>Time value</b>: premium minus intrinsic value. It is the price of the chance that things get better before expiry. It shrinks to zero at expiry.</li>
+    </ul>
+    <p>An option is <b>in the money</b> (ITM) if it has intrinsic value, <b>at the money</b> (ATM) if <var>S</var> ≈ <var>K</var>, and <b>out of the money</b> (OTM) otherwise.</p>
+  </div>
+</section>
+
+<section class="lvl" id="cashflows">
+  <h2><span class="lv">Level 2</span> The cashflows</h2>
+  <div class="prose">
+    <p>There are only two cashflows. You <span class="pay-c">pay the premium</span> today. At expiry you <span class="rec-c">may receive</span> the payoff. Nobody knows today if it will be zero, so we draw it as a contingent (dotted) arrow.</p>
+  </div>
+  <figure class="fig">
+    <div class="fig-title">Long 1 KOSPI 200 put, strike 900, 3 months</div>
+    <div id="legs-opt"></div>
+    <figcaption>Solid = <b>known today</b> (the premium). Dotted with "?" = <b>contingent</b>: paid only if the index ends below the strike.</figcaption>
+  </figure>
+  <figure class="fig">
+    <div class="fig-title">Payoff at expiry and value today, by index level</div>
+    <div id="pay-opt"></div>
+    <figcaption>The solid line is the "hockey stick" payoff at expiry. The dashed line is what the option is worth today. The gap between them is the <b>time value</b>, largest near the strike. Hover to read values.</figcaption>
+  </figure>
+  <div class="f"><span class="lbl">Payoffs at expiry</span>
+    Call = max(<var>S</var><sub>T</sub> − <var>K</var>, 0) &nbsp;&nbsp;&nbsp; Put = max(<var>K</var> − <var>S</var><sub>T</sub>, 0)
+  </div>
+</section>
+
+<section class="lvl" id="pv">
+  <h2><span class="lv">Level 3</span> The PV formula</h2>
+  <h3>Step 1 · Expected payoff, then discount</h3>
+  <div class="prose">
+    <p>As with every product: PV = (average future payoff) × (discount factor). The hard part is the average. The payoff is zero in half the scenarios, so we cannot just plug in one forecast. We need the whole range of possible prices and how likely each is.</p>
+    <p>Black, Scholes and Merton assumed that the price moves randomly. Its percentage moves follow a bell curve whose width is the <b>volatility</b> <var>σ</var>: the typical yearly move in percent. A 22% vol means a typical one-year move of about ±22%, or ±11% over 3 months (22% × √0.25).</p>
+  </div>
+  <h3>Step 2 · The forward is the centre of the bell curve</h3>
+  <div class="f"><var>F</var> = <var>S</var> × e<sup>(<var>r</var> − <var>q</var>)<var>T</var></sup></div>
+  <dl class="where">
+    <dt><var>S</var></dt><dd>spot price today</dd>
+    <dt><var>r</var></dt><dd>interest rate (continuously compounded) to expiry</dd>
+    <dt><var>q</var></dt><dd>dividend yield: dividends you would miss by holding the option instead of the shares</dd>
+    <dt><var>T</var></dt><dd>time to expiry in years</dd>
+  </dl>
+  <h3>Step 3 · Two numbers from the probability table</h3>
+  <div class="f">
+    <var>d</var><sub>1</sub> = <span class="frac"><span>ln(<var>F</var> / <var>K</var>) + ½<var>σ</var><sup>2</sup><var>T</var></span><span><var>σ</var>√<var>T</var></span></span>
+    &nbsp;&nbsp;&nbsp; <var>d</var><sub>2</sub> = <var>d</var><sub>1</sub> − <var>σ</var>√<var>T</var>
+  </div>
+  <div class="prose">
+    <p><var>N</var>(<var>x</var>) is the normal probability table from <a href="toolkit.html#black">the toolkit</a>. <var>N</var>(<var>d</var><sub>2</sub>) is the probability that a call ends in the money. <var>N</var>(<var>d</var><sub>1</sub>) is the same probability, weighted by how far in the money it ends.</p>
+  </div>
+  <h3>Step 4 · Black-Scholes with dividends</h3>
+  <div class="f"><span class="lbl">The formula every options desk knows by heart</span>
+    Call = <var>S</var>e<sup>−<var>qT</var></sup> <var>N</var>(<var>d</var><sub>1</sub>) − <var>K</var>e<sup>−<var>rT</var></sup> <var>N</var>(<var>d</var><sub>2</sub>)<br>
+    Put = <var>K</var>e<sup>−<var>rT</var></sup> <var>N</var>(−<var>d</var><sub>2</sub>) − <var>S</var>e<sup>−<var>qT</var></sup> <var>N</var>(−<var>d</var><sub>1</sub>)
+  </div>
+  <div class="prose"><p>Read the put formula aloud: "the strike I receive, discounted, times the chance I exercise, minus the share I hand over, discounted for dividends, weighted by the same chance". Multiply by the contract size to get money.</p></div>
+  <h3>Step 5 · Put-call parity, your error check</h3>
+  <div class="f">Call − Put = <var>S</var>e<sup>−<var>qT</var></sup> − <var>K</var>e<sup>−<var>rT</var></sup></div>
+  <div class="prose"><p>A long call plus a short put with the same strike is exactly a forward purchase at <var>K</var>. This holds for European options whatever the volatility. If your call and put don't satisfy it, you have a bug.</p></div>
+  <aside class="key"><p>Only one input cannot be observed: volatility. Everyone agrees on <var>S</var>, <var>K</var>, <var>r</var>, <var>q</var> and <var>T</var>. So traders quote options by their <b>implied vol</b>, the <var>σ</var> that makes the formula match the market price. "KOSPI 3-month puts are 22 vol" is a price.</p></aside>
+</section>
+
+<section class="lvl" id="flavours">
+  <h2><span class="lv">Level 4</span> The three flavours</h2>
+  <h3>EquityOption · OTC European index options</h3>
+  <div class="prose">
+    <p><code>Put European 900 KOSPI 200 INDEX|25/Nov/26</code>: traded directly with a bank, exercised only at expiry, cash-settled on the index level. Price it with Black-Scholes exactly as above. Use <var>q</var> from the index dividend forecast and <var>r</var> from the KRW curve. The worked example below is this product.</p>
+  </div>
+  <h3>EquityListedOption · American options on single stocks and ETFs</h3>
+  <div class="prose">
+    <p><code>Put XLV 20Nov26 187.5</code>: a listed option on the XLV ETF. One contract covers <b>100 shares</b> and settles physically (you deliver or receive the shares). These are <b>American</b>: you can exercise on any day before expiry.</p>
+    <p>That right makes them worth at least as much as the European version. When is early exercise worth it?</p>
+    <ul>
+      <li>A <b>deep ITM put</b>: you would rather have <var>K</var> in cash now and earn interest on it than wait.</li>
+      <li>An <b>ITM call just before a dividend</b>: you exercise to own the shares in time to collect the dividend.</li>
+    </ul>
+    <p>Black-Scholes cannot handle this. Desks use a <b>binomial tree</b> instead. Split time into small steps. At each step the price moves up by a factor <var>u</var> = e<sup><var>σ</var>√Δ<var>t</var></sup> or down by <var>d</var> = 1/<var>u</var>. Start from the payoffs at expiry and walk backwards. At every node, the option value is the larger of "exercise now" and "discounted average of the two next nodes". The calculator below has an American switch that does this with 400 steps.</p>
+  </div>
+  <h3>EquityIndexListedOption · listed index options, including VIX</h3>
+  <div class="prose">
+    <p>Listed options on SPX, KOSPI 200 and similar indices are European and cash-settled, so Black-Scholes applies. VIX options are the exception that catches people out.</p>
+    <p><code>Put VIX Option Jan27 20</code> settles on the VIX level on its January 2027 expiry morning. You cannot buy spot VIX. It is a number calculated from SPX option prices, and nobody can hold it. The only thing you can hedge with is the <b>VIX future</b> expiring on the same day. So the right underlying is that future's price <var>F</var>, and you price with <b>Black-76</b> (Black-Scholes written on a forward, see <a href="futures-options.html">options on futures</a>):</p>
+  </div>
+  <div class="f">Put = e<sup>−<var>rT</var></sup> [ <var>K</var> <var>N</var>(−<var>d</var><sub>2</sub>) − <var>F</var> <var>N</var>(−<var>d</var><sub>1</sub>) ], &nbsp; <var>d</var><sub>1</sub> = <span class="frac"><span>ln(<var>F</var>/<var>K</var>) + ½<var>σ</var><sup>2</sup><var>T</var></span><span><var>σ</var>√<var>T</var></span></span></div>
+  <div class="prose">
+    <p>Example: Jan27 VIX future 19.50, strike 20, 58 days (<var>T</var> = 0.1589), vol of the VIX future 85%, <var>r</var> = 3.6%. Then <var>d</var><sub>1</sub> = 0.0947, <var>d</var><sub>2</sub> = −0.2441, and the put is worth 2.898 VIX points, or <b>$289.77</b> per contract at the $100 multiplier. Using spot VIX (often several points away from the future) would give a badly wrong price.</p>
+  </div>
+</section>
+
+<section class="lvl" id="desk">
+  <h2><span class="lv">Level 5</span> Desk reality</h2>
+  <ul>
+    <li><b>The smile.</b> If Black-Scholes were exactly right, every strike would have the same implied vol. In equities, low-strike puts trade at higher vols than ATM ("skew"), because crashes happen more often than a bell curve predicts. You must look up <var>σ</var> for <em>your</em> strike and expiry on the vol surface.</li>
+    <li><b>Discrete dividends.</b> Single stocks pay known cash dividends on known dates. Desks subtract the PV of the dividends from <var>S</var> instead of using a smooth yield <var>q</var>.</li>
+    <li><b>Premium settlement.</b> Listed premiums settle T+1. Then the position is marked at the exchange's settlement price each day, but you do not post variation margin as with futures.</li>
+    <li><b>Contract sizes.</b> US stock and ETF options: 100 shares. SPX: $100 × index. KOSPI 200: KRW 250,000 × index. VIX: $100 × VIX. Always multiply.</li>
+    <li><b>Expiry and pin risk.</b> Near expiry, gamma for ATM options explodes. Physically settled options leave you with an unexpected share position if the stock closes right at the strike.</li>
+  </ul>
+</section>
+
+<section class="sec" id="greeks">
+  <h2>Greeks that matter</h2>
+  <p>Greeks tell you how the PV moves when one input moves. They are how a desk hedges and explains its daily P&amp;L.</p>
+  <div class="tbl greeks"><table>
+    <thead><tr><th>Greek</th><th>What it measures</th><th>For a long option</th></tr></thead>
+    <tbody>
+      <tr><td>Delta Δ</td><td>PV change for a 1-point move in the underlying</td><td>Call: e<sup>−<var>qT</var></sup><var>N</var>(<var>d</var><sub>1</sub>), between 0 and 1. Put: −e<sup>−<var>qT</var></sup><var>N</var>(−<var>d</var><sub>1</sub>), between −1 and 0. A delta of −0.55 means the put gains 0.55 points when the index falls 1 point. You hedge by buying 0.55 units of index per option.</td></tr>
+      <tr><td>Gamma Γ</td><td>How much delta changes for a 1-point move</td><td>Always positive for a long option, and largest ATM near expiry. Being long gamma means your hedge needs adjusting, and those adjustments make you money when the market moves a lot.</td></tr>
+      <tr><td>Vega ν</td><td>PV change if implied vol rises by 1 point (22% → 23%)</td><td>Always positive for a long option, and largest for long-dated ATM options. Your main exposure if you trade vol.</td></tr>
+      <tr><td>Theta Θ</td><td>PV change from one day passing</td><td>Usually negative. This is the rent you pay for gamma: you lose time value every day the market does not move.</td></tr>
+      <tr><td>Rho ρ</td><td>PV change if the interest rate rises by 1%</td><td>Positive for calls, negative for puts. Small for short-dated equity options.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="sec" id="example">
+  <h2>Worked example</h2>
+  <p>A European put on KOSPI 200, strike 900, 3 months to expiry (<var>T</var> = 0.25). Illustrative market data: index <var>S</var> = 880, KRW rate <var>r</var> = 2.75%, dividend yield <var>q</var> = 1.50%, implied vol <var>σ</var> = 22%. One contract is KRW 250,000 per index point.</p>
+  <ol class="steps">
+    <li><span>Forward.</span>
+      <div class="calc-line">F = 880 × e^((0.0275 − 0.015) × 0.25) = 882.754</div></li>
+    <li><span>Volatility over the life of the option.</span>
+      <div class="calc-line">σ√T = 0.22 × √0.25 = 0.11</div></li>
+    <li><span><var>d</var><sub>1</sub> and <var>d</var><sub>2</sub>.</span>
+      <div class="calc-line">d1 = (ln(882.754/900) + ½ × 0.22² × 0.25) / 0.11 = (−0.019348 + 0.00605) / 0.11 = −0.12089
+d2 = −0.12089 − 0.11 = −0.23089</div></li>
+    <li><span>Look up the probability table.</span>
+      <div class="calc-line">N(−d1) = N(0.12089) = 0.54811      N(−d2) = N(0.23089) = 0.59130</div></li>
+    <li><span>Discounted strike and dividend-adjusted spot.</span>
+      <div class="calc-line">K e^(−rT) = 900 × e^(−0.0275×0.25) = 893.834      S e^(−qT) = 880 × e^(−0.015×0.25) = 876.706</div></li>
+    <li><span>Put price in index points.</span>
+      <div class="calc-line">P = 893.834 × 0.59130 − 876.706 × 0.54811 = 528.523 − 480.532 = 47.99 points</div></li>
+    <li><span>Check with put-call parity. The same inputs give a call of 30.864.</span>
+      <div class="calc-line">C − P = 30.864 − 47.992 = −17.128      S e^(−qT) − K e^(−rT) = 876.706 − 893.834 = −17.128  ✓</div></li>
+    <li><span>Money and greeks per contract (× 250,000).</span>
+      <div class="calc-line">PV = 47.99 × 250,000 = KRW 11,997,883
+delta −0.546 · vega 1.736 pts per vol point (KRW 434k) · theta −0.189 pts per day (KRW −47k)</div></li>
+  </ol>
+  <p class="answer">One KOSPI 200 900 put is worth <b>47.99 points = KRW 12.0m</b>. Intrinsic value is 20 points (900 − 880), so time value is 27.99 points.</p>
+</section>
+
+<section class="sec" id="try">
+  <h2>Try it</h2>
+  <p>Defaults reproduce the worked example. Switch to American to see the early-exercise premium. It matters most for deep ITM puts when rates are high.</p>
+  <div id="calc-opt"></div>
+</section>
+
+<section class="sec" id="recap">
+  <h2>Remember</h2>
+  <ul class="recap">
+    <li>An option is a right. You pay a premium today for a payoff that may be zero.</li>
+    <li>Premium = intrinsic value + time value. Time value comes from volatility.</li>
+    <li>Black-Scholes: Put = <var>K</var>e<sup>−<var>rT</var></sup><var>N</var>(−<var>d</var><sub>2</sub>) − <var>S</var>e<sup>−<var>qT</var></sup><var>N</var>(−<var>d</var><sub>1</sub>). Check it with put-call parity.</li>
+    <li>American options need a tree. VIX options are priced off the VIX future, never spot VIX.</li>
+    <li>Delta, gamma, vega, theta and rho describe the risk. Long options are long gamma and vega, and short theta.</li>
+  </ul>
+</section>
+
+</main>
+</div>
+<script src="assets/course.js"></script>
+<script>
+(function () {
+  const ex = { S: 880, K: 900, T: 0.25, r: 0.0275, q: 0.015, vol: 0.22 };
+  const putToday = s => C.bs({ ...ex, S: s, call: false }).pv;
+  const prem = putToday(ex.S);
+
+  C.legs('#legs-opt', {
+    tMin: 0, tMax: 0.27, ticks: [0, 1 / 12, 2 / 12, 3 / 12], tickFmt: t => t === 0 ? 'today' : Math.round(t * 12) + 'm',
+    axisLabel: 'months from today',
+    events: [{ t: 0, label: 'Trade' }, { t: 0.25, label: 'Expiry' }],
+    legs: [
+      { name: 'Payoff: max(900 − S, 0) × 250,000 (contingent)', dir: 1, style: 'contingent', flows: [{ t: 0.25, a: 1.4, label: 'max(K − S, 0)', tip: 'Paid only if KOSPI 200 ends below 900' }] },
+      { name: 'Premium paid today', dir: -1, style: 'fixed', flows: [{ t: 0, a: 1, label: '47.99 pts', tip: 'Premium 47.99 points = KRW 12.0m per contract' }] },
+    ],
+  });
+
+  C.chart('#pay-opt', {
+    x: [760, 1040], xLabel: 'KOSPI 200 level', yLabel: 'option value (index points)',
+    series: [
+      { name: 'Payoff at expiry', f: s => Math.max(ex.K - s, 0), color: 1 },
+      { name: 'Value today (3 months left)', f: putToday, color: 3, dashed: true },
+    ],
+    marks: [{ x: ex.K, label: 'K = 900' }, { x: ex.S, label: 'S = 880' }],
+  });
+
+  // Cox-Ross-Rubinstein binomial tree (European or American).
+  function crr(S, K, T, r, q, vol, call, amer, n) {
+    const dt = T / n, u = Math.exp(vol * Math.sqrt(dt)), d = 1 / u;
+    const pu = (Math.exp((r - q) * dt) - d) / (u - d), disc = Math.exp(-r * dt);
+    const v = new Float64Array(n + 1);
+    for (let i = 0; i <= n; i++) { const s = S * Math.pow(u, n - 2 * i); v[i] = Math.max(call ? s - K : K - s, 0); }
+    for (let step = n - 1; step >= 0; step--) {
+      for (let i = 0; i <= step; i++) {
+        let val = disc * (pu * v[i] + (1 - pu) * v[i + 1]);
+        if (amer) { const s = S * Math.pow(u, step - 2 * i); val = Math.max(val, call ? s - K : K - s); }
+        v[i] = val;
+      }
+    }
+    return v[0];
+  }
+
+  C.calc('#calc-opt', {
+    title: 'Equity option pricer',
+    inputs: [
+      { id: 'type', label: 'Type', value: 'put', options: [['call', 'Call'], ['put', 'Put']] },
+      { id: 'style', label: 'Exercise', value: 'eu', options: [['eu', 'European (Black-Scholes)'], ['am', 'American (tree)']] },
+      { id: 'S', label: 'Spot S', value: 880, step: 1 },
+      { id: 'K', label: 'Strike K', value: 900, step: 1 },
+      { id: 'T', label: 'Time to expiry', unit: 'years', value: 0.25, step: 0.01, min: 0 },
+      { id: 'r', label: 'Rate r', unit: '%', value: 2.75, step: 0.05 },
+      { id: 'q', label: 'Dividend yield q', unit: '%', value: 1.5, step: 0.05 },
+      { id: 'vol', label: 'Implied vol σ', unit: '%', value: 22, step: 0.5, min: 0.1 },
+      { id: 'mult', label: 'Multiplier', value: 250000, step: 1 },
+    ],
+    compute: v => {
+      const call = v.type === 'call', p = { S: v.S, K: v.K, T: v.T, r: v.r / 100, q: v.q / 100, vol: v.vol / 100 };
+      const eu = C.bs({ ...p, call });
+      const am = v.style === 'am' ? crr(p.S, p.K, p.T, p.r, p.q, p.vol, call, true, 400) : null;
+      const pv = am ?? eu.pv, intr = Math.max(call ? p.S - p.K : p.K - p.S, 0);
+      const out = [
+        ['Forward F', C.fmt(eu.fwd, 3)],
+        ['d1 / d2', C.fmt(eu.d1, 4) + ' / ' + C.fmt(eu.d2, 4)],
+        ['Option price (points)', C.fmt(pv, 3), true],
+        ['Per contract', C.fmt(pv * v.mult, 0)],
+        ['Intrinsic / time value', C.fmt(intr, 2) + ' / ' + C.fmt(pv - intr, 2)],
+      ];
+      if (am !== null) out.push(['Early-exercise premium', C.fmt(am - eu.pv, 3)]);
+      out.push(['Delta', C.fmt(eu.delta, 4)], ['Gamma (per point)', C.fmt(eu.gamma, 6)], ['Vega (per vol point)', C.fmt(eu.vega, 3)],
+        ['Theta (per day)', C.fmt(eu.theta, 3)], ['Rho (per 1% rate)', C.fmt(eu.rho, 3)]);
+      const lo = Math.max(0.01, p.K * 0.7), hi = p.K * 1.3;
+      return {
+        out,
+        chart: {
+          x: [lo, hi], xLabel: 'underlying level', yLabel: 'option value (points)',
+          series: [
+            { name: 'Payoff at expiry', f: s => Math.max(call ? s - p.K : p.K - s, 0), color: 1 },
+            { name: 'Value today', f: s => C.bs({ ...p, S: s, call }).pv, color: 3, dashed: true },
+          ],
+          marks: [{ x: p.K, label: 'K' }, { x: p.S, label: 'S' }],
+        },
+        note: 'Greeks are Black-Scholes (European) greeks, quoted per unit of underlying. The American price uses a 400-step Cox-Ross-Rubinstein tree with a continuous dividend yield.',
+      };
+    },
+  });
+})();
+</script>
+</body>
+</html>

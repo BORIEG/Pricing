@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FX Vanilla Options</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=JetBrains+Mono:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..600&display=swap">
+<link rel="stylesheet" href="assets/course.css">
+</head>
+<body data-page="fx-options.html">
+<div class="shell">
+<aside class="toc" id="toc"></aside>
+<main class="page">
+
+<header class="ph">
+  <p class="eyebrow">Part 6 · Vanilla options</p>
+  <h1>FX vanilla options</h1>
+  <p class="lede">The right to exchange one currency for another at a fixed rate. Every FX option is a call on one currency and a put on the other at the same time. Once that clicks, Garman-Kohlhagen is just Black-Scholes with two interest rates.</p>
+  <div class="ptypes" data-ptypes data-eg="Put European  96 USD:INR|1/Oct/27 · Call European  7.85 USD:HKD|4/Feb/27"></div>
+</header>
+
+<section class="lvl" id="idea">
+  <h2><span class="lv">Level 1</span> The idea</h2>
+  <div class="prose">
+    <p>An Indian exporter will receive US dollars next October and must convert them into rupees. If the rupee strengthens (USD:INR falls from 92.50 to 85), every dollar buys fewer rupees and the exporter loses money.</p>
+    <p>They buy a <b>USD put / INR call</b> struck at 90. It gives them the right to sell USD 10 million at 90 rupees per dollar on 1 Oct 2027. If USD:INR is below 90 then, they exercise and get INR 900 million. If it is above 90, they let the option expire and convert at the better market rate.</p>
+  </div>
+  <aside class="analogy"><p>Swapping football stickers with a friend: "I give you my Messi, you give me two Ronaldos". The same deal is <em>selling</em> a Messi and <em>buying</em> Ronaldos. An FX option is always both: a USD put is also an INR call.</p></aside>
+  <div class="prose">
+    <p><b>Pair notation.</b> <code>USD:INR</code> = 92.50 means 1 US dollar costs 92.50 rupees. The first currency (USD) is the <b>foreign</b> or base currency, the thing being priced. The second (INR) is the <b>domestic</b> or quote currency, the unit of the price. Calls and puts in trade descriptions refer to the first currency.</p>
+  </div>
+</section>
+
+<section class="lvl" id="cashflows">
+  <h2><span class="lv">Level 2</span> The cashflows</h2>
+  <div class="prose">
+    <p>Today you <span class="pay-c">pay a premium</span>, settled on the spot date (two business days later). If you exercise at expiry, two currency amounts are swapped on the delivery date: you <span class="pay-c">pay USD 10m</span> and <span class="rec-c">receive INR 900m</span>. Both are contingent.</p>
+  </div>
+  <figure class="fig">
+    <div class="fig-title">Long USD 10m USD put / INR call, strike 90, expiry 1 Oct 2027</div>
+    <div id="legs-fx"></div>
+    <figcaption>Dotted arrows with "?" are <b>contingent</b>. Both currency amounts only move if USD:INR is below 90 at expiry. Arrow heights are in USD-equivalent at the strike, so both look the same size.</figcaption>
+  </figure>
+  <figure class="fig">
+    <div class="fig-title">Payoff at expiry and value today, INR per USD of notional</div>
+    <div id="pay-fx"></div>
+    <figcaption>The payoff is max(90 − <var>S</var><sub>T</sub>, 0) rupees per dollar. Today the option is out of the money (spot 92.50, forward 94.42), so its value is all time value.</figcaption>
+  </figure>
+</section>
+
+<section class="lvl" id="pv">
+  <h2><span class="lv">Level 3</span> The PV formula</h2>
+  <h3>Step 1 · The FX forward</h3>
+  <div class="prose"><p>Holding dollars earns the USD rate <var>r</var><sub>f</sub>. Holding rupees earns the INR rate <var>r</var><sub>d</sub>. The forward exchange rate makes the two equal (see <a href="fx-forward.html">FX forwards</a>):</p></div>
+  <div class="f"><var>F</var> = <var>S</var> × e<sup>(<var>r</var><sub>d</sub> − <var>r</var><sub>f</sub>)<var>T</var></sup></div>
+  <div class="prose"><p>Higher INR rates make the forward dollar more expensive in rupees. That is why the 10-month forward (94.42) is well above spot (92.50).</p></div>
+  <h3>Step 2 · Garman-Kohlhagen</h3>
+  <div class="prose"><p>Garman and Kohlhagen (1983) noticed that a foreign currency behaves like a share paying a dividend yield equal to the foreign rate. So take Black-Scholes and set <var>r</var> = <var>r</var><sub>d</sub> and <var>q</var> = <var>r</var><sub>f</sub>:</p></div>
+  <div class="f"><span class="lbl">Price in domestic currency per 1 unit of foreign notional</span>
+    <var>d</var><sub>1</sub> = <span class="frac"><span>ln(<var>F</var>/<var>K</var>) + ½<var>σ</var><sup>2</sup><var>T</var></span><span><var>σ</var>√<var>T</var></span></span> &nbsp;&nbsp; <var>d</var><sub>2</sub> = <var>d</var><sub>1</sub> − <var>σ</var>√<var>T</var><br>
+    Call = <var>S</var>e<sup>−<var>r</var><sub>f</sub><var>T</var></sup> <var>N</var>(<var>d</var><sub>1</sub>) − <var>K</var>e<sup>−<var>r</var><sub>d</sub><var>T</var></sup> <var>N</var>(<var>d</var><sub>2</sub>)<br>
+    Put = <var>K</var>e<sup>−<var>r</var><sub>d</sub><var>T</var></sup> <var>N</var>(−<var>d</var><sub>2</sub>) − <var>S</var>e<sup>−<var>r</var><sub>f</sub><var>T</var></sup> <var>N</var>(−<var>d</var><sub>1</sub>)
+  </div>
+  <h3>Step 3 · Scale and convert</h3>
+  <div class="f">PV<sub>domestic</sub> = <var>N</var><sub>foreign</sub> × price &nbsp;&nbsp;&nbsp; PV<sub>foreign</sub> = PV<sub>domestic</sub> ÷ <var>S</var></div>
+  <dl class="where">
+    <dt>INR pips</dt><dd>the price per dollar in rupees: the formula's direct output</dd>
+    <dt>USD %</dt><dd>PV in dollars ÷ USD notional. Common for EM pairs, because the client thinks in dollars</dd>
+    <dt>INR %</dt><dd>PV in rupees ÷ rupee notional (<var>N</var> × <var>K</var>)</dd>
+  </dl>
+  <aside class="key"><p>The same option has four honest prices: INR pips, INR amount, USD amount and USD %. Before agreeing a price with a counterparty, agree the <b>premium currency</b> and the quoting convention. It is the most common source of FX option booking errors.</p></aside>
+</section>
+
+<section class="lvl" id="desk">
+  <h2><span class="lv">Level 4</span> Desk reality</h2>
+  <h3>The smile is quoted by delta</h3>
+  <div class="prose">
+    <p>FX traders quote the smile at three points of the surface for each expiry:</p>
+    <ul>
+      <li><b>ATM</b>: the at-the-money vol (delta-neutral straddle).</li>
+      <li><b>25-delta risk reversal (RR)</b>: vol of the 25-delta call minus vol of the 25-delta put. It shows which way the market fears a big move. For USD:INR it is usually positive: people pay more for protection against a rupee crash.</li>
+      <li><b>25-delta butterfly (BF)</b>: how much higher both wings are than ATM. It shows how fat the tails are.</li>
+    </ul>
+  </div>
+  <div class="f">σ<sub>25C</sub> = σ<sub>ATM</sub> + BF + ½RR &nbsp;&nbsp;&nbsp; σ<sub>25P</sub> = σ<sub>ATM</sub> + BF − ½RR</div>
+  <div class="prose"><p>Example: ATM 5.5%, RR +1.2%, BF 0.3% gives σ<sub>25C</sub> = 6.4% and σ<sub>25P</sub> = 5.2%. To price your strike, you interpolate the vol at your option's delta.</p></div>
+  <h3>Which delta?</h3>
+  <ul>
+    <li><b>Spot delta</b> = −e<sup>−<var>r</var><sub>f</sub><var>T</var></sup><var>N</var>(−<var>d</var><sub>1</sub>) for a put. This is the hedge in spot.</li>
+    <li><b>Forward delta</b> = −<var>N</var>(−<var>d</var><sub>1</sub>). This is the hedge in the forward. It is used for long-dated and EM pairs.</li>
+    <li><b>Premium-adjusted delta</b> = spot delta − PV<sub>foreign %</sub>. Use it when the premium is paid in the foreign currency, because that premium is itself an FX exposure. USD:INR, USD:JPY and most EM pairs quote premium-adjusted.</li>
+  </ul>
+  <h3>Other things that bite</h3>
+  <ul>
+    <li><b>Dates.</b> Expiry (10am New York or 3pm Tokyo cut) and delivery (expiry + spot lag) are different days. Vol runs to expiry. Discounting runs to delivery.</li>
+    <li><b>Non-deliverable currencies.</b> Offshore USD:INR options are usually cash-settled in USD against the RBI reference rate, so no rupees change hands. The payoff in USD is <var>N</var> × max(<var>K</var> − <var>S</var><sub>T</sub>, 0) ÷ <var>S</var><sub>T</sub>.</li>
+    <li><b>Pegs.</b> <code>Call European 7.85 USD:HKD</code> is struck at the weak edge of the Hong Kong dollar's 7.75–7.85 band. Normal vol is tiny, but the option is a bet on the peg breaking. A lognormal model says it is almost free, which is exactly the tail risk the buyer wants.</li>
+    <li><b>Two rate risks.</b> You have rho to both the domestic and the foreign curve, and both must be hedged.</li>
+  </ul>
+</section>
+
+<section class="sec" id="greeks">
+  <h2>Greeks that matter</h2>
+  <div class="tbl greeks"><table>
+    <thead><tr><th>Greek</th><th>What it measures</th><th>For an FX option</th></tr></thead>
+    <tbody>
+      <tr><td>Delta</td><td>Foreign-currency amount to trade in spot to hedge</td><td>Spot delta × notional. −0.181 × USD 10m = short USD 1.81m. You hedge by <em>selling</em> USD 1.81m spot.</td></tr>
+      <tr><td>Gamma</td><td>Change in delta for a 1% spot move</td><td>Desks quote it in foreign currency per 1%: about USD 0.47m here.</td></tr>
+      <tr><td>Vega</td><td>PV change for +1 vol point</td><td>INR 2.22m (USD 24k) here. FX desks bucket vega by expiry, and by ATM, RR and BF.</td></tr>
+      <tr><td>Theta</td><td>PV change from one day passing</td><td>INR −9,534 per day here.</td></tr>
+      <tr><td>Rho (both)</td><td>PV change for +1% in each rate</td><td>Domestic rho and foreign rho have opposite signs. Raising INR rates lifts the forward and hurts the USD put.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="sec" id="example">
+  <h2>Worked example</h2>
+  <p>A USD put / INR call on USD 10m, strike 90, expiring 1 Oct 2027 (312 days, <var>T</var> = 0.85479). Illustrative market data: spot 92.50, INR rate <var>r</var><sub>d</sub> = 6.0%, USD rate <var>r</var><sub>f</sub> = 3.6% (continuous), vol 6.0%.</p>
+  <ol class="steps">
+    <li><span>Forward.</span>
+      <div class="calc-line">F = 92.50 × e^((0.06 − 0.036) × 0.85479) = 94.4172</div></li>
+    <li><span><var>d</var><sub>1</sub> and <var>d</var><sub>2</sub>.</span>
+      <div class="calc-line">σ√T = 0.06 × √0.85479 = 0.055473
+d1 = (ln(94.4172/90) + ½ × 0.06² × 0.85479) / 0.055473 = (0.047914 + 0.001539) / 0.055473 = 0.89147
+d2 = 0.89147 − 0.055473 = 0.83600</div></li>
+    <li><span>Probability table.</span>
+      <div class="calc-line">N(−d1) = N(−0.89147) = 0.186338      N(−d2) = N(−0.83600) = 0.201578</div></li>
+    <li><span>Discounted strike and foreign-discounted spot.</span>
+      <div class="calc-line">K e^(−rd T) = 90 × e^(−0.06×0.85479) = 85.50048      S e^(−rf T) = 92.50 × e^(−0.036×0.85479) = 89.69689</div></li>
+    <li><span>Put price in INR per USD.</span>
+      <div class="calc-line">P = 85.50048 × 0.201578 − 89.69689 × 0.186338 = 17.23500 − 16.71394 = 0.521056 INR</div></li>
+    <li><span>Scale and convert.</span>
+      <div class="calc-line">PV = 0.521056 × 10,000,000 = INR 5,210,560  =  USD 56,330 (÷ 92.50)  =  0.5633% of USD notional</div></li>
+    <li><span>Deltas.</span>
+      <div class="calc-line">spot −0.18069 · forward −0.18634 · premium-adjusted −0.18069 − 0.00563 = −0.18632</div></li>
+  </ol>
+  <p class="answer">The exporter pays <b>INR 5.21m (USD 56,330, 0.563% USD)</b> for protection below 90. Their dollar hedge is to sell about USD 1.81m spot.</p>
+</section>
+
+<section class="sec" id="try">
+  <h2>Try it</h2>
+  <p>Defaults are the worked example. Try the HKD peg trade: spot 7.80, strike 7.85, call, 73 days, HKD rate 3.0%, USD rate 3.6%, vol 2%.</p>
+  <div id="calc-fx"></div>
+</section>
+
+<section class="sec" id="recap">
+  <h2>Remember</h2>
+  <ul class="recap">
+    <li>A call on the first currency is a put on the second. <code>USD:INR</code> = INR per 1 USD.</li>
+    <li>Garman-Kohlhagen = Black-Scholes with <var>r</var> = domestic rate and <var>q</var> = foreign rate.</li>
+    <li>The formula gives domestic currency per unit of foreign notional. Agree the premium currency before quoting.</li>
+    <li>The smile is quoted as ATM, 25-delta risk reversal and butterfly. Check which delta convention the pair uses.</li>
+    <li>Vega per vol point, delta in foreign currency, and two rhos.</li>
+  </ul>
+</section>
+
+</main>
+</div>
+<script src="assets/course.js"></script>
+<script>
+(function () {
+  const ex = { S: 92.5, K: 90, T: 312 / 365, rd: 0.06, rf: 0.036, vol: 0.06 };
+  const val = s => C.gk({ ...ex, S: s, call: false }).pv;
+
+  C.legs('#legs-fx', {
+    tMin: 0, tMax: 0.95, ticks: [0, 0.25, 0.5, 0.75], tickFmt: t => C.fmt(t, 2),
+    events: [{ t: 0, label: 'Trade 23 Nov 26' }, { t: 0.8548, label: 'Expiry 1 Oct 27' }],
+    legs: [
+      { name: 'Receive INR 900m if exercised (contingent)', dir: 1, style: 'contingent', flows: [{ t: 0.8603, a: 1, label: 'INR 900m', tip: 'Receive INR 900,000,000 on delivery, only if USD:INR < 90' }] },
+      { name: 'Premium INR 5.21m, paid on spot date', dir: -1, style: 'fixed', flows: [{ t: 0.0055, a: 0.12, label: '5.21m', tip: 'Premium INR 5,210,560 = USD 56,330' }] },
+      { name: 'Pay USD 10m if exercised (contingent)', dir: -1, style: 'contingent', flows: [{ t: 0.8603, a: 1, label: 'USD 10m', tip: 'Deliver USD 10,000,000 on delivery, only if USD:INR < 90' }] },
+    ],
+  });
+
+  C.chart('#pay-fx', {
+    x: [82, 102], xLabel: 'USD:INR at expiry', yLabel: 'INR per USD',
+    series: [
+      { name: 'Payoff at expiry', f: s => Math.max(ex.K - s, 0), color: 1 },
+      { name: 'Value today', f: val, color: 3, dashed: true },
+    ],
+    marks: [{ x: 90, label: 'K = 90' }, { x: 92.5, label: 'S' }, { x: 94.417, label: 'F' }],
+  });
+
+  C.calc('#calc-fx', {
+    title: 'Garman-Kohlhagen pricer',
+    inputs: [
+      { id: 'type', label: 'Option on 1st currency', value: 'put', options: [['call', 'Call (buy 1st ccy)'], ['put', 'Put (sell 1st ccy)']] },
+      { id: 'S', label: 'Spot', unit: 'dom per for', value: 92.5, step: 0.01 },
+      { id: 'K', label: 'Strike', value: 90, step: 0.01 },
+      { id: 'days', label: 'Days to expiry', value: 312, step: 1, min: 0 },
+      { id: 'rd', label: 'Domestic rate rd', unit: '%', value: 6.0, step: 0.05 },
+      { id: 'rf', label: 'Foreign rate rf', unit: '%', value: 3.6, step: 0.05 },
+      { id: 'vol', label: 'Vol', unit: '%', value: 6.0, step: 0.1, min: 0.01 },
+      { id: 'N', label: 'Notional (1st ccy)', unit: 'm', value: 10, step: 1 },
+    ],
+    compute: v => {
+      const call = v.type === 'call', T = v.days / 365, N = v.N * 1e6;
+      const p = { S: v.S, K: v.K, T, rd: v.rd / 100, rf: v.rf / 100, vol: v.vol / 100, call };
+      const g = C.gk(p), pvD = g.pv * N, pvF = pvD / v.S, pctF = g.pv / v.S;
+      const fwdDelta = call ? C.N(g.d1) : -C.N(-g.d1);
+      const rhoF = (C.gk({ ...p, rf: p.rf + 0.01 }).pv - g.pv) * N;
+      const lo = v.K * 0.9, hi = v.K * 1.12;
+      return {
+        out: [
+          ['Forward', C.fmt(g.fwd, 4)],
+          ['d1 / d2', C.fmt(g.d1, 5) + ' / ' + C.fmt(g.d2, 5)],
+          ['Price (domestic pips)', C.fmt(g.pv, 6)],
+          ['PV in domestic ccy', C.fmt(pvD, 0), true],
+          ['PV in 1st ccy', C.fmt(pvF, 0)],
+          ['1st ccy % / domestic %', C.pct(pctF, 4) + ' / ' + C.pct(g.pv / v.K, 4)],
+          ['Delta: spot / fwd / prem-adj', C.fmt(g.delta, 4) + ' / ' + C.fmt(fwdDelta, 4) + ' / ' + C.fmt(g.delta - pctF, 4)],
+          ['Delta amount (1st ccy)', C.fmt(g.delta * N, 0)],
+          ['Gamma per 1% spot (1st ccy)', C.fmt(g.gamma * v.S * 0.01 * N, 0)],
+          ['Vega per vol point (dom)', C.fmt(g.vega * N, 0)],
+          ['Theta per day (dom)', C.fmt(g.theta * N, 0)],
+          ['Rho dom / for (+1%, dom)', C.fmt(g.rho * N, 0) + ' / ' + C.fmt(rhoF, 0)],
+        ],
+        chart: {
+          x: [lo, hi], xLabel: 'spot at expiry', yLabel: 'domestic ccy per unit of 1st ccy',
+          series: [
+            { name: 'Payoff at expiry', f: s => Math.max(call ? s - v.K : v.K - s, 0), color: 1 },
+            { name: 'Value today', f: s => C.gk({ ...p, S: s }).pv, color: 3, dashed: true },
+          ],
+          marks: [{ x: v.K, label: 'K' }, { x: v.S, label: 'S' }],
+        },
+        note: 'Continuous rates; vol time and discounting both run to expiry (a real system discounts to the delivery date). Premium-adjusted delta assumes the premium is paid in the first currency.',
+      };
+    },
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bonds & Bills</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=JetBrains+Mono:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..600&display=swap">
+<link rel="stylesheet" href="assets/course.css">
+</head>
+<body data-page="bond.html">
+<div class="shell">
+<aside class="toc" id="toc"></aside>
+<main class="page">
+
+<header class="ph">
+  <p class="eyebrow">Part 1 · Cash products</p>
+  <h1>Bonds &amp; bills</h1>
+  <p class="lede">A bond is a loan cut into tradable pieces. Its cashflows are written in advance, so pricing it is pure discounting. The skills you learn here (yield, accrued interest, DV01, convexity) come back on almost every later page.</p>
+  <div class="ptypes" data-ptypes data-eg="ZAMBIN 0.5 12/31/53 REGS · T 4.625 02/15/35"></div>
+</header>
+
+<section class="lvl" id="idea">
+  <h2><span class="lv">Level 1</span> The idea</h2>
+  <div class="prose">
+    <p>A government needs to borrow $10 billion. Instead of asking one bank, it sells millions of small IOUs called <b>bonds</b>. Each one promises to pay a fixed interest amount, the <b>coupon</b>, every six months and to repay the <b>face value</b> (say $100) on the <b>maturity</b> date.</p>
+    <p>A <b>bill</b> is a short bond, under a year, with no coupon at all. You buy it below $100 and get $100 back. The gap is your interest.</p>
+    <p>Once issued, bonds trade every day. If interest rates in the market rise, an old bond paying a lower coupon becomes less attractive and its price falls. <b>Bond prices and yields always move in opposite directions.</b></p>
+  </div>
+  <aside class="analogy"><p>You lend a friend £100. They promise you £2.31 every six months and the £100 back in eight years. If a bank starts offering 5% elsewhere, nobody would pay you the full £100 for your friend's IOU. You would have to sell it for less.</p></aside>
+</section>
+
+<section class="lvl" id="cashflows">
+  <h2><span class="lv">Level 2</span> The cashflows</h2>
+  <div class="prose"><p>You <span class="pay-c">pay</span> the price on the settlement date. You <span class="rec-c">receive</span> every coupon left and then the face value with the last coupon. All amounts are known in advance (assuming the issuer doesn't default).</p></div>
+  <figure class="fig">
+    <div class="fig-title">US Treasury 4.625% 15 Feb 2035, bought for settlement 24 Nov 2026</div>
+    <div id="legs-bond"></div>
+    <figcaption>Seventeen semi-annual coupons of 2.3125 per 100 face, then the face value of 100. The purchase price includes the <b>accrued interest</b> owed to the seller for the 101 days since the last coupon.</figcaption>
+  </figure>
+</section>
+
+<section class="lvl" id="pv">
+  <h2><span class="lv">Level 3</span> The PV formula</h2>
+  <h3>Step 1 · price from a discount curve</h3>
+  <div class="prose"><p>Every cashflow is known, so the PV is the toolkit formula applied directly. This is how a pricing system values a bond against a curve.</p></div>
+  <div class="f"><span class="lbl">Dirty price per 100 face, from discount factors</span>
+    <var>P</var><sub>dirty</sub> = <span class="sum"><small><var>n</var></small><span class="s">Σ</span><small><var>i</var>=1</small></span> <span class="frac"><span><var>c</var></span><span><var>f</var></span></span> × <var>D</var>(<var>t</var><sub><var>i</var></sub>) + 100 × <var>D</var>(<var>t</var><sub><var>n</var></sub>)
+  </div>
+  <dl class="where">
+    <dt><var>c</var></dt><dd>annual coupon per 100 face (4.625)</dd>
+    <dt><var>f</var></dt><dd>coupons per year (2 for Treasuries and Gilts, 1 for Bunds and most EUR bonds)</dd>
+    <dt><var>D</var>(<var>t</var>)</dt><dd>discount factor from the government curve, or from the issuer's credit curve</dd>
+  </dl>
+
+  <h3>Step 2 · price from a yield</h3>
+  <div class="prose"><p>Traders quote bonds by a single number, the <b>yield to maturity</b> <var>y</var>. It is the one flat rate that, used to discount every cashflow, reproduces the price. The first coupon is only a fraction <var>w</var> of a period away.</p></div>
+  <div class="f"><span class="lbl">Dirty price from yield (street convention)</span>
+    <var>P</var><sub>dirty</sub> = <span class="sum"><small><var>n</var>−1</small><span class="s">Σ</span><small><var>k</var>=0</small></span> <span class="frac"><span><var>c</var>/<var>f</var></span><span>(1 + <var>y</var>/<var>f</var>)<sup><var>k</var>+<var>w</var></sup></span></span>
+    + <span class="frac"><span>100</span><span>(1 + <var>y</var>/<var>f</var>)<sup><var>n</var>−1+<var>w</var></sup></span></span>
+    &nbsp;&nbsp;&nbsp; <var>w</var> = <span class="frac"><span>days to next coupon</span><span>days in coupon period</span></span>
+  </div>
+
+  <h3>Step 3 · clean price and accrued interest</h3>
+  <div class="prose"><p>Between coupons the buyer owes the seller the interest earned so far, called <b>accrued interest</b>. Screens show the <b>clean</b> price, which strips it out, so the price does not jump on coupon dates. You pay the <b>dirty</b> price.</p></div>
+  <div class="f"><span class="lbl">Accrued interest and clean price</span>
+    AI = <span class="frac"><span><var>c</var></span><span><var>f</var></span></span> × <span class="frac"><span>days since last coupon</span><span>days in coupon period</span></span>
+    &nbsp;&nbsp;&nbsp; <var>P</var><sub>clean</sub> = <var>P</var><sub>dirty</sub> − AI<br>
+    &nbsp;&nbsp;&nbsp; PV<sub>position</sub> = <span class="frac"><span>face</span><span>100</span></span> × <var>P</var><sub>dirty</sub>
+  </div>
+
+  <h3>Step 4 · how the price reacts to yield</h3>
+  <div class="f"><span class="lbl">DV01, modified duration, convexity</span>
+    DV01 = <var>P</var>(<var>y</var> − 1bp) − <var>P</var>(<var>y</var>)
+    &nbsp;&nbsp; <var>D</var><sub>mod</sub> = <span class="frac"><span>DV01</span><span><var>P</var> × 0.0001</span></span><br>
+    Δ<var>P</var> ≈ −<var>D</var><sub>mod</sub> × <var>P</var> × Δ<var>y</var> + ½ × Conv × <var>P</var> × (Δ<var>y</var>)<sup>2</sup>
+  </div>
+  <div class="prose"><p><b>Duration</b> is the straight-line estimate. <b>Convexity</b> corrects for the price-yield line being curved. For a normal bond the correction is always in your favour: prices rise more than duration says when yields fall, and fall less when yields rise.</p></div>
+
+  <h3>Step 5 · bills and the Z-spread</h3>
+  <div class="f"><span class="lbl">US T-bill on a discount-rate quote d, and its money-market yield</span>
+    <var>P</var> = 100 × (1 − <var>d</var> × <span class="frac"><span>days</span><span>360</span></span>)
+    &nbsp;&nbsp;&nbsp; <var>y</var><sub>MM</sub> = ( <span class="frac"><span>100</span><span><var>P</var></span></span> − 1 ) × <span class="frac"><span>360</span><span>days</span></span>
+  </div>
+  <div class="f"><span class="lbl">Z-spread: the constant spread over the curve that matches the market price</span>
+    <var>P</var><sub>dirty, market</sub> = <span class="sum"><small><var>i</var></small><span class="s">Σ</span><small></small></span> <var>CF</var><sub><var>i</var></sub> × e<sup>−(<var>z</var>(<var>t</var><sub><var>i</var></sub>) + <var>Z</var>) <var>t</var><sub><var>i</var></sub></sup>
+  </div>
+  <p>The Z-spread is how credit and EM desks compare bonds from different issuers. A wider Z-spread means the market sees more default risk or less liquidity.</p>
+</section>
+
+<section class="lvl" id="desk">
+  <h2><span class="lv">Level 4</span> Desk reality</h2>
+  <ul>
+    <li><b>Settlement.</b> US Treasuries settle T+1, most other government and corporate bonds T+2. Accrued interest runs to the settlement date, not the trade date.</li>
+    <li><b>Day counts.</b> Treasuries, Gilts and Bunds use ACT/ACT (Bunds pay annually). US corporates and many EM bonds use 30/360.</li>
+    <li><b>Ex-dividend.</b> Gilts go ex-coupon seven business days before payment. A buyer in that window does not get the next coupon, so accrued interest turns negative.</li>
+    <li><b>EM sovereigns.</b> <code>ZAMBIN 0.5 12/31/53 REGS</code> is a Zambian bond from the 2024 restructuring. "REGS" means it was sold under Regulation S to non-US investors. Bonds like this can step up their coupons and amortise. You price them from the cashflow schedule on the term sheet, and discount at a wide credit spread. CS01 matters more than DV01.</li>
+    <li><b>Amortising bonds and FRNs.</b> Bonds that repay principal early carry a <em>factor</em> (fraction of face still outstanding): multiply PV by it. A floating-rate note pays index + spread, priced with forwards as in the <a href="fra.html">FRA</a> page.</li>
+  </ul>
+</section>
+
+<section class="sec" id="greeks">
+  <h2>Greeks that matter</h2>
+  <div class="tbl greeks"><table>
+    <thead><tr><th>Greek</th><th>What it measures</th><th>For a bond</th></tr></thead>
+    <tbody>
+      <tr><td>DV01</td><td>PV change if yields fall 1bp</td><td>About $6,958 per $10m face for the 8-year Treasury below. It grows with maturity.</td></tr>
+      <tr><td>Modified duration</td><td>% price change per 1% yield move</td><td>6.72: yields up 1% means the price drops about 6.7%.</td></tr>
+      <tr><td>Convexity</td><td>How fast duration changes</td><td>Always positive for plain bonds. It matters for big moves and for long bonds.</td></tr>
+      <tr><td>CS01</td><td>PV change if the credit spread widens 1bp</td><td>Equal to DV01 for a plain bond. Corporate and EM desks track it separately from rates DV01.</td></tr>
+      <tr><td>Bucketed DV01</td><td>Where on the curve the risk sits</td><td>Concentrated at maturity, with a little at each coupon date.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="sec" id="example">
+  <h2>Worked example</h2>
+  <p>US Treasury 4.625% 15 Feb 2035, priced at a yield of 4.30% for settlement 24 Nov 2026. The last coupon was 15 Aug 2026 and the next is 15 Feb 2027.</p>
+  <ol class="steps">
+    <li><span>Coupon period 15 Aug → 15 Feb is 184 days. Days since last coupon: 101. Days to next: 83. Coupons left: 17.</span><div class="calc-line">w = 83/184 = 0.45109</div></li>
+    <li><span>Accrued interest.</span><div class="calc-line">AI = 4.625/2 × 101/184 = 1.26936</div></li>
+    <li><span>Discount each cashflow at 4.30%/2 = 2.15% per half-year. The first coupon is 0.45 periods away and the last 16.45.</span>
+      <div class="calc-line">first:  2.3125 / 1.0215^0.45109 = 2.3125 × 0.990450 = 2.29042
+last:   102.3125 / 1.0215^16.45109 = 102.3125 × 0.704724 = 72.1020</div></li>
+    <li><span>Add all 17 discounted cashflows (see the table in the calculator).</span><div class="calc-line">P_dirty = 103.49501      P_clean = 103.49501 − 1.26936 = 102.22565</div></li>
+    <li><span>DV01 by repricing at 4.29% and 4.31%.</span><div class="calc-line">DV01 = 0.069584 per 100   →   $6,958 per $10m face     D_mod = 6.7234</div></li>
+    <li><span>Check convexity: yields jump 100bp to 5.30%.</span><div class="calc-line">duration only: 96.537     duration + convexity: 96.816     exact: 96.809</div></li>
+    <li><span>A 91-day T-bill quoted at a 4.20% discount rate.</span><div class="calc-line">P = 100 × (1 − 0.042 × 91/360) = 98.9383     money-market yield 4.2451%</div></li>
+  </ol>
+  <p class="answer">Clean price <b>102.2256</b>, dirty <b>103.4950</b>. A $10m face position is worth <b>$10,349,501</b> and has a DV01 of $6,958.</p>
+</section>
+
+<section class="sec" id="try">
+  <h2>Try it</h2>
+  <p>The curve shows the price for every yield. The dashed line is the duration estimate. The gap between them is convexity.</p>
+  <div id="calc-bond"></div>
+</section>
+
+<section class="sec" id="recap">
+  <h2>Remember</h2>
+  <ul class="recap">
+    <li>Bond PV = coupons and face, each × discount factor. You pay dirty = clean + accrued.</li>
+    <li>Yield is the single rate that reproduces the price. Price and yield move in opposite directions.</li>
+    <li>DV01 = price change per 1bp; duration = DV01 as a % of price; convexity is the curve's bend.</li>
+    <li>For credit and EM bonds, discount at the curve plus a Z-spread and watch CS01.</li>
+  </ul>
+</section>
+
+</main>
+</div>
+<script src="assets/course.js"></script>
+<script>
+(function () {
+  const w = 83 / 184, flows = [];
+  for (let k = 0; k < 17; k++) flows.push({ t: (k + w) / 2, a: 2.3125, label: k === 0 ? '2.31' : '' });
+  C.legs('#legs-bond', {
+    tMin: -0.35, tMax: 9, ticks: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+    events: [{ t: 0, label: 'Settle 24 Nov 26' }, { t: (16 + w) / 2, label: 'Maturity 15 Feb 35' }],
+    legs: [
+      { name: 'Dirty price: you pay 103.495', dir: -1, style: 'notional', flows: [{ t: 0, a: 103.495, label: '103.50' }] },
+      { name: 'Coupons: you receive 2.3125 every 6 months', dir: 1, style: 'fixed', flows },
+      { name: 'Face value: you receive 100', dir: 1, style: 'notional', flows: [{ t: (16 + w) / 2 + 0.06, a: 100, label: '100' }] },
+    ],
+  });
+})();
+
+function bondPrice(c, f, y, n, w) {
+  let p = 0;
+  for (let k = 0; k < n; k++) p += (c / f) / Math.pow(1 + y / f, k + w);
+  return p + 100 / Math.pow(1 + y / f, n - 1 + w);
+}
+
+C.calc('#calc-bond', {
+  title: 'Fixed-coupon bond pricer',
+  inputs: [
+    { id: 'c', label: 'Coupon', unit: '%', value: 4.625, step: 0.125 },
+    { id: 'f', label: 'Frequency', value: 2, options: [[2, 'Semi-annual'], [1, 'Annual']] },
+    { id: 'y', label: 'Yield to maturity', unit: '%', value: 4.30, step: 0.01 },
+    { id: 'n', label: 'Coupons remaining', value: 17, step: 1, min: 1 },
+    { id: 'ds', label: 'Days since last coupon', value: 101, step: 1, min: 0 },
+    { id: 'dp', label: 'Days in coupon period', value: 184, step: 1, min: 1 },
+    { id: 'face', label: 'Face held', unit: '$m', value: 10, step: 1 },
+  ],
+  compute: v => {
+    const c = v.c, f = v.f, y = v.y / 100, n = Math.round(v.n), w = (v.dp - v.ds) / v.dp;
+    if (v.ds > v.dp) throw new Error('days since last coupon cannot exceed the period');
+    const P = bondPrice(c, f, y, n, w), Pu = bondPrice(c, f, y + 1e-4, n, w), Pd = bondPrice(c, f, y - 1e-4, n, w);
+    const ai = c / f * v.ds / v.dp, dv01 = (Pd - Pu) / 2, dmod = dv01 / P * 1e4, conv = (Pu + Pd - 2 * P) / (P * 1e-8);
+    const rows = [];
+    for (let k = 0; k < n; k++) {
+      const cf = c / f + (k === n - 1 ? 100 : 0), d = 1 / Math.pow(1 + y / f, k + w);
+      rows.push([String(k + 1), C.fmt((k + w) / f, 3), C.fmt(cf, 4), C.fmt(d, 6), C.fmt(cf * d, 4)]);
+    }
+    return {
+      out: [
+        ['Accrued interest', C.fmt(ai, 5)],
+        ['Dirty price', C.fmt(P, 5)],
+        ['Clean price', C.fmt(P - ai, 5), true],
+        ['Position value (dirty)', '$' + C.fmt(v.face * 1e4 * P, 0)],
+        ['DV01 per 100 / per position', C.fmt(dv01, 5) + ' / $' + C.fmt(dv01 * v.face * 1e4, 0)],
+        ['Modified duration', C.fmt(dmod, 4)],
+        ['Convexity', C.fmt(conv, 2)],
+      ],
+      chart: {
+        x: [Math.max(0, y - 0.03), y + 0.03], xLabel: 'yield', yLabel: 'dirty price per 100',
+        xFmt: x => C.pct(x, 1), yFmt: y2 => C.fmt(y2, 0), tipFmt: y2 => C.fmt(y2, 3), zero: false,
+        series: [
+          { name: 'Price', f: yy => bondPrice(c, f, yy, n, w), color: 1 },
+          { name: 'Duration estimate', f: yy => P - dmod * P * (yy - y), color: 2, dashed: true },
+        ],
+        marks: [{ x: y, label: 'today' }],
+      },
+      table: { head: ['#', 'Years', 'Cashflow', 'Discount factor', 'PV'], rows },
+      note: 'Street-convention yield with fractional first period. Time in years assumes equal coupon periods.',
+    };
+  },
+});
+</script>
+</body>
+</html>

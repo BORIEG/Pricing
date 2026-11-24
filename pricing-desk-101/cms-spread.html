@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CMS Spread Options</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=JetBrains+Mono:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..600&display=swap">
+<link rel="stylesheet" href="assets/course.css">
+</head>
+<body data-page="cms-spread.html">
+<div class="shell">
+<aside class="toc" id="toc"></aside>
+<main class="page">
+
+<header class="ph">
+  <p class="eyebrow">Part 6 · Vanilla options</p>
+  <h1>CMS spread options</h1>
+  <p class="lede">An option on the steepness of the yield curve: the 30-year swap rate minus the 5-year swap rate. It needs two vols and a correlation, and the correlation is where the trading happens.</p>
+  <div class="ptypes" data-ptypes data-eg="StraddleSpread 1Y USD-SOFRCMP-30Y-5Y 0.2 % 2/Aug/27"></div>
+</header>
+
+<section class="lvl" id="idea">
+  <h2><span class="lv">Level 1</span> The idea</h2>
+  <div class="prose">
+    <p>Long-term rates are usually higher than short-term rates. The gap between them is the <b>steepness</b> of the curve. Traders call "30-year swap rate minus 5-year swap rate" the <b>30s5s spread</b>. Today it might be 0.40%.</p>
+    <p>The steepness moves with the economy. Before recessions the curve often flattens or inverts (the spread falls below zero). In recoveries it steepens. A <b>spread option</b> pays on where that gap ends up:</p>
+    <ul>
+      <li>A <b>spread cap</b> (call) pays if the spread ends above the strike: a bet on steepening.</li>
+      <li>A <b>spread floor</b> (put) pays if it ends below: a bet on flattening.</li>
+      <li>A <b>straddle</b> is both together. It pays whenever the spread moves far from the strike, in either direction. It is a bet on the size of the move, whichever way it goes.</li>
+    </ul>
+  </div>
+  <aside class="analogy"><p>Two siblings, aged 12 and 16, are 20cm apart in height today. You bet on the gap in a year. If they grow at the same speed, the gap barely changes. If one has a growth spurt and the other doesn't, the gap moves a lot. How much it can move depends on how independently they grow. That is correlation.</p></aside>
+</section>
+
+<section class="lvl" id="cashflows">
+  <h2><span class="lv">Level 2</span> The cashflows</h2>
+  <div class="prose">
+    <p>A <b>CMS rate</b> (constant maturity swap rate) is the market swap rate for a fixed tenor, observed on one date. "CMS 30Y on 2 Aug 2027" is the 30-year swap rate published that day. It is a single number used to set a single payment.</p>
+    <p>The buyer <span class="pay-c">pays a premium</span> today. On the fixing date both CMS rates are observed, and the option <span class="rec-c">may pay</span>:</p>
+  </div>
+  <div class="f"><span class="lbl">Payoff for one period, with spread <var>X</var> = CMS<sub>30Y</sub> − CMS<sub>5Y</sub></span>
+    Cap: <var>N</var><var>τ</var> max(<var>X</var> − <var>K</var>, 0) &nbsp;&nbsp; Floor: <var>N</var><var>τ</var> max(<var>K</var> − <var>X</var>, 0) &nbsp;&nbsp; Straddle: <var>N</var><var>τ</var> |<var>X</var> − <var>K</var>|
+  </div>
+  <figure class="fig">
+    <div class="fig-title">Long USD 100m 30s5s straddle, strike 0.20%, fixing 2 Aug 2027</div>
+    <div id="legs-cms"></div>
+    <figcaption>The <b>contingent</b> payment is almost certain to be positive (a straddle pays on both sides). Its size is unknown until both rates fix.</figcaption>
+  </figure>
+  <figure class="fig">
+    <div class="fig-title">Payoff at fixing and value today, by the 30s5s spread</div>
+    <div id="pay-cms"></div>
+    <figcaption>USD. The V-shape is the straddle payoff: USD 10,000 per bp away from 0.20%. Today's value (dashed) never touches zero, because the spread will certainly move before August.</figcaption>
+  </figure>
+</section>
+
+<section class="lvl" id="pv">
+  <h2><span class="lv">Level 3</span> The PV formula</h2>
+  <h3>Step 1 · Forward CMS rates, with a convexity adjustment</h3>
+  <div class="prose">
+    <p>The centre of each rate's bell curve is its forward swap rate from <a href="swaption.html">the swaptions page</a>, plus a small <b>convexity adjustment</b>. A normal swap pays its rate every year for 30 years. A CMS payment pays the 30-year rate <em>once</em>. Moving the payment changes how it should be averaged, and the result is that the forward CMS rate sits slightly above the forward swap rate.</p>
+    <p>The adjustment grows with the rate's volatility, the time to fixing and the swap's tenor. Desks compute it by replicating the CMS payment with a strip of swaptions. For 30Y fixing in under a year it is a few basis points.</p>
+  </div>
+  <div class="f">CMS<sub>fwd</sub> = forward swap rate + convexity adjustment</div>
+  <h3>Step 2 · The forward spread</h3>
+  <div class="f"><var>X</var><sub>fwd</sub> = CMS<sub>30Y, fwd</sub> − CMS<sub>5Y, fwd</sub></div>
+  <h3>Step 3 · The spread's volatility</h3>
+  <div class="prose">
+    <p>Each rate has its own normal vol <var>σ</var><sub>30</sub> and <var>σ</var><sub>5</sub> from the swaption market. When the two rates move together, their moves cancel in the spread. The <b>correlation</b> <var>ρ</var> (between −1 and +1) measures how much they move together:</p>
+  </div>
+  <div class="f"><span class="lbl">Normal vol of a difference of two rates</span>
+    <var>σ</var><sub>X</sub> = √( <var>σ</var><sub>30</sub><sup>2</sup> + <var>σ</var><sub>5</sub><sup>2</sup> − 2<var>ρ</var><var>σ</var><sub>30</sub><var>σ</var><sub>5</sub> )
+  </div>
+  <div class="prose"><p>With <var>ρ</var> = 1 and equal vols the spread never moves. With <var>ρ</var> = 0 the vols add like the sides of a right-angled triangle. Real 30Y and 5Y rates have <var>ρ</var> around 0.8 to 0.9, so the spread is much calmer than either rate.</p></div>
+  <h3>Step 4 · Bachelier on the spread</h3>
+  <div class="prose"><p>A spread can be negative, so the normal model is the natural choice. Treat <var>X</var> as one rate with vol <var>σ</var><sub>X</sub>:</p></div>
+  <div class="f">
+    <var>d</var> = <span class="frac"><span><var>X</var><sub>fwd</sub> − <var>K</var></span><span><var>σ</var><sub>X</sub>√<var>T</var></span></span><br>
+    Cap = <var>N</var><var>τ</var><var>D</var> [ (<var>X</var><sub>fwd</sub> − <var>K</var>) <var>N</var>(<var>d</var>) + <var>σ</var><sub>X</sub>√<var>T</var> <var>n</var>(<var>d</var>) ]<br>
+    Floor = <var>N</var><var>τ</var><var>D</var> [ (<var>K</var> − <var>X</var><sub>fwd</sub>) <var>N</var>(−<var>d</var>) + <var>σ</var><sub>X</sub>√<var>T</var> <var>n</var>(<var>d</var>) ]<br>
+    Straddle = Cap + Floor
+  </div>
+  <dl class="where">
+    <dt><var>T</var></dt><dd>time to the fixing date in years</dd>
+    <dt><var>D</var></dt><dd>OIS discount factor to the payment date</dd>
+    <dt><var>τ</var></dt><dd>accrual of the period the spread is paid on (1.0 for one annual period)</dd>
+  </dl>
+  <aside class="key"><p>A long straddle gains when <var>σ</var><sub>X</sub> rises. <var>σ</var><sub>X</sub> rises when correlation <em>falls</em>. So the buyer of a spread straddle is <b>short correlation</b>. That exposure is why these trades exist: correlation cannot be traded any other simple way.</p></aside>
+</section>
+
+<section class="lvl" id="desk">
+  <h2><span class="lv">Level 4</span> Desk reality</h2>
+  <ul>
+    <li><b>Reading the trade description.</b> <code>StraddleSpread 1Y USD-SOFRCMP-30Y-5Y 0.2 % 2/Aug/27</code> means: straddle, 1-year period, USD SOFR swap CMS rates (30Y minus 5Y), strike 0.20%, ending 2 Aug 2027. We price one annual period whose spread is observed at the end, with <var>τ</var> = 1. Check the trade's schedule for the exact fixing and payment dates.</li>
+    <li><b>Multi-period trades.</b> A 5-year spread cap is a strip of spread caplets, one per period, priced and summed exactly as on the <a href="capfloor.html">caps &amp; floors</a> page.</li>
+    <li><b>Where correlation comes from.</b> It is implied from broker quotes on spread options, and it differs by strike. Desks keep a correlation surface by expiry and strike, the same way they keep a vol surface.</li>
+    <li><b>Better models.</b> Bachelier with one correlation is the market's quoting model. A more exact price uses a copula: it combines each rate's own smile with the correlation. The difference matters for far out-of-the-money strikes.</li>
+    <li><b>Convexity adjustments move.</b> They depend on the swaption smile. When long-dated vols jump, the CMS forwards move too, so the 30Y leg carries extra vega.</li>
+  </ul>
+</section>
+
+<section class="sec" id="greeks">
+  <h2>Greeks that matter</h2>
+  <div class="tbl greeks"><table>
+    <thead><tr><th>Greek</th><th>What it measures</th><th>For a spread straddle</th></tr></thead>
+    <tbody>
+      <tr><td>Spread delta</td><td>PV change if the spread widens 1bp</td><td><var>N</var><var>τ</var><var>D</var> × (2<var>N</var>(<var>d</var>) − 1) × 1bp. Positive here (USD 3,606) because the forward spread is above the strike. Split into the legs: about +3,600 per bp on the 30Y rate and −3,600 per bp on the 5Y rate.</td></tr>
+      <tr><td>Vega (each rate)</td><td>PV change if one rate's normal vol rises 1bp</td><td>Positive to both, but each is reduced by the correlation. Hedged with swaptions on the 30Y and 5Y tenors.</td></tr>
+      <tr><td>Correlation</td><td>PV change if <var>ρ</var> rises by 0.01</td><td>Negative for a long straddle: −USD 8,858 per 0.01 here. The key risk, and hard to hedge.</td></tr>
+      <tr><td>Theta</td><td>PV change from one day passing</td><td>Negative for the buyer, as for any long option.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="sec" id="example">
+  <h2>Worked example</h2>
+  <p>Valuation 23 Nov 2026. Long USD 100m 30s5s straddle, strike 0.20%, fixing 2 Aug 2027 (252 days, <var>T</var> = 0.69041), <var>τ</var> = 1. Illustrative market data: forward swap rates 30Y 4.15% and 5Y 3.78%, convexity adjustments +5bp and +2bp, normal vols 80bp and 95bp, correlation 0.85, SOFR OIS zero 3.5%.</p>
+  <ol class="steps">
+    <li><span>Forward CMS rates and spread.</span>
+      <div class="calc-line">CMS30 = 4.15% + 0.05% = 4.20%    CMS5 = 3.78% + 0.02% = 3.80%    X = 0.40%</div></li>
+    <li><span>Spread vol, in bp.</span>
+      <div class="calc-line">σX = √(80² + 95² − 2 × 0.85 × 80 × 95) = √(6,400 + 9,025 − 12,920) = √2,505 = 50.05bp</div></li>
+    <li><span>Bachelier inputs.</span>
+      <div class="calc-line">σX√T = 0.005005 × √0.69041 = 0.0041587
+d = (0.0040 − 0.0020) / 0.0041587 = 0.48092    N(d) = 0.684713    n(d) = 0.355376</div></li>
+    <li><span>Cap and floor rate values.</span>
+      <div class="calc-line">cap   = 0.0020 × 0.684713 + 0.0041587 × 0.355376 = 0.0013694 + 0.0014779 = 0.0028473
+floor = −0.0020 × 0.315287 + 0.0014779 = 0.0008473</div></li>
+    <li><span>Straddle, discounted.</span>
+      <div class="calc-line">straddle = 0.0028473 + 0.0008473 = 0.0036947
+D = e^(−0.035 × 0.69041) = 0.976125
+PV = 100,000,000 × 1 × 0.976125 × 0.0036947 = USD 360,644</div></li>
+    <li><span>Correlation risk. Reprice with <var>ρ</var> = 0.86.</span>
+      <div class="calc-line">PV(0.86) − PV(0.85) = −USD 8,858</div></li>
+  </ol>
+  <p class="answer">The straddle is worth <b>USD 360,644</b> (36bp of notional). USD 195,225 of it is intrinsic value: the spread is already 20bp above the strike (100m × 0.20% × 0.976125). The remaining USD 165,419 is time value, which depends heavily on correlation.</p>
+</section>
+
+<section class="sec" id="try">
+  <h2>Try it</h2>
+  <p>Defaults are the worked example. The table shows how the price moves with correlation. Set <var>ρ</var> to 1 and equal vols to see the option lose almost all its time value.</p>
+  <div id="calc-cms"></div>
+</section>
+
+<section class="sec" id="recap">
+  <h2>Remember</h2>
+  <ul class="recap">
+    <li>A CMS spread option pays on the difference between two swap rates observed on one date.</li>
+    <li>Forward CMS = forward swap rate + convexity adjustment (a few bp, larger for long tenors).</li>
+    <li>Spread vol: <var>σ</var><sub>X</sub><sup>2</sup> = <var>σ</var><sub>1</sub><sup>2</sup> + <var>σ</var><sub>2</sub><sup>2</sup> − 2<var>ρ</var><var>σ</var><sub>1</sub><var>σ</var><sub>2</sub>. Then use Bachelier on the spread.</li>
+    <li>Long spread options are short correlation. That is the risk to watch.</li>
+  </ul>
+</section>
+
+</main>
+</div>
+<script src="assets/course.js"></script>
+<script>
+(function () {
+  function price(o) {
+    const c30 = o.f30 + o.a30, c5 = o.f5 + o.a5, X = c30 - c5;
+    const sX = Math.sqrt(o.s30 * o.s30 + o.s5 * o.s5 - 2 * o.rho * o.s30 * o.s5);
+    const T = o.days / 365, D = Math.exp(-o.z * T), w = o.N * o.tau * D;
+    const cap = C.bachelier({ F: X, K: o.K, T, volN: sX, df: 1, call: true });
+    const flo = C.bachelier({ F: X, K: o.K, T, volN: sX, df: 1, call: false });
+    const pick = (a, b) => o.type === 'cap' ? a : o.type === 'floor' ? b : a + b;
+    return { c30, c5, X, sX, T, D, w, d: cap.d, pv: w * pick(cap.pv, flo.pv), delta: w * pick(cap.delta, flo.delta) * 1e-4, vega: w * pick(cap.vega, flo.vega) };
+  }
+  const ex = { type: 'straddle', N: 100e6, tau: 1, K: 0.002, f30: 0.0415, a30: 0.0005, f5: 0.0378, a5: 0.0002, s30: 0.008, s5: 0.0095, rho: 0.85, days: 252, z: 0.035 };
+  const p0 = price(ex);
+  const payoffAt = (o, x) => o.N * o.tau * price(o).D * (o.type === 'cap' ? Math.max(x - o.K, 0) : o.type === 'floor' ? Math.max(o.K - x, 0) : Math.abs(x - o.K));
+  const valueAt = (o, x) => {
+    const r = price(o), c = C.bachelier({ F: x, K: o.K, T: r.T, volN: r.sX, df: 1, call: true }).pv, f = C.bachelier({ F: x, K: o.K, T: r.T, volN: r.sX, df: 1, call: false }).pv;
+    return r.w * (o.type === 'cap' ? c : o.type === 'floor' ? f : c + f);
+  };
+
+  C.legs('#legs-cms', {
+    tMin: -0.04, tMax: 0.75, ticks: [0, 0.25, 0.5, 0.75], tickFmt: t => C.fmt(t, 2),
+    events: [{ t: 0, label: 'Trade' }, { t: p0.T, label: 'Fixing 2 Aug 27' }],
+    legs: [
+      { name: 'Payoff: 100m × |CMS30 − CMS5 − 0.20%| (contingent)', dir: 1, style: 'contingent', flows: [{ t: p0.T, a: 1, label: '|X − K| × 100m', tip: 'Paid at the end of the period; size set by both CMS fixings' }] },
+      { name: 'Premium paid today', dir: -1, style: 'fixed', flows: [{ t: 0, a: 0.5, label: '360,644', tip: 'Premium USD 360,644' }] },
+    ],
+  });
+
+  C.chart('#pay-cms', {
+    x: [-0.008, 0.012], xLabel: '30s5s spread at fixing', yLabel: 'straddle value (USD, discounted)',
+    xFmt: x => C.fmt(x * 1e4, 0) + 'bp', yFmt: y => C.fmt(y / 1e3, 0) + 'k', tipFmt: y => 'USD ' + C.fmt(y, 0),
+    series: [
+      { name: 'Payoff at fixing', f: x => payoffAt(ex, x), color: 1 },
+      { name: 'Value today', f: x => valueAt(ex, x), color: 3, dashed: true },
+    ],
+    marks: [{ x: 0.002, label: 'K = 20bp' }, { x: p0.X, label: 'fwd 40bp' }],
+  });
+
+  C.calc('#calc-cms', {
+    title: 'CMS spread option pricer (Bachelier on the spread)',
+    inputs: [
+      { id: 'type', label: 'Type', value: 'straddle', options: [['cap', 'Spread cap (call)'], ['floor', 'Spread floor (put)'], ['straddle', 'Straddle']] },
+      { id: 'N', label: 'Notional', unit: 'USD m', value: 100, step: 10 },
+      { id: 'K', label: 'Strike', unit: '%', value: 0.20, step: 0.05 },
+      { id: 'f30', label: '30Y fwd swap rate', unit: '%', value: 4.15, step: 0.01 },
+      { id: 'a30', label: '30Y convexity adj', unit: 'bp', value: 5, step: 0.5 },
+      { id: 'f5', label: '5Y fwd swap rate', unit: '%', value: 3.78, step: 0.01 },
+      { id: 'a5', label: '5Y convexity adj', unit: 'bp', value: 2, step: 0.5 },
+      { id: 's30', label: '30Y normal vol', unit: 'bp', value: 80, step: 1, min: 0 },
+      { id: 's5', label: '5Y normal vol', unit: 'bp', value: 95, step: 1, min: 0 },
+      { id: 'rho', label: 'Correlation ρ', value: 0.85, step: 0.01, min: -1, max: 1 },
+      { id: 'days', label: 'Days to fixing', value: 252, step: 1, min: 1 },
+      { id: 'z', label: 'OIS zero rate', unit: '%', value: 3.5, step: 0.05 },
+      { id: 'tau', label: 'Accrual τ', value: 1, step: 0.25, min: 0 },
+    ],
+    compute: v => {
+      const rho = Math.max(-1, Math.min(1, v.rho));
+      const o = { type: v.type, N: v.N * 1e6, tau: v.tau, K: v.K / 100, f30: v.f30 / 100, a30: v.a30 / 1e4, f5: v.f5 / 100, a5: v.a5 / 1e4, s30: v.s30 / 1e4, s5: v.s5 / 1e4, rho, days: v.days, z: v.z / 100 };
+      const r = price(o);
+      const corr01 = price({ ...o, rho: Math.min(1, rho + 0.01) }).pv - r.pv;
+      const up30 = price({ ...o, f30: o.f30 + 1e-4 }).pv - r.pv, up5 = price({ ...o, f5: o.f5 + 1e-4 }).pv - r.pv;
+      const rhos = [0.5, 0.6, 0.7, 0.8, 0.85, 0.9, 0.95, 0.99];
+      return {
+        out: [
+          ['CMS 30Y / CMS 5Y', C.pct(r.c30, 3) + ' / ' + C.pct(r.c5, 3)],
+          ['Forward spread X', C.fmt(r.X * 1e4, 2) + 'bp'],
+          ['Spread normal vol σX', C.fmt(r.sX * 1e4, 2) + 'bp'],
+          ['d', C.fmt(r.d, 5)],
+          ['PV', 'USD ' + C.fmt(r.pv, 0), true],
+          ['Spread delta (+1bp)', C.fmt(r.delta, 0)],
+          ['30Y +1bp / 5Y +1bp', C.fmt(up30, 0) + ' / ' + C.fmt(up5, 0)],
+          ['Vega (+1bp spread vol)', C.fmt(r.vega, 0)],
+          ['Correlation (+0.01)', C.fmt(corr01, 0)],
+        ],
+        chart: {
+          x: [o.K - 0.01, o.K + 0.01], xLabel: 'spread at fixing', yLabel: 'value (USD, discounted)',
+          xFmt: x => C.fmt(x * 1e4, 0) + 'bp', yFmt: y => C.fmt(y / 1e3, 0) + 'k', tipFmt: y => 'USD ' + C.fmt(y, 0),
+          series: [
+            { name: 'Payoff at fixing', f: x => payoffAt(o, x), color: 1 },
+            { name: 'Value today', f: x => valueAt(o, x), color: 3, dashed: true },
+          ],
+          marks: [{ x: o.K, label: 'K' }, { x: r.X, label: 'fwd' }],
+        },
+        table: {
+          head: ['Correlation ρ', 'Spread vol (bp)', 'PV (USD)'], num: [1, 2],
+          rows: rhos.map(q => { const x = price({ ...o, rho: q }); return [C.fmt(q, 2), C.fmt(x.sX * 1e4, 1), C.fmt(x.pv, 0)]; }),
+        },
+        note: 'One period, spread observed at the fixing date and paid then (payment lag ignored). Convexity adjustments are inputs here; a desk computes them from the swaption smile.',
+      };
+    },
+  });
+})();
+</script>
+</body>
+</html>

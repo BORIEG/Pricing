@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Zero-Coupon Inflation Swaps</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=JetBrains+Mono:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..600&display=swap">
+<link rel="stylesheet" href="assets/course.css">
+</head>
+<body data-page="inflation-swap.html">
+<div class="shell">
+<aside class="toc" id="toc"></aside>
+<main class="page">
+
+<header class="ph">
+  <p class="eyebrow">Part 3 · Swaps</p>
+  <h1>Zero-coupon inflation swaps</h1>
+  <p class="lede">One payment, years from now: realised inflation against a fixed rate agreed today. The fixed rate that makes the swap fair is the market's <b>breakeven inflation</b>, the most-watched inflation number on a rates desk.</p>
+  <div class="ptypes" data-ptypes data-eg="Receive|3.335 %|Pay|GBP|RPI|15/Sep/24|15/Sep/39"></div>
+</header>
+
+<section class="lvl" id="idea">
+  <h2><span class="lv">Level 1</span> The idea</h2>
+  <div class="prose">
+    <p>A pension fund must pay pensions that rise with prices. If inflation runs hot for 15 years, its bills explode. It wants protection.</p>
+    <p>In a zero-coupon inflation swap, the fund and a bank agree a fixed rate today, say 3.335% a year. Nothing happens for 15 years. At the end, the bank pays the fund the actual rise in the price index over those years, and the fund pays the bank what 3.335% a year compounded would have given. If real inflation beat 3.335%, the fund wins, which offsets its higher pension bill.</p>
+  </div>
+  <aside class="analogy"><p>You and a friend bet on how much a cinema ticket will cost in 15 years. You lock in "it grows 3.335% a year". Your friend takes whatever the real price turns out to be. In 15 years whoever is wrong pays the difference, scaled up to a notional of GBP 10m.</p></aside>
+</section>
+
+<section class="lvl" id="cashflows">
+  <h2><span class="lv">Level 2</span> The cashflows</h2>
+  <div class="prose">
+    <p>There is exactly one exchange, at maturity, so it is called zero-coupon. Both amounts are percentages of the notional <var>N</var>. The notional itself is never exchanged.</p>
+  </div>
+  <figure class="fig">
+    <div class="fig-title">Receive fixed 3.335%, pay UK RPI, GBP 10m, 15 Sep 2024 to 15 Sep 2039 (example trade)</div>
+    <div id="legs-zc"></div>
+    <figcaption>The trade started two years ago, so the base index is already known. Both legs pay once, at maturity. <b>Blue solid</b> = fixed leg, known today. <b>Orange dashed</b> = inflation leg, unknown until the final index is published.</figcaption>
+  </figure>
+  <div class="f"><span class="lbl">The two amounts paid at maturity T</span>
+    fixed leg = <var>N</var> × [ (1 + <var>K</var>)<sup><var>T</var></sup> − 1 ] &nbsp;&nbsp;&nbsp; inflation leg = <var>N</var> × [ <span class="frac"><span><var>I</var>(<var>T</var>)</span><span><var>I</var><sub>base</sub></span></span> − 1 ]
+  </div>
+  <dl class="where">
+    <dt><var>K</var></dt><dd>fixed rate (3.335%), compounded annually over the whole number of years <var>T</var> (15)</dd>
+    <dt><var>I</var><sub>base</sub></dt><dd>the index level for the start date, after the lag (see Level 4)</dd>
+    <dt><var>I</var>(<var>T</var>)</dt><dd>the index level for the maturity date, with the same lag</dd>
+  </dl>
+</section>
+
+<section class="lvl" id="pv">
+  <h2><span class="lv">Level 3</span> The PV formula</h2>
+  <div class="prose"><p>The only unknown is the final index <var>I</var>(<var>T</var>). As usual, replace it with its forward, which comes from the market's inflation swap rates for each maturity.</p></div>
+  <div class="f"><span class="lbl">Step 1 · forward index from the market breakeven b for the remaining time</span>
+    <var>I</var><sup>fwd</sup>(<var>T</var>) = <var>I</var><sub>ref</sub> × (1 + <var>b</var>)<sup><var>T</var><sub>rem</sub></sup>
+  </div>
+  <dl class="where">
+    <dt><var>I</var><sub>ref</sub></dt><dd>base index of a swap starting today. It is the latest index used under the lag.</dd>
+    <dt><var>b</var></dt><dd>market zero-coupon inflation swap rate for <var>T</var><sub>rem</sub> years (the breakeven)</dd>
+    <dt><var>T</var><sub>rem</sub></dt><dd>years from today to maturity (12.82)</dd>
+  </dl>
+  <div class="f"><span class="lbl">Step 2 · PV for the fixed receiver (inflation payer), discounted on SONIA</span>
+    PV = <var>N</var> × <var>D</var>(<var>T</var><sub>rem</sub>) × [ (1 + <var>K</var>)<sup><var>T</var></sup> − <span class="frac"><span><var>I</var><sup>fwd</sup>(<var>T</var>)</span><span><var>I</var><sub>base</sub></span></span> ]
+  </div>
+  <div class="prose"><p>The two "− 1" terms cancel. For a brand-new trade, <var>I</var><sub>base</sub> = <var>I</var><sub>ref</sub> and <var>T</var> = <var>T</var><sub>rem</sub>, so:</p></div>
+  <div class="f">PV<sub>new</sub> = <var>N</var> × <var>D</var>(<var>T</var>) × [ (1 + <var>K</var>)<sup><var>T</var></sup> − (1 + <var>b</var>)<sup><var>T</var></sup> ] &nbsp;&nbsp; ⇒ &nbsp;&nbsp; fair <var>K</var> = <var>b</var></div>
+  <aside class="key"><p>The fair fixed rate of a new ZC inflation swap is the breakeven inflation rate. It is called that because a nominal bond and an inflation-linked bond of the same maturity give the same return if realised inflation comes out at exactly this rate.</p></aside>
+</section>
+
+<section class="lvl" id="desk">
+  <h2><span class="lv">Level 4</span> Desk reality</h2>
+  <ul>
+    <li><b>Index lag.</b> Price indices are published weeks after the month they measure, so swaps reference an older month. UK RPI swaps use a 2-month lag: a 15 Sep start uses July's RPI. Systems write this as <code>Mar-2M</code> on LPI trades. US CPI uses a 3-month lag, interpolated daily between two months. Euro HICPx (shown as EUR … CPI</code>) and French CPI (<code>FRCPI</code>) use a 3-month lag, monthly, without interpolation.</li>
+    <li><b>Reading the trade description.</b> <code>Receive|3.335 %|Pay|GBP|RPI|15/Sep/24|15/Sep/39</code> means you receive the fixed 3.335% and pay RPI, start 15 Sep 2024, maturity 15 Sep 2039. Many trades are already started, so their base index is already fixed and only the final index is unknown.</li>
+    <li><b>Seasonality.</b> Prices rise more in some months, for example January sales reversals and April utility bills in the UK. The forward index curve built from annual swap maturities needs a monthly seasonal pattern added. Without it, fixings in other months are mis-priced.</li>
+    <li><b>Curve building.</b> The inflation curve is bootstrapped from ZC swap quotes at 1, 2, 3 … 50 years. Near-term fixings come from economists' forecasts (the desk's "fixings curve").</li>
+    <li><b>Discounting.</b> SONIA for GBP, SOFR for USD, €STR for EUR, all collateralised. Payment is a few business days after the maturity date.</li>
+    <li><b>Convexity.</b> A ZC swap pays the index ratio exactly at its natural date, so no convexity adjustment is needed. Year-on-year swaps, as on the <a href="lpi.html">LPI page</a>, do need one.</li>
+  </ul>
+</section>
+
+<section class="sec" id="greeks">
+  <h2>Greeks that matter</h2>
+  <div class="tbl greeks"><table>
+    <thead><tr><th>Greek</th><th>What it measures</th><th>For a ZC inflation swap</th></tr></thead>
+    <tbody>
+      <tr><td>IE01 (inflation01)</td><td>PV change if the breakeven curve rises 1bp</td><td>≈ −<var>N</var> × <var>D</var> × (<var>I</var><sup>fwd</sup>/<var>I</var><sub>base</sub>) × <var>T</var><sub>rem</sub>/(1 + <var>b</var>) × 0.0001 for the fixed receiver. About −GBP 12,000 per bp on GBP 10m with 12.8 years left. This is the main risk.</td></tr>
+      <tr><td>DV01 (nominal rates)</td><td>PV change if SONIA rises 1bp</td><td>Small. Only the net amount at maturity is discounted: PV × <var>T</var><sub>rem</sub> × 0.0001.</td></tr>
+      <tr><td>Fixing / carry risk</td><td>Sensitivity to the next monthly print</td><td>On short-dated or nearly expired trades, each monthly print moves the PV directly.</td></tr>
+      <tr><td>Gamma, vega</td><td>Convexity, volatility</td><td>None for ZC. They appear in capped or floored versions (<a href="lpi.html">LPI</a>).</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="sec" id="example">
+  <h2>Worked example</h2>
+  <p>We price an example trade on 23 Nov 2026: receive 3.335% fixed, pay RPI, GBP 10m, 15 Sep 2024 to 15 Sep 2039 (<var>T</var> = 15). Index values and market rates are illustrative: base RPI (Jul-24) 387.5, base RPI for a swap starting today 408.0, market 13-year RPI breakeven 3.30%, SONIA zero 3.90% continuously compounded.</p>
+  <ol class="steps">
+    <li><span>Time left.</span>
+      <div class="calc-line">T_rem = days(23 Nov 2026 → 15 Sep 2039) / 365 = 4,679 / 365 = 12.8192 years</div></li>
+    <li><span>Forward final index.</span>
+      <div class="calc-line">I_fwd = 408.0 × 1.033^12.8192 = 408.0 × 1.516193 = 618.607</div></li>
+    <li><span>The two amounts expected at maturity.</span>
+      <div class="calc-line">fixed     = 10,000,000 × (1.03335^15 − 1)     = 10,000,000 × 0.635730 = GBP 6,357,301
+inflation = 10,000,000 × (618.607/387.5 − 1)  = 10,000,000 × 0.596405 = GBP 5,964,047</div></li>
+    <li><span>Net to you (fixed receiver), then discount.</span>
+      <div class="calc-line">net = 6,357,301 − 5,964,047 = GBP 393,255      D = e^(−0.039×12.8192) = 0.606562
+PV = 393,255 × 0.606562 = GBP 238,533</div></li>
+    <li><span>Risks.</span>
+      <div class="calc-line">IE01 ≈ −GBP 12,023 per bp of breakeven     DV01 ≈ −GBP 306 per bp of SONIA</div></li>
+    <li><span>Breakeven for this trade: the average inflation from now that would make the net zero.</span>
+      <div class="calc-line">π* = (1.635730 × 387.5 / 408.0)^(1/12.8192) − 1 = 3.496%</div></li>
+  </ol>
+  <p class="answer">The swap is worth <b>+GBP 238,533</b> to the fixed receiver. The market expects 3.30% inflation a year from here, while this trade only loses money if inflation averages more than 3.50%.</p>
+</section>
+
+<section class="sec" id="try">
+  <h2>Try it</h2>
+  <p>The chart shows the net payment at maturity for each possible average inflation rate from today. It crosses zero at the trade's breakeven.</p>
+  <div id="calc-zc"></div>
+</section>
+
+<section class="sec" id="recap">
+  <h2>Remember</h2>
+  <ul class="recap">
+    <li>One payment at maturity: <var>N</var>[(1+<var>K</var>)<sup><var>T</var></sup> − 1] against <var>N</var>[<var>I</var>(<var>T</var>)/<var>I</var><sub>base</sub> − 1].</li>
+    <li>PV = <var>N</var> × <var>D</var> × [(1+<var>K</var>)<sup><var>T</var></sup> − <var>I</var><sup>fwd</sup>/<var>I</var><sub>base</sub>], with <var>I</var><sup>fwd</sup> = <var>I</var><sub>ref</sub>(1+<var>b</var>)<sup><var>T</var><sub>rem</sub></sup>.</li>
+    <li>The fair rate of a new swap is the breakeven inflation rate.</li>
+    <li>Watch the index lag and seasonality. The main risk is IE01.</li>
+  </ul>
+</section>
+
+</main>
+</div>
+<script src="assets/course.js"></script>
+<script>
+(function () {
+  C.legs('#legs-zc', {
+    tMin: -2.4, tMax: 13.4, ticks: [-2, 0, 2, 4, 6, 8, 10, 12], tickFmt: t => (t > 0 ? '+' : '') + C.fmt(t, 0), height: 120,
+    axisLabel: 'years from today (23 Nov 2026)',
+    events: [{ t: -2.19, label: 'Start: base RPI fixed' }, { t: 0, label: 'Today' }, { t: 12.82, label: '15 Sep 2039' }],
+    legs: [
+      { name: 'Fixed leg: N × ((1.03335)^15 − 1)', dir: 1, style: 'fixed', flows: [{ t: 12.82, a: 6.357, label: '6.36m', tip: 'GBP 10m × (1.03335^15 − 1) = GBP 6,357,301' }] },
+      { name: 'Inflation leg: N × (RPI_end / RPI_base − 1)', dir: -1, style: 'float', flows: [{ t: 12.82, a: 5.964, label: '≈5.96m', tip: 'GBP 10m × (RPI Jul-39 / RPI Jul-24 − 1); forward ≈ GBP 5,964,047' }] },
+    ],
+  });
+
+  C.calc('#calc-zc', {
+    title: 'ZC inflation swap pricer',
+    inputs: [
+      { id: 'side', label: 'Position', value: 1, options: [[1, 'Receive fixed, pay inflation'], [-1, 'Pay fixed, receive inflation']] },
+      { id: 'N', label: 'Notional', unit: 'm', value: 10, step: 1 },
+      { id: 'K', label: 'Fixed rate K', unit: '%', value: 3.335, step: 0.005 },
+      { id: 'T', label: 'Full tenor T', unit: 'years', value: 15, step: 1, min: 1 },
+      { id: 'Ib', label: 'Base index', value: 387.5, step: 0.1 },
+      { id: 'Ir', label: 'Base index of a swap starting today', value: 408.0, step: 0.1 },
+      { id: 'Tr', label: 'Years remaining', value: 12.81918, step: 0.25, min: 0.01 },
+      { id: 'b', label: 'Market breakeven b', unit: '%', value: 3.30, step: 0.01 },
+      { id: 'z', label: 'Discount zero (OIS)', unit: '%', value: 3.90, step: 0.01 },
+    ],
+    compute: v => {
+      const N = v.N * 1e6, K = v.K / 100, z = v.z / 100;
+      const fixAmt = Math.pow(1 + K, v.T) - 1;
+      const pvAt = (b, zz) => { const If = v.Ir * Math.pow(1 + b, v.Tr), D = Math.exp(-zz * v.Tr); return { If, D, pv: v.side * N * D * (fixAmt - (If / v.Ib - 1)) }; };
+      const base = pvAt(v.b / 100, z);
+      const ie = pvAt(v.b / 100 + 1e-4, z).pv - base.pv, dv = pvAt(v.b / 100, z + 1e-4).pv - base.pv;
+      const pistar = Math.pow((1 + fixAmt) * v.Ib / v.Ir, 1 / v.Tr) - 1;
+      const net = pi => v.side * N * (fixAmt - (v.Ir * Math.pow(1 + pi, v.Tr) / v.Ib - 1));
+      return {
+        out: [
+          ['Forward final index', C.fmt(base.If, 3)],
+          ['Fixed leg amount', C.fmt(N * fixAmt, 0)],
+          ['Inflation leg amount (fwd)', C.fmt(N * (base.If / v.Ib - 1), 0)],
+          ['Discount factor', C.fmt(base.D, 6)],
+          ['PV', C.fmt(base.pv, 0), true],
+          ['IE01 (breakeven +1bp)', C.fmt(ie, 0)],
+          ['DV01 (OIS +1bp)', C.fmt(dv, 0)],
+          ['Trade breakeven from today', C.pct(pistar, 3)],
+        ],
+        chart: {
+          x: [0, 0.07], xLabel: 'average inflation from today', yLabel: 'net payment at maturity',
+          xFmt: x => C.pct(x, 0), yFmt: y => C.fmt(y / 1e6, 1) + 'm', tipFmt: y => C.fmt(y, 0),
+          series: [{ name: 'Net at maturity', f: net, color: 1 }],
+          marks: [{ x: v.b / 100, label: 'market b' }, { x: pistar, label: 'trade breakeven' }],
+        },
+        note: 'Forward index uses a single flat breakeven for the remaining tenor; a real curve would add term structure and monthly seasonality.',
+      };
+    },
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Index Tranches</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=JetBrains+Mono:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..600&display=swap">
+<link rel="stylesheet" href="assets/course.css">
+</head>
+<body data-page="tranche.html">
+<div class="shell">
+<aside class="toc" id="toc"></aside>
+<main class="page">
+
+<header class="ph">
+  <p class="eyebrow">Part 4 · Credit</p>
+  <h1>Index tranches</h1>
+  <p class="lede">Take the losses of a CDS index and cut them into layers. The bottom layer is hit first, the top layer almost never. Each layer is a separate trade, and its price depends on one new idea: how much the companies tend to default <em>together</em>.</p>
+  <div class="ptypes" data-ptypes data-eg="Sell iTraxx Europe Series 46 EUR 100 Dec 2031 Tr:6-12"></div>
+</header>
+
+<section class="lvl" id="idea">
+  <h2><span class="lv">Level 1</span> The idea</h2>
+  <div class="prose">
+    <p>Picture the 125 companies of iTraxx Europe Main as a stack of 100 floors of losses. Every default adds a little water to the building, starting at the ground floor. A <b>tranche</b> is the insurance on a range of floors.</p>
+    <ul>
+      <li>The <b>equity</b> tranche (0–3%) takes the first 3% of pool losses. It floods with just a few defaults.</li>
+      <li>The <b>mezzanine</b> tranches (3–6%, 6–12%) start losing only once the floors below are full.</li>
+      <li>The <b>senior</b> tranche (12–100%) needs a catastrophe: well over 20% of the companies defaulting at 40% recovery.</li>
+    </ul>
+    <p>The example trade <code>Tr:6-12</code> sells protection on the 6–12% layer. It loses money only when pool losses pass 6%, and it is wiped out at 12%.</p>
+  </div>
+  <aside class="analogy"><p>It is like a group of friends splitting the cost of a broken window. The first friend pays the first EUR 30, the second pays from EUR 30 to EUR 60, and so on. The first friend pays for almost every accident. The last friend only pays if the whole house falls down.</p></aside>
+  <figure class="fig">
+    <div class="fig-title">How much of each tranche is lost, for each level of pool loss</div>
+    <div id="chart-tl"></div>
+    <figcaption>The 6–12% tranche loses nothing until pool losses reach 6%, then loses 1/6 of its notional for each extra 1% of pool loss. At 12% it is wiped out.</figcaption>
+  </figure>
+</section>
+
+<section class="lvl" id="cashflows">
+  <h2><span class="lv">Level 2</span> The cashflows</h2>
+  <div class="f"><span class="lbl">Fraction of the tranche lost, for attachment A and detachment D</span>
+    TL(<var>L</var>) = <span class="frac"><span>min( max(<var>L</var> − <var>A</var>, 0), <var>D</var> − <var>A</var> )</span><span><var>D</var> − <var>A</var></span></span>
+  </div>
+  <dl class="where">
+    <dt><var>L</var></dt><dd>pool loss so far, as a fraction of the index notional: (number of defaults ÷ 125) × (1 − <var>R</var>)</dd>
+    <dt><var>A</var>, <var>D</var></dt><dd>attachment (6%) and detachment (12%) points</dd>
+  </dl>
+  <div class="prose">
+    <ul>
+      <li><span class="rec-c">Premium leg</span>. The seller receives the running coupon (100bp here) × the tranche's <b>remaining</b> notional × <var>τ</var> each quarter, plus an upfront payment at the start.</li>
+      <li><span class="pay-c">Protection leg</span>. Whenever a default pushes TL up, the seller pays the increase × tranche notional.</li>
+    </ul>
+  </div>
+  <figure class="fig">
+    <div class="fig-title">Protection seller, EUR 10m 6–12% tranche: one possible bad path</div>
+    <div id="legs-tr"></div>
+    <figcaption>Solid arrows = <b>upfront and coupons</b>. Coupons are paid on the remaining tranche notional, so after the losses they fall by 25% and then 55%; hover to see the amounts, which are too small to show at this scale. Dotted arrows = <b>contingent</b> loss payments, made only in a world where pool losses pass 6%. In most scenarios no contingent payment happens at all.</figcaption>
+  </figure>
+</section>
+
+<section class="lvl" id="pv">
+  <h2><span class="lv">Level 3</span> The PV formula</h2>
+  <h3>Step 1 · Expected tranche loss drives everything</h3>
+  <div class="prose"><p>If we know the <b>expected tranche loss</b> ETL(<var>t</var>) = average of TL over all scenarios at each date, the legs look just like a CDS. ETL plays the role of the default probability.</p></div>
+  <div class="f left"><span class="lbl">Tranche legs (per unit of tranche notional)</span>
+    RPV01 = <span class="sum"><span class="s">Σ</span><small>i</small></span> <var>τ</var><sub><var>i</var></sub> <var>D</var>(<var>t</var><sub><var>i</var></sub>) [ 1 − <span class="frac"><span>ETL(<var>t</var><sub><var>i</var>−1</sub>) + ETL(<var>t</var><sub><var>i</var></sub>)</span><span>2</span></span> ]<br>
+    Prot = <span class="sum"><span class="s">Σ</span><small>i</small></span> <var>D</var>(<var>t</var><sub><var>i</var></sub>) [ ETL(<var>t</var><sub><var>i</var></sub>) − ETL(<var>t</var><sub><var>i</var>−1</sub>) ]<br>
+    PV<sub>seller</sub> = <var>N</var> × ( <var>c</var> × RPV01 − Prot )      par spread = Prot ÷ RPV01
+  </div>
+
+  <h3>Step 2 · Why correlation matters</h3>
+  <div class="prose">
+    <p>The index tells us the <em>average</em> pool loss, but not how spread out it is. If companies default independently, losses cluster tightly around the average: about 3% over 5 years here. The equity tranche then takes a big hit, and the senior tranche is safe. If companies default together (high <b>correlation</b>), most years see almost no loss but a few see huge losses. The senior tranche becomes risky, and equity actually becomes safer.</p>
+  </div>
+
+  <h3>Step 3 · One-factor model (large homogeneous pool)</h3>
+  <div class="prose">
+    <p>The market's standard model uses a single number <var>M</var> for "the state of the economy", drawn from a standard normal distribution. Given <var>M</var>, each company defaults independently with a probability that rises when <var>M</var> is low. With many identical names, the pool loss is then known exactly for each <var>M</var>:</p>
+  </div>
+  <div class="f"><span class="lbl">Pool loss given the economy M (Vasicek)</span>
+    <var>L</var>(<var>M</var>) = (1 − <var>R</var>) × <var>N</var>( <span class="frac"><span><var>N</var><sup>−1</sup>(<var>p</var>) − √<var>ρ</var> <var>M</var></span><span>√(1 − <var>ρ</var>)</span></span> ),   <var>p</var> = 1 − e<sup>−<var>λ</var><var>t</var></sup>,   <var>λ</var> = <span class="frac"><span><var>S</var><sub>index</sub></span><span>1 − <var>R</var></span></span>
+  </div>
+  <div class="f"><span class="lbl">Expected tranche loss: average over the economy</span>
+    ETL(<var>t</var>) = <span class="frac"><span>E[min(<var>L</var>, <var>D</var>)] − E[min(<var>L</var>, <var>A</var>)]</span><span><var>D</var> − <var>A</var></span></span>,   E[min(<var>L</var>, <var>K</var>)] = average of min(<var>L</var>(<var>M</var>), <var>K</var>) over <var>M</var> ~ normal
+  </div>
+  <dl class="where">
+    <dt><var>N</var>( ), <var>N</var><sup>−1</sup>( )</dt><dd>the normal distribution table and its inverse (see <a href="toolkit.html">the toolkit</a>)</dd>
+    <dt><var>ρ</var></dt><dd>default correlation between any two names, from 0 (independent) to 1 (all together)</dd>
+    <dt><var>p</var></dt><dd>each name's probability of having defaulted by <var>t</var></dd>
+  </dl>
+  <aside class="key"><p>E[min(<var>L</var>, <var>K</var>)] is the expected loss of a <b>base tranche</b> 0–<var>K</var>. Every tranche is the difference of two base tranches. The average over <var>M</var> is a simple numerical sum: the calculator uses 200 slices of the normal curve.</p></aside>
+</section>
+
+<section class="lvl" id="desk">
+  <h2><span class="lv">Level 4</span> Desk reality</h2>
+  <ul>
+    <li><b>Base correlation.</b> No single <var>ρ</var> reprices all tranches. The market therefore quotes a separate correlation for each base tranche 0–3%, 0–6%, 0–12% and so on. That set is the <b>base correlation curve</b>, and it usually rises with the detachment point. A 6–12% tranche is priced as [0–12% at <var>ρ</var><sub>12</sub>] minus [0–6% at <var>ρ</var><sub>6</sub>]. Our calculator uses one flat correlation, called <em>compound</em> correlation, which is fine for learning.</li>
+    <li><b>Heterogeneous pool.</b> Real models use each name's own spread curve and recovery, plus a recursion (or Fourier method) for the loss distribution of 125 different names. The large-pool formula is the closed-form approximation.</li>
+    <li><b>Quotes.</b> Tranches trade with a fixed running coupon (often 100bp, or 500bp and 0bp for equity) plus an upfront in points. Super-senior and senior tranches can trade with upfront near zero.</li>
+    <li><b>Defaults and recovery</b> eat the bottom of the structure. Recoveries also amortise the <em>top</em> tranche, because a recovered amount can never be lost again.</li>
+    <li><b>In the trade description</b>, <code>Tr:6-12</code> gives the attachment and detachment, and the series and coupon follow the index naming. The trade notional is the tranche notional (EUR 10m of a 6% wide tranche covers 10m ÷ 6% = EUR 167m of index).</li>
+  </ul>
+</section>
+
+<section class="sec" id="greeks">
+  <h2>Greeks that matter</h2>
+  <div class="tbl greeks"><table>
+    <thead><tr><th>Greek</th><th>What it measures</th><th>For a tranche</th></tr></thead>
+    <tbody>
+      <tr><td>CS01 (index)</td><td>PV change if the index spread widens 1bp</td><td>About −EUR 19k on EUR 10m 6–12%. Divided by the index CS01 it gives the tranche's <b>leverage</b> or <b>hedge ratio</b>, the amount of index needed to hedge.</td></tr>
+      <tr><td>Correlation01</td><td>PV change if correlation rises 1 point</td><td>Equity sellers gain when correlation rises. Senior sellers lose. Mezzanine sits in between (here −EUR 15.9k per point).</td></tr>
+      <tr><td>JTD</td><td>PV change if one name defaults now</td><td>Large for equity (it absorbs the loss directly), tiny for senior.</td></tr>
+      <tr><td>Recovery sensitivity</td><td>PV change if assumed recovery moves</td><td>Matters more than for single-name CDS, because recovery moves losses between tranches.</td></tr>
+      <tr><td>Theta</td><td>Value of one day passing</td><td>Equity sellers earn large carry. Time also changes the shape of the loss distribution.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="sec" id="example">
+  <h2>Worked example</h2>
+  <p>Today is 23 Nov 2026. We sell EUR 10m of protection on the <b>6–12% tranche of iTraxx Europe Main S46</b>, with a 100bp running coupon and maturity 20 Dec 2031. Market inputs: index spread 60bp, <var>R</var> = 40%, flat correlation <var>ρ</var> = 30%, EUR OIS 2.00%.</p>
+  <ol class="steps">
+    <li><span>Hazard rate and default probability at maturity (<var>t</var> = 5.0767 years).</span>
+      <div class="calc-line">λ = 0.0060 / 0.6 = 1.00%      p = 1 − e^(−0.01 × 5.0767) = 4.950%
+expected pool loss = 0.6 × 4.950% = 2.97%</div></li>
+    <li><span>Pool loss in three economies, using <var>N</var><sup>−1</sup>(0.0495) = −1.6497.</span>
+      <div class="calc-line">M = −2 (recession): L = 0.6 × N((−1.6497 + 0.5477×2)/0.8367) = 15.23%
+M =  0 (normal):    L = 0.6 × N(−1.6497/0.8367)          =  1.46%
+M = +2 (boom):      L =  0.03%</div>
+      <span>Only bad economies push losses past 6%.</span></li>
+    <li><span>Average over all economies to get the base-tranche expected losses at maturity, then the tranche.</span>
+      <div class="calc-line">E[min(L, 6%)] = 2.2576%     E[min(L, 12%)] = 2.7497%
+ETL = (2.7497% − 2.2576%) / 6% = 8.203% of the tranche</div></li>
+    <li><span>Repeat Step 3 for all 21 quarterly dates and sum the legs.</span>
+      <div class="calc-line">RPV01 = 4.735328     Prot = 0.076825     par spread = 162.2bp</div></li>
+    <li><span>Upfront and PV for the seller.</span>
+      <div class="calc-line">upfront (buyer pays) = 0.076825 − 0.01 × 4.735328 = 2.947 points
+PV seller = 10,000,000 × (0.01 × 4.735328 − 0.076825) = −EUR 294,717</div></li>
+    <li><span>Risks, by repricing.</span>
+      <div class="calc-line">Corr01 (ρ 30% → 31%) = −EUR 15,904     CS01 (index 60 → 61bp) = −EUR 19,271</div></li>
+  </ol>
+  <p class="answer">The 6–12% tranche is worth <b>162bp running</b>. Selling it with a 100bp coupon means receiving <b>2.95 points upfront</b>. The position's PV is <b>−EUR 294,717</b>, offset by that upfront.</p>
+</section>
+
+<section class="sec" id="try">
+  <h2>Try it</h2>
+  <p>Change the attachment, detachment and correlation. Try 0–3% and then 12–100%: the chart shows that rising correlation helps the equity seller and hurts the senior seller.</p>
+  <div id="calc-tr"></div>
+</section>
+
+<section class="sec" id="recap">
+  <h2>Remember</h2>
+  <ul class="recap">
+    <li>A tranche takes pool losses between <var>A</var> and <var>D</var>: TL = min(max(<var>L</var> − <var>A</var>, 0), <var>D</var> − <var>A</var>) ÷ (<var>D</var> − <var>A</var>).</li>
+    <li>Price it like a CDS with expected tranche loss in place of default probability.</li>
+    <li>Expected tranche loss needs the whole loss distribution, which needs a correlation. The one-factor Gaussian model is the market standard, quoted as base correlation.</li>
+    <li>Equity is long correlation, senior is short correlation. Back to <a href="cds-index.html">CDS indices</a>, or on to <a href="mbs.html">mortgages</a>.</li>
+  </ul>
+</section>
+
+</main>
+</div>
+<script src="assets/course.js"></script>
+<script>
+const TODAY = '2026-11-23';
+function sched(mat) {
+  const out = [], end = C.toDate(mat);
+  for (let k = 0; ; k++) { const d = C.addMonths('2026-12-20', 3 * k); if (d > end) break; out.push(d); }
+  return out;
+}
+// E[min(L, K)] under the large homogeneous pool model, Simpson's rule with 200 slices on M in [-8, 8].
+function elBase(K, p, rho, R) {
+  if (K <= 0 || p <= 0) return 0;
+  const a = C.Ninv(p), sr = Math.sqrt(rho), s1 = Math.sqrt(1 - rho), n = 200, h = 16 / n;
+  let tot = 0;
+  for (let i = 0; i <= n; i++) {
+    const M = -8 + i * h, L = (1 - R) * C.N((a - sr * M) / s1);
+    const w = (i === 0 || i === n) ? 1 : (i % 2 ? 4 : 2);
+    tot += w * Math.min(L, K) * C.n(M);
+  }
+  return tot * h / 3;
+}
+function tranche(A, D, rho, s, R, r, mat) {
+  const lam = s / (1 - R); let prev = TODAY, Ep = 0, rp = 0, pr = 0; const rows = [];
+  for (const d of sched(mat)) {
+    const t = C.days(TODAY, d) / 365, tau = C.days(prev, d) / 360, df = Math.exp(-r * t), p = 1 - Math.exp(-lam * t);
+    const E = (elBase(D, p, rho, R) - elBase(A, p, rho, R)) / (D - A);
+    rp += tau * df * (1 - (Ep + E) / 2); pr += df * (E - Ep); rows.push({ d, p, E }); prev = d; Ep = E;
+  }
+  return { rp, pr, rows };
+}
+
+C.chart('#chart-tl', {
+  x: [0, 0.25], xLabel: 'pool loss', yLabel: 'fraction of tranche lost', y: [0, 1], xFmt: x => C.pct(x, 0), yFmt: y => C.pct(y, 0), tipFmt: y => C.pct(y, 1),
+  series: [
+    { name: 'Equity 0–3%', f: L => Math.min(Math.max(L, 0), 0.03) / 0.03, color: 1 },
+    { name: 'Mezzanine 6–12%', f: L => Math.min(Math.max(L - 0.06, 0), 0.06) / 0.06, color: 2 },
+    { name: 'Senior 12–100%', f: L => Math.min(Math.max(L - 0.12, 0), 0.88) / 0.88, color: 3 },
+  ],
+  marks: [{ x: 0.0297, label: 'expected 5Y loss' }], height: 230, n: 500,
+});
+
+// Illustrative bad path: losses reach the tranche from year 2.5
+(function () {
+  const d = sched('2031-12-20'); let prev = TODAY; const cps = [];
+  const tl = t => t < 2.5 ? 0 : t < 3.3 ? 0.25 : t < 4.2 ? 0.55 : 0.55;
+  d.forEach(x => { const t = C.days(TODAY, x) / 365, a = 0.01 * 10e6 * (1 - tl(t - 0.01)) * C.days(prev, x) / 360; prev = x; cps.push({ t, a, label: '', tip: `Coupon ${C.iso(x)}: EUR ${C.fmt(a, 0)}` }); });
+  C.legs('#legs-tr', {
+    tMin: 0, tMax: 5.2, ticks: [0, 1, 2, 3, 4, 5],
+    events: [{ t: 0, label: 'Upfront + start' }, { t: 2.5, label: 'Pool loss passes 6%' }, { t: 5.074, label: 'Maturity' }],
+    legs: [
+      { name: 'Upfront: you receive 2.95 pts × 10m', dir: 1, style: 'notional', flows: [{ t: 0.02, a: 294717, label: '295k' }] },
+      { name: 'Coupons: you receive 100bp × τ × remaining tranche notional', dir: 1, style: 'fixed', flows: cps },
+      { name: 'Loss payments: you pay increases in tranche loss × 10m', dir: -1, style: 'contingent', flows: [
+        { t: 2.5, a: 2.5e6, label: '2.5m', tip: 'Contingent: tranche loss rises to 25% in this path → EUR 2.5m' },
+        { t: 3.3, a: 3.0e6, label: '3.0m', tip: 'Contingent: tranche loss rises from 25% to 55% → EUR 3.0m' }] },
+    ],
+    height: 120,
+  });
+})();
+
+C.calc('#calc-tr', {
+  title: 'Tranche pricer (one-factor Gaussian, large pool)',
+  inputs: [
+    { id: 'side', label: 'Position', value: 1, options: [[1, 'Sell protection'], [-1, 'Buy protection']] },
+    { id: 'N', label: 'Tranche notional', unit: 'EUR m', value: 10, step: 1 },
+    { id: 'A', label: 'Attachment', unit: '%', value: 6, step: 1, min: 0 },
+    { id: 'D', label: 'Detachment', unit: '%', value: 12, step: 1, max: 100 },
+    { id: 'rho', label: 'Correlation ρ', unit: '%', value: 30, step: 1, min: 1, max: 99 },
+    { id: 's', label: 'Index spread', unit: 'bp', value: 60, step: 1, min: 1 },
+    { id: 'R', label: 'Recovery', unit: '%', value: 40, step: 5, min: 0, max: 95 },
+    { id: 'c', label: 'Running coupon', unit: 'bp', value: 100, options: [[0, '0bp'], [100, '100bp'], [500, '500bp']] },
+    { id: 'mat', label: 'Maturity', value: '2031-12-20', options: [['2029-12-20', '20 Dec 2029'], ['2031-12-20', '20 Dec 2031'], ['2033-12-20', '20 Dec 2033']] },
+    { id: 'r', label: 'OIS rate', unit: '%', value: 2.00, step: 0.05 },
+  ],
+  compute: v => {
+    const A = v.A / 100, D = v.D / 100, rho = v.rho / 100, s = v.s / 1e4, R = v.R / 100, r = v.r / 100, c = v.c / 1e4, N = v.N * 1e6;
+    if (!(D > A)) throw new Error('detachment must be above attachment');
+    if (A >= 1 - R) throw new Error('attachment is above the maximum possible pool loss of 1 − R');
+    const pv = x => v.side * N * (c * x.rp - x.pr);
+    const b = tranche(A, D, rho, s, R, r, v.mat), bc = tranche(A, D, Math.min(0.99, rho + 0.01), s, R, r, v.mat), bs = tranche(A, D, rho, s + 1e-4, R, r, v.mat);
+    const last = b.rows[b.rows.length - 1];
+    return {
+      out: [
+        ['Pool expected loss at maturity', C.pct(last.p * (1 - R), 2)],
+        ['Expected tranche loss at maturity', C.pct(last.E, 3)],
+        ['RPV01', C.fmt(b.rp, 5)],
+        ['Protection leg', C.fmt(b.pr, 6)],
+        ['Par spread', C.fmt(b.pr / b.rp * 1e4, 1) + 'bp'],
+        ['Upfront paid by buyer', C.fmt(100 * (b.pr - c * b.rp), 3) + ' pts'],
+        ['PV of position', 'EUR ' + C.fmt(pv(b), 0), true],
+        ['Corr01 (+1 point)', 'EUR ' + C.fmt(pv(bc) - pv(b), 0)],
+        ['CS01 (index +1bp)', 'EUR ' + C.fmt(pv(bs) - pv(b), 0)],
+      ],
+      chart: {
+        x: [0.05, 0.9], n: 34, xLabel: 'correlation ρ', yLabel: 'PV of position (EUR)', xFmt: x => C.pct(x, 0), yFmt: y => C.fmt(y / 1e3, 0) + 'k', tipFmt: y => 'EUR ' + C.fmt(y, 0), zero: false,
+        series: [{ name: 'PV', f: rr => pv(tranche(A, D, rr, s, R, r, v.mat)), color: 2 }],
+        marks: [{ x: rho, label: 'ρ' }],
+      },
+      table: {
+        head: ['Date', 'Default prob. p', 'Expected tranche loss'], num: [1, 2],
+        rows: b.rows.filter(q => C.iso(q.d).slice(5) === '12-20').map(q => [C.iso(q.d), C.pct(q.p, 3), C.pct(q.E, 3)]),
+      },
+      note: 'Large homogeneous pool, flat hazard λ = index spread ÷ (1 − R), one flat (compound) correlation. Real desks use name-by-name curves and a base-correlation surface.',
+    };
+  },
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MBS, TBAs &amp; CMOs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=JetBrains+Mono:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..600&display=swap">
+<link rel="stylesheet" href="assets/course.css">
+</head>
+<body data-page="mbs.html">
+<div class="shell">
+<aside class="toc" id="toc"></aside>
+<main class="page">
+
+<header class="ph">
+  <p class="eyebrow">Part 5 · Mortgages</p>
+  <h1>MBS, TBAs &amp; CMOs</h1>
+  <p class="lede">Bonds made of thousands of home loans. Each month the homeowners' payments flow through to the investor. Because homeowners can repay early whenever they like, you never know exactly when your money comes back. Pricing an MBS is mostly about guessing that.</p>
+  <div class="ptypes" data-ptypes data-eg="STIP G2SF 7.5 8/26 G2 DU6841   ·   STRU MS-3149 SG"></div>
+</header>
+
+<section class="lvl" id="idea">
+  <h2><span class="lv">Level 1</span> The idea</h2>
+  <div class="prose">
+    <p>When an American family buys a house, they usually take a 30-year fixed-rate mortgage. Every month they pay the same amount, part interest and part repayment of the loan. Agencies backed by the US government (Ginnie Mae, Fannie Mae, Freddie Mac) buy thousands of these loans, put them in a <b>pool</b>, and sell shares of the pool to investors. That share is a <b>mortgage-backed security</b>, or <b>pass-through</b>, because the payments pass straight through to you. The agency guarantees you against defaults, so the only risk left is <b>timing</b>.</p>
+    <p>Timing is uncertain because families can repay their whole loan at any time with no penalty. They do this when they move house, or when rates fall and they <b>refinance</b> into a cheaper loan. This is called <b>prepayment</b>.</p>
+  </div>
+  <aside class="analogy"><p>Imagine lending your bike to 1,000 classmates who each pay you a little every week. Anyone can hand the bike back early and stop paying. If bikes suddenly get cheaper elsewhere, lots of them return yours at once, just when you would have liked to keep collecting. That is the mortgage investor's problem.</p></aside>
+  <div class="prose">
+    <p>The desk trades three flavours, all priced from the same monthly cash-flow engine:</p>
+    <ul>
+      <li><b>Pass-through pools</b> (type Mbs</code>, <code>Tba</code> once allocated). A specific pool, identified by a pool number.</li>
+      <li><b>TBA</b> ("to be announced", type Tba</code>). A forward contract to buy or sell <em>some</em> pool with a given agency, coupon and maturity, for settlement in a future month. The exact pools are only announced two days before settlement.</li>
+      <li><b>CMOs</b> (type Mbs</code>, structured). The pool's cash flows are cut into tranches that get paid in a set order.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="lvl" id="cashflows">
+  <h2><span class="lv">Level 2</span> The cashflows</h2>
+  <div class="prose">
+    <p>Each month <var>k</var> the investor receives three things:</p>
+    <ul>
+      <li><b>Interest</b> at the pool's <b>net coupon</b> <var>c</var> on the remaining balance. The homeowners pay a higher rate, the <b>WAC</b> (weighted-average coupon). The difference pays the servicer and the agency guarantee.</li>
+      <li><b>Scheduled principal</b>, the repayment part of the fixed monthly mortgage payment.</li>
+      <li><b>Prepayments</b>, the loans repaid early that month.</li>
+    </ul>
+  </div>
+  <figure class="fig">
+    <div class="fig-title">Investor in USD 1m of a 5.5% pool (WAC 6%, 30 years left, 10% CPR), first 24 months</div>
+    <div id="legs-mbs"></div>
+    <figcaption>Solid arrows = <b>interest + scheduled principal</b>, which are known once the balance is known. Dashed green arrows = <b>prepayments</b>, which depend on homeowners' choices and are only <em>projected</em> here. The total shrinks every month because the balance keeps falling.</figcaption>
+  </figure>
+  <div class="prose"><p>Prepayment speed is quoted as a <b>CPR</b> (conditional prepayment rate): the fraction of the remaining balance repaid early over a year. Cash flows are monthly, so we convert it to a monthly rate, the <b>SMM</b> (single monthly mortality):</p></div>
+  <div class="f"><span class="lbl">Annual to monthly prepayment rate</span>SMM = 1 − (1 − CPR)<sup>1/12</sup></div>
+  <div class="prose"><p>The <b>PSA</b> convention is an older way to quote speed: 100% PSA ramps CPR from 0.2% in month 1 up to 6% at month 30, then stays at 6%. "200 PSA" means double that curve.</p></div>
+</section>
+
+<section class="lvl" id="pv">
+  <h2><span class="lv">Level 3</span> The PV formula</h2>
+  <h3>Step 1 · One month of cash flow</h3>
+  <div class="prose"><p>Start the month with balance <var>B</var><sub><var>k</var>−1</sub> and <var>n</var> months left. Let <var>g</var> = WAC ÷ 12.</p></div>
+  <div class="f left"><span class="lbl">Monthly cash flow to the investor</span>
+    mortgage payment  <var>M</var><sub><var>k</var></sub> = <var>B</var><sub><var>k</var>−1</sub> × <span class="frac"><span><var>g</var></span><span>1 − (1 + <var>g</var>)<sup>−<var>n</var></sup></span></span><br>
+    scheduled principal  SP<sub><var>k</var></sub> = <var>M</var><sub><var>k</var></sub> − <var>B</var><sub><var>k</var>−1</sub> × <var>g</var><br>
+    interest to investor  I<sub><var>k</var></sub> = <var>B</var><sub><var>k</var>−1</sub> × <var>c</var> ÷ 12<br>
+    prepayment  PP<sub><var>k</var></sub> = SMM × (<var>B</var><sub><var>k</var>−1</sub> − SP<sub><var>k</var></sub>)<br>
+    cash flow  CF<sub><var>k</var></sub> = I<sub><var>k</var></sub> + SP<sub><var>k</var></sub> + PP<sub><var>k</var></sub>      new balance <var>B</var><sub><var>k</var></sub> = <var>B</var><sub><var>k</var>−1</sub> − SP<sub><var>k</var></sub> − PP<sub><var>k</var></sub>
+  </div>
+  <h3>Step 2 · Discount every month</h3>
+  <div class="f"><span class="lbl">Price at a yield y (monthly compounding)</span>
+    PV = <span class="sum"><span class="s">Σ</span><small>k = 1 … 360</small></span> <span class="frac"><span>CF<sub><var>k</var></sub></span><span>(1 + <var>y</var>/12)<sup><var>k</var></sup></span></span>      price = 100 × PV ÷ current face
+  </div>
+  <h3>Step 3 · Effective duration and negative convexity</h3>
+  <div class="prose"><p>When rates fall, homeowners refinance and CPR jumps. Your cash comes back early, just when you would rather keep earning the old coupon. So the price rises <em>less</em> than an ordinary bond's. That is <b>negative convexity</b>. To measure it, move the yield up and down by Δ <em>and change the CPR with it</em>, then reprice:</p></div>
+  <div class="f left"><span class="lbl">Effective duration and convexity</span>
+    Dur<sub>eff</sub> = <span class="frac"><span>PV(<var>y</var> − Δ) − PV(<var>y</var> + Δ)</span><span>2 × PV × Δ</span></span>      Conv<sub>eff</sub> = <span class="frac"><span>PV(<var>y</var> − Δ) + PV(<var>y</var> + Δ) − 2 PV</span><span>PV × Δ<sup>2</sup></span></span>
+  </div>
+  <div class="prose"><p>The <b>weighted-average life</b> (WAL) is the average time until each dollar of principal comes back: WAL = Σ (<var>k</var>/12) × principal<sub><var>k</var></sub> ÷ Σ principal<sub><var>k</var></sub>.</p></div>
+
+  <h3>TBA: a forward on a pool</h3>
+  <div class="prose"><p>A TBA trade fixes a price <var>P</var><sub>trade</sub> today for delivery on the settlement date of a future month, which follows the SIFMA calendar (mid-month for 30-year UMBS). It is a forward contract, so:</p></div>
+  <div class="f"><span class="lbl">TBA PV for the buyer</span>
+    PV = Face × <span class="frac"><span><var>P</var><sub>TBA, market</sub> − <var>P</var><sub>trade</sub></span><span>100</span></span> × <var>D</var>(settle)
+  </div>
+  <div class="prose">
+    <p>The seller chooses which pools to deliver, so they deliver the least valuable ones, the <b>cheapest to deliver</b>. The TBA price is therefore the price of the worst pools that qualify. Pools with slow, predictable prepayments (small loan sizes, certain states, low-income borrowers) trade at a premium to TBA, called the <b>pay-up</b>. Those are <b>specified pools</b>.</p>
+    <p>The price difference between this month's and next month's settlement is the <b>drop</b>. Selling the front month and buying the next one is a <b>dollar roll</b>, the main way to finance MBS. A fair drop is roughly one month of carry:</p>
+  </div>
+  <div class="f"><span class="lbl">Fair drop (points per month, approximate)</span>
+    drop ≈ <span class="frac"><span><var>c</var> × 100</span><span>12</span></span> − <span class="frac"><span><var>P</var> × <var>r</var><sub>repo</sub></span><span>12</span></span> + SMM × (100 − <var>P</var>)
+  </div>
+
+  <h3>CMOs: slicing the pool</h3>
+  <div class="prose">
+    <p>A CMO (collateralised mortgage obligation) runs the same pool cash flows through a <b>waterfall</b>. In a <b>sequential</b> deal, tranche A gets all principal until it is repaid, then B, then C, so A is short and C is long. An <b>IO</b> (interest only) gets just the interest, and its value <em>falls</em> when prepayments speed up. A <b>PO</b> (principal only) gets just principal, and its value rises with faster prepayments. To price any CMO class, project the pool cash flows (Step 1), apply the deal's payment rules each month to find that class's cash flows, then discount (Step 2).</p>
+  </div>
+</section>
+
+<section class="lvl" id="desk">
+  <h2><span class="lv">Level 4</span> Desk reality</h2>
+  <ul>
+    <li><b>Prepayment models, not one CPR.</b> Desks project CPR month by month from a model driven by the refinancing incentive (WAC minus current mortgage rate), loan age, seasonality, burnout and housing turnover. The yield curve is simulated with hundreds of rate paths.</li>
+    <li><b>OAS.</b> The standard price measure is the <b>option-adjusted spread</b>: the constant spread over the simulated Treasury/SOFR paths that makes the average discounted cash flow equal the market price. It is the "yield" that already accounts for prepayment.</li>
+    <li><b>Payment delay.</b> Investors are paid later than homeowners pay: about 45 days for Ginnie I, 50 for Ginnie II, and 55 days for UMBS (Fannie/Freddie). This shifts every cash flow and lowers the price slightly.</li>
+    <li><b>Factor.</b> Pools are quoted on <em>original</em> face. Current face = original face × pool factor, which is published monthly. Accrued interest is 30/360 from the 1st of the month.</li>
+    <li><b>Prices in 32nds.</b> 100-16 means 100 + 16/32 = 100.50. A "+" adds 1/64.</li>
+    <li><b>Reading trade descriptions.</b> <code>STIP G2SF 7.5 8/26 G2 DU6841</code> reads as a Ginnie Mae II single-family (<code>G2SF</code>) 7.5% pool, pool number <code>DU6841</code>, dated 8/26. <code>STIP</code> most likely marks a stipulated (specified-pool) trade rather than a generic TBA. <code>STRU MS-3149 SG</code> is a structured CMO class: deal 3149, class SG. Class codes like S often denote inverse-floating or interest-only pieces, so check the deal prospectus before assuming anything.</li>
+  </ul>
+</section>
+
+<section class="sec" id="greeks">
+  <h2>Greeks that matter</h2>
+  <div class="tbl greeks"><table>
+    <thead><tr><th>Greek</th><th>What it measures</th><th>For MBS</th></tr></thead>
+    <tbody>
+      <tr><td>Effective duration / DV01</td><td>PV change for a 1bp rate move, with prepayments reacting</td><td>About USD 551 per bp per USD 1m on our pool (duration 5.5). Lower than the fixed-CPR duration, because falling rates shorten the bond.</td></tr>
+      <tr><td>Negative convexity</td><td>How duration changes as rates move</td><td>Duration shortens when rates fall and lengthens when they rise. You are effectively short an option to the homeowners, so hedgers buy swaptions.</td></tr>
+      <tr><td>Prepayment sensitivity</td><td>PV change if CPR rises 1%</td><td>Negative for premium pools (price above 100). Positive for discount pools. Strongly negative for IOs.</td></tr>
+      <tr><td>Vega</td><td>PV change if rate volatility rises 1 point</td><td>Negative. More volatility makes the homeowners' refinancing option more valuable.</td></tr>
+      <tr><td>OAS duration / spread01</td><td>PV change if OAS widens 1bp</td><td>About equal to the DV01. This is the "MBS basis" risk against swaps or Treasuries.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="sec" id="example">
+  <h2>Worked example</h2>
+  <p>We price USD 1,000,000 current face of a pass-through: WAC 6.00%, net coupon 5.50%, 360 months remaining, constant 10% CPR, discounted at a 5.40% yield (monthly compounding, no payment delay). For risk we assume CPR rises 5% for every 100bp fall in rates.</p>
+  <ol class="steps">
+    <li><span>Monthly prepayment rate.</span>
+      <div class="calc-line">SMM = 1 − (1 − 0.10)^(1/12) = 0.874161%</div></li>
+    <li><span>Month 1, with <var>g</var> = 0.06/12 = 0.005.</span>
+      <div class="calc-line">payment   = 1,000,000 × 0.005 / (1 − 1.005^−360) = 5,995.51
+sched. principal = 5,995.51 − 1,000,000 × 0.005 = 995.51
+interest  = 1,000,000 × 0.055 / 12 = 4,583.33
+prepay    = 0.00874161 × (1,000,000 − 995.51) = 8,732.91
+cash flow = 4,583.33 + 995.51 + 8,732.91 = 14,311.75</div></li>
+    <li><span>Roll the balance forward (1,000,000 − 995.51 − 8,732.91 = 990,271.58) and repeat for 360 months. Discount each month at (1 + 0.054/12)<sup>−<var>k</var></sup> and add up.</span>
+      <div class="calc-line">PV = 1,005,581.75   →   price = 100.558   WAL = 7.68 years</div></li>
+    <li><span>Effective duration. Bump the yield ±50bp and move CPR the other way (−50bp → 12.5% CPR, +50bp → 7.5% CPR).</span>
+      <div class="calc-line">PV(4.90%, 12.5% CPR) = 1,029,901.27     PV(5.90%, 7.5% CPR) = 974,797.48
+Dur_eff  = (1,029,901.27 − 974,797.48) / (2 × 1,005,581.75 × 0.005) = 5.48
+Conv_eff = (1,029,901.27 + 974,797.48 − 2 × 1,005,581.75) / (1,005,581.75 × 0.005²) = −257</div></li>
+    <li><span>Compare with a fixed 10% CPR, as if the bond were an ordinary bond. Then the duration is 5.58 and the convexity is +58. The prepayment option flips convexity negative.</span></li>
+    <li><span>TBA mark. We bought USD 10m UMBS 30Y 5.5 for December settlement at 100-16. It now trades at 100-24, and settlement is 21 days away (4% OIS).</span>
+      <div class="calc-line">PV = 10,000,000 × (100.75 − 100.50)/100 × e^(−0.04×21/365) = 25,000 × 0.997701 = USD 24,943</div></li>
+    <li><span>Fair dollar-roll drop at a 4% repo rate, price 100.75, using the prepayment part of SMM.</span>
+      <div class="calc-line">drop ≈ 0.4583 − 0.3358 + 0.00874 × (100 − 100.75) = 0.1159 points ≈ 3.7/32nds</div></li>
+  </ol>
+  <p class="answer">The pool is worth <b>100.558</b> (USD 1,005,582 per USD 1m). It has an effective duration of <b>5.48</b>, a DV01 of <b>USD 551 per bp</b>, and <b>negative convexity</b>.</p>
+</section>
+
+<section class="sec" id="try">
+  <h2>Try it</h2>
+  <p>Raise the CPR on this premium pool and watch the price fall. Set the prepayment sensitivity to zero and see convexity turn positive. The chart shows the projected monthly cash flow split into its three parts.</p>
+  <div id="calc-mbs"></div>
+</section>
+
+<section class="sec" id="recap">
+  <h2>Remember</h2>
+  <ul class="recap">
+    <li>Monthly cash flow = interest at the net coupon + scheduled principal + prepayment, where SMM = 1 − (1 − CPR)<sup>1/12</sup>.</li>
+    <li>Price = discounted sum of the projected cash flows. On the desk the projection comes from a prepayment model across many rate paths (OAS).</li>
+    <li>Prepayments speed up when rates fall, which creates negative convexity. Measure risk with effective duration.</li>
+    <li>A TBA is a forward on the cheapest deliverable pool. A CMO is the same cash flows split by a waterfall.</li>
+  </ul>
+</section>
+
+</main>
+</div>
+<script src="assets/course.js"></script>
+<script>
+// Monthly pass-through projection. Returns PV at yield y, WAL and the month-by-month rows.
+function pool(B0, wac, cpn, n, cpr, y) {
+  const smm = 1 - Math.pow(1 - cpr, 1 / 12), g = wac / 12; let B = B0, pv = 0, wal = 0, prin = 0; const rows = [];
+  for (let k = 1; k <= n && B > 1e-6; k++) {
+    const rem = n - k + 1, pmt = B * g / (1 - Math.pow(1 + g, -rem)), sp = pmt - B * g, it = B * cpn / 12, pp = smm * (B - sp), cf = it + sp + pp;
+    pv += cf / Math.pow(1 + y / 12, k); wal += (sp + pp) * k / 12; prin += sp + pp;
+    rows.push({ k, B, it, sp, pp, cf }); B -= sp + pp;
+  }
+  return { pv, wal: wal / prin, rows, smm };
+}
+
+(function () {
+  const p = pool(1e6, 0.06, 0.055, 360, 0.10, 0.054), r = p.rows.slice(0, 24);
+  C.legs('#legs-mbs', {
+    tMin: 0, tMax: 25, ticks: [0, 3, 6, 9, 12, 15, 18, 21, 24], tickFmt: t => C.fmt(t, 0), axisLabel: 'months from today',
+    legs: [
+      { name: 'Interest + scheduled principal (you receive)', dir: 1, style: 'fixed', flows: r.map(q => ({ t: q.k - 0.15, a: q.it + q.sp, label: q.k === 1 || q.k === 24 ? C.fmt((q.it + q.sp) / 1e3, 1) + 'k' : '', tip: `Month ${q.k}: interest ${C.fmt(q.it, 0)} + scheduled principal ${C.fmt(q.sp, 0)}` })) },
+      { name: 'Projected prepayments at 10% CPR (you receive)', dir: 1, style: 'float', color: 'aqua', flows: r.map(q => ({ t: q.k + 0.15, a: q.pp, label: q.k === 1 || q.k === 24 ? C.fmt(q.pp / 1e3, 1) + 'k' : '', tip: `Month ${q.k}: projected prepayment ${C.fmt(q.pp, 0)}` })) },
+    ],
+    height: 150,
+  });
+})();
+
+C.calc('#calc-mbs', {
+  title: 'Pass-through pool pricer',
+  inputs: [
+    { id: 'face', label: 'Current face', unit: 'USD m', value: 1, step: 0.5 },
+    { id: 'wac', label: 'WAC', unit: '%', value: 6.00, step: 0.125 },
+    { id: 'cpn', label: 'Net coupon', unit: '%', value: 5.50, step: 0.5 },
+    { id: 'n', label: 'Months remaining', value: 360, step: 12, min: 12, max: 360 },
+    { id: 'cpr', label: 'CPR', unit: '%', value: 10, step: 1, min: 0, max: 80 },
+    { id: 'y', label: 'Discount yield', unit: '%', value: 5.40, step: 0.05 },
+    { id: 'sens', label: 'CPR change per −100bp', unit: '%', value: 5, step: 1, min: 0 },
+  ],
+  compute: v => {
+    const F = v.face * 1e6, wac = v.wac / 100, cpn = v.cpn / 100, cpr = v.cpr / 100, y = v.y / 100, s = v.sens / 100, dy = 0.005;
+    const b = pool(F, wac, cpn, v.n, cpr, y);
+    const up = pool(F, wac, cpn, v.n, Math.max(0.02, cpr - s * dy / 0.01), y + dy);
+    const dn = pool(F, wac, cpn, v.n, Math.min(0.99, cpr + s * dy / 0.01), y - dy);
+    const c1 = pool(F, wac, cpn, v.n, Math.min(0.99, cpr + 0.01), y);
+    const dur = (dn.pv - up.pv) / (2 * b.pv * dy), conv = (dn.pv + up.pv - 2 * b.pv) / (b.pv * dy * dy);
+    return {
+      out: [
+        ['SMM', C.pct(b.smm, 4)],
+        ['PV', 'USD ' + C.fmt(b.pv, 2)],
+        ['Price (per 100 face)', C.fmt(100 * b.pv / F, 3), true],
+        ['WAL', C.fmt(b.wal, 2) + ' yrs'],
+        ['Effective duration', C.fmt(dur, 2)],
+        ['Effective convexity', C.fmt(conv, 0)],
+        ['DV01 (effective)', 'USD ' + C.fmt((dn.pv - up.pv) / (2 * dy) * 1e-4, 0)],
+        ['PV change if CPR +1%', 'USD ' + C.fmt(c1.pv - b.pv, 0)],
+      ],
+      chart: {
+        x: [1, Math.min(v.n, 360)], n: Math.min(v.n, 360) - 1, xLabel: 'month', yLabel: 'monthly cash flow (USD)', xFmt: x => C.fmt(x, 0), yFmt: y => C.fmt(y / 1e3, 1) + 'k', tipFmt: y => 'USD ' + C.fmt(y, 0),
+        series: [
+          { name: 'Interest', points: b.rows.map(q => [q.k, q.it]), color: 1 },
+          { name: 'Scheduled principal', points: b.rows.map(q => [q.k, q.sp]), color: 3 },
+          { name: 'Prepayment', points: b.rows.map(q => [q.k, q.pp]), color: 2 },
+        ],
+      },
+      table: {
+        head: ['Month', 'Start balance', 'Interest', 'Sched. principal', 'Prepayment', 'Cash flow'], num: [1, 2, 3, 4, 5],
+        rows: b.rows.slice(0, 12).map(q => [q.k, C.fmt(q.B, 2), C.fmt(q.it, 2), C.fmt(q.sp, 2), C.fmt(q.pp, 2), C.fmt(q.cf, 2)]),
+      },
+      note: 'Constant CPR, monthly-compounded discount yield, no payment delay. Effective duration and convexity use ±50bp with CPR moved by your sensitivity (floored at 2%).',
+    };
+  },
+});
+</script>
+</body>
+</html>

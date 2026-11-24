@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Forward Volatility Agreements</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=JetBrains+Mono:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..600&display=swap">
+<link rel="stylesheet" href="assets/course.css">
+</head>
+<body data-page="fva.html">
+<div class="shell">
+<aside class="toc" id="toc"></aside>
+<main class="page">
+
+<header class="ph">
+  <p class="eyebrow">Part 7 · Exotics &amp; volatility</p>
+  <h1>Forward volatility agreements</h1>
+  <p class="lede">A deal to buy an at-the-money straddle at a future date, at a volatility fixed today. It is the volatility version of an <a href="fra.html">FRA</a>: you lock in tomorrow's vol the way an FRA locks in tomorrow's interest rate.</p>
+  <div class="ptypes" data-ptypes data-eg="FVA Straddle European 9.100000 % EUR:JPY|17/Mar/27"></div>
+</header>
+
+<section class="lvl" id="idea">
+  <h2><span class="lv">Level 1</span> The idea</h2>
+  <div class="prose">
+    <p>A <b>straddle</b> is a call plus a put at the same strike. It makes money if the exchange rate moves a lot in either direction, so its price is mostly a bet on <b>volatility</b>, the size of future moves.</p>
+    <p>Suppose you think EUR/JPY will be jumpy in spring 2027, but you don't want to pay for options today and suffer time decay over the winter. With an FVA you agree today: "On 17 March 2027, I will buy a 3-month at-the-money straddle priced at 9.10% vol, whatever the market vol is that day." If market vol on 17 March is 11%, you get an option worth 11% for the price of 9.10%. If it is 8%, you overpay.</p>
+  </div>
+  <aside class="analogy"><p>It is like agreeing in November on the price of a ski pass for the March holidays. If heavy snow makes passes expensive in March, your locked price is a bargain. Nobody knows yet which day will be snowy. You only care about the overall mood of the season.</p></aside>
+  <p>The strike of the straddle is not fixed today. It is set on 17 March at the forward rate of that day ("at the money"). That keeps the trade a clean bet on vol and removes most of the bet on direction.</p>
+</section>
+
+<section class="lvl" id="cashflows">
+  <h2><span class="lv">Level 2</span> The cashflows</h2>
+  <div class="prose">
+    <p>Today: nothing is exchanged. On the <b>strike date</b> <var>T</var><sub>1</sub> the straddle is struck at the then-forward <var>K</var> = <var>F</var>(<var>T</var><sub>1</sub>, <var>T</var><sub>2</sub>), and the buyer pays its premium computed at the agreed vol (9.10%). On the <b>expiry</b> <var>T</var><sub>2</sub> the straddle pays |<var>S</var><sub><var>T</var>2</sub> − <var>K</var>| per EUR of notional.</p>
+    <p>In practice FVAs are often cash-settled at <var>T</var><sub>1</sub>: the two sides exchange the difference between the straddle priced at market vol and priced at 9.10%.</p>
+  </div>
+  <figure class="fig">
+    <div class="fig-title">FVA buyer, EUR 10m, 3M ATM straddle struck 17 Mar 2027 at 9.10% vol</div>
+    <div id="legs-fva"></div>
+    <figcaption>Dashed orange = the premium you pay on the strike date. Its size depends on where EUR/JPY trades then, so it is unknown today. Dotted blue = the straddle payout at expiry, |S − K|, which may be large or small. Hover an arrow for details.</figcaption>
+  </figure>
+  <figure class="fig">
+    <div class="fig-title">Value on the strike date, for each possible market vol</div>
+    <div id="chart-fva"></div>
+    <figcaption>Almost a straight line through zero at 9.10%. An at-the-money straddle's price is nearly proportional to vol. That is why FVAs are written on straddles: the trade is a clean, linear bet on future vol.</figcaption>
+  </figure>
+</section>
+
+<section class="lvl" id="pv">
+  <h2><span class="lv">Level 3</span> The PV formula</h2>
+  <h3>Step 1 · Forward volatility from today's vol curve</h3>
+  <div class="prose">
+    <p>Today the market quotes an at-the-money vol <var>σ</var><sub>1</sub> for options to <var>T</var><sub>1</sub> and <var>σ</var><sub>2</sub> for options to <var>T</var><sub>2</sub>. <b>Variance</b> (vol squared times time) adds up over time like distance on a trip. So the variance expected between <var>T</var><sub>1</sub> and <var>T</var><sub>2</sub> is the total minus the first part:</p>
+  </div>
+  <div class="f"><span class="lbl">Forward variance and forward vol</span>
+    <var>σ</var><sub>f</sub>² = <span class="frac"><span><var>σ</var><sub>2</sub>² <var>T</var><sub>2</sub> − <var>σ</var><sub>1</sub>² <var>T</var><sub>1</sub></span><span><var>T</var><sub>2</sub> − <var>T</var><sub>1</sub></span></span>
+  </div>
+  <div class="prose"><p>This is the same trick as the forward rate in <a href="fra.html">FRAs</a>, applied to variance. It needs <var>σ</var><sub>2</sub>²<var>T</var><sub>2</sub> &gt; <var>σ</var><sub>1</sub>²<var>T</var><sub>1</sub>, otherwise the vol curve would allow an arbitrage.</p></div>
+
+  <h3>Step 2 · Price of an at-the-money-forward straddle</h3>
+  <div class="prose"><p>With <var>K</var> = <var>F</var>, the Black formula from <a href="toolkit.html#black">the toolkit</a> simplifies. Both <var>d</var><sub>1</sub> and <var>d</var><sub>2</sub> become ±½<var>σ</var>√<var>τ</var>, and the call and the put are worth the same:</p></div>
+  <div class="f"><span class="lbl">ATMF straddle per unit of foreign notional, option life τ = T₂ − T₁</span>
+    Straddle(<var>σ</var>) = 2 <var>F</var> <var>D</var> [ 2<var>N</var>(½<var>σ</var>√<var>τ</var>) − 1 ] &nbsp;≈&nbsp; 0.8 × <var>σ</var> √<var>τ</var> × <var>F</var> × <var>D</var>
+  </div>
+  <dl class="where">
+    <dt>0.8</dt><dd>comes from 2 × 0.3989 (the bell-curve height at zero); the approximation is excellent for short options</dd>
+    <dt><var>F</var>, <var>D</var></dt><dd>today's EUR/JPY forward to <var>T</var><sub>2</sub> and the JPY discount factor to <var>T</var><sub>2</sub></dd>
+  </dl>
+
+  <h3>Step 3 · FVA value</h3>
+  <div class="f"><span class="lbl">PV for the buyer (in JPY)</span>
+    PV = <var>N</var> × [ Straddle(<var>σ</var><sub>f</sub>) − Straddle(<var>K</var><sub>vol</sub>) ] &nbsp;≈&nbsp; <var>N</var> × 0.8 × (<var>σ</var><sub>f</sub> − <var>K</var><sub>vol</sub>) × √<var>τ</var> × <var>F</var> × <var>D</var>
+  </div>
+  <div class="prose"><p>Using today's forward <var>F</var> to <var>T</var><sub>2</sub> is legitimate. The straddle's value on the strike date is proportional to the spot level then, and the average of that, discounted, is exactly today's <var>F</var> × <var>D</var>.</p></div>
+  <aside class="key"><p>An FVA is <b>long the long-dated vol and short the short-dated vol</b>. Raise <var>σ</var><sub>2</sub> and the forward vol rises. Raise <var>σ</var><sub>1</sub> and it falls. That makes it the natural tool for trading the shape of the vol term structure.</p></aside>
+</section>
+
+<section class="lvl" id="desk">
+  <h2><span class="lv">Level 4</span> Desk reality</h2>
+  <ul>
+    <li><b>Reading the trade description.</b> <code>FVA Straddle European 9.100000 % EUR:JPY|17/Mar/27</code> is an FVA on a European EUR/JPY straddle at 9.10% vol with strike date 17 Mar 2027. The option tenor after the strike date (often 1M or 3M) is in the trade details.</li>
+    <li><b>ATM convention.</b> FX desks quote the at-the-money strike as delta-neutral straddle (DNS) for most pairs, slightly away from the forward. The difference from ATMF is small for EUR/JPY at 3 months.</li>
+    <li><b>Forward smile.</b> Step 1 only uses at-the-money vols. Under stochastic-vol models, the vol that prevails on 17 March is itself uncertain. A straddle is close to linear in vol, so this "vol of vol" effect is small but not zero. Desks mark FVAs with a stochastic or local-stochastic vol model and quote the difference as a convexity adjustment.</li>
+    <li><b>Event vol.</b> If a known event (a BoJ meeting, an election) falls between <var>T</var><sub>1</sub> and <var>T</var><sub>2</sub>, the forward vol is higher than smooth interpolation suggests. Traders use FVAs to buy that event vol without paying for the quiet months before it.</li>
+    <li><b>After the strike date</b> the FVA becomes an ordinary straddle and is risk-managed like any <a href="fx-options.html">FX vanilla</a>.</li>
+  </ul>
+</section>
+
+<section class="sec" id="greeks">
+  <h2>Greeks that matter</h2>
+  <div class="tbl greeks"><table>
+    <thead><tr><th>Greek</th><th>What it measures</th><th>For an FVA (before the strike date)</th></tr></thead>
+    <tbody>
+      <tr><td>Forward vega</td><td>PV change if the forward vol moves +1 point</td><td>The main risk, ≈ <var>N</var> × 0.8 × √<var>τ</var> × <var>F</var> × <var>D</var> × 0.01. About JPY 6.7m per point in the example.</td></tr>
+      <tr><td>Term-structure vega</td><td>PV change if <var>σ</var><sub>2</sub> or <var>σ</var><sub>1</sub> moves +1 point</td><td>Long vega to <var>T</var><sub>2</sub>, short vega to <var>T</var><sub>1</sub>. A parallel shift of all vols moves the PV much less than either leg alone.</td></tr>
+      <tr><td>Delta</td><td>PV change if spot moves 1%</td><td>Small. The strike resets to at-the-money, so direction mostly drops out. A residual comes from <var>F</var> scaling the straddle price.</td></tr>
+      <tr><td>Gamma, theta</td><td>Curvature and time decay</td><td>Practically zero until the strike date. After it, a normal long straddle: long gamma, negative theta.</td></tr>
+      <tr><td>Vol of vol</td><td>Sensitivity to uncertainty of future vol</td><td>Second-order. It shows up as the model's convexity adjustment.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="sec" id="example">
+  <h2>Worked example</h2>
+  <p>On 23 Nov 2026 we buy an FVA on EUR 10m. The strike date is 17 Mar 2027 (114 days) and the straddle expires 3 months later on 17 Jun 2027 (206 days). The strike vol is 9.10%. Illustrative market: ATM vol 9.50% to March, 9.80% to June, EUR/JPY forward to June 168.00, JPY rate 0.80%.</p>
+  <ol class="steps">
+    <li><span>Times.</span>
+      <div class="calc-line">T1 = 114/365 = 0.312329    T2 = 206/365 = 0.564384    τ = T2 − T1 = 0.252055</div></li>
+    <li><span>Forward vol.</span>
+      <div class="calc-line">σf² = (0.098² × 0.564384 − 0.095² × 0.312329) / 0.252055 = 0.0103215    σf = 10.1595%</div>
+      <span>Vol from March to June is higher than either quoted vol, because the June vol has to "catch up" over a short window.</span></li>
+    <li><span>Discount factor.</span>
+      <div class="calc-line">D = e^(−0.008 × 0.564384) = 0.995495</div></li>
+    <li><span>Straddle prices per EUR, exact formula.</span>
+      <div class="calc-line">Straddle(10.1595%) = 2 × 168 × 0.995495 × [2N(½ × 0.101595 × √0.252055) − 1] = 6.805490 JPY
+Straddle(9.10%)    = 2 × 168 × 0.995495 × [2N(½ × 0.091 × √0.252055) − 1]    = 6.095924 JPY</div></li>
+    <li><span>PV.</span>
+      <div class="calc-line">PV = 10,000,000 × (6.805490 − 6.095924) = JPY 7,095,651</div></li>
+    <li><span>Check with the 0.8 rule.</span>
+      <div class="calc-line">10,000,000 × 0.8 × (0.101595 − 0.091) × √0.252055 × 168 × 0.995495 = JPY 7,116,545</div></li>
+  </ol>
+  <p class="answer">The FVA is worth <b>+JPY 7.10m</b> (about EUR 42k) to the buyer. The market's forward vol of 10.16% is above the locked 9.10%. Each extra point of forward vol adds about JPY 6.7m.</p>
+</section>
+
+<section class="sec" id="try">
+  <h2>Try it</h2>
+  <p>Flatten the vol curve (set both vols equal) and the forward vol equals them. Make the short vol higher than the long one and watch the forward vol drop below both.</p>
+  <div id="calc-fva"></div>
+</section>
+
+<section class="sec" id="recap">
+  <h2>Remember</h2>
+  <ul class="recap">
+    <li>An FVA locks today the vol of an at-the-money straddle that starts later.</li>
+    <li>Forward variance = (σ₂²T₂ − σ₁²T₁) ÷ (T₂ − T₁), just like a forward rate.</li>
+    <li>PV ≈ N × 0.8 × (σ_f − K_vol) × √τ × F × D.</li>
+    <li>It is long the long-dated vol and short the short-dated vol, with almost no delta or gamma before the strike date.</li>
+    <li>Forward smile and vol of vol make the true price differ slightly from this formula.</li>
+  </ul>
+</section>
+
+</main>
+</div>
+<script src="assets/course.js"></script>
+<script>
+function fva(o) {
+  const T1 = o.d1 / 365, T2 = o.d2 / 365, tau = T2 - T1;
+  if (tau <= 0) throw new Error('the expiry must be after the strike date');
+  const fv2 = (o.s2 * o.s2 * T2 - o.s1 * o.s1 * T1) / tau;
+  if (fv2 <= 0) throw new Error('σ₂²T₂ must exceed σ₁²T₁ (no negative forward variance)');
+  const sf = Math.sqrt(fv2), D = Math.exp(-o.rd * T2);
+  const strad = s => 2 * o.F * D * (2 * C.N(s * Math.sqrt(tau) / 2) - 1);
+  return { T1, T2, tau, sf, D, strad, pv: o.N * (strad(sf) - strad(o.K)), approx: o.N * 0.8 * (sf - o.K) * Math.sqrt(tau) * o.F * D };
+}
+const ex = { N: 10e6, d1: 114, d2: 206, s1: 0.095, s2: 0.098, K: 0.091, F: 168, rd: 0.008 };
+const exR = fva(ex);
+
+C.legs('#legs-fva', {
+  tMin: 0, tMax: 0.62, ticks: [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6], tickFmt: t => C.fmt(t, 1),
+  events: [{ t: 0, label: 'Trade 23 Nov 26' }, { t: exR.T1, label: 'Strike date 17 Mar 27' }, { t: exR.T2, label: 'Expiry 17 Jun 27' }],
+  legs: [
+    { name: 'Straddle payout: you receive N × |S − K|', dir: 1, style: 'contingent', flows: [{ t: exR.T2, a: 1.1, label: '|S − K| ?', tip: 'At expiry: EUR 10m × |EUR/JPY − K| in JPY' }] },
+    { name: 'Premium at 9.10% vol: you pay on the strike date', dir: -1, style: 'float', flows: [{ t: exR.T1, a: 1, label: '≈ 61m JPY', tip: 'Straddle premium at 9.10% vol; about JPY 61m if EUR/JPY forward stays at 168' }] },
+  ],
+});
+
+C.chart('#chart-fva', {
+  x: [0.06, 0.14], xLabel: 'market ATM vol on the strike date', yLabel: 'value to the buyer (JPY)',
+  xFmt: x => C.pct(x, 0), yFmt: y => C.fmt(y / 1e6, 0) + 'm', tipFmt: y => 'JPY ' + C.fmt(y, 0), height: 240,
+  series: [{ name: 'Value on the strike date', f: s => ex.N * (exR.strad(s) - exR.strad(ex.K)), color: 1 }],
+  marks: [{ x: ex.K, label: 'K = 9.10%' }, { x: exR.sf, label: 'σf today' }],
+});
+
+C.calc('#calc-fva', {
+  title: 'FVA pricer (ATMF straddle, flat smile)',
+  inputs: [
+    { id: 'N', label: 'Notional', unit: 'EUR m', value: 10, step: 1 },
+    { id: 'd1', label: 'Days to strike date', value: 114, step: 1, min: 1 },
+    { id: 'd2', label: 'Days to expiry', value: 206, step: 1, min: 2 },
+    { id: 's1', label: 'ATM vol to strike date', unit: '%', value: 9.5, step: 0.1 },
+    { id: 's2', label: 'ATM vol to expiry', unit: '%', value: 9.8, step: 0.1 },
+    { id: 'K', label: 'Strike vol', unit: '%', value: 9.1, step: 0.1 },
+    { id: 'F', label: 'Forward to expiry', value: 168, step: 0.5 },
+    { id: 'rd', label: 'JPY rate', unit: '%', value: 0.8, step: 0.05 },
+  ],
+  compute: v => {
+    const o = { N: v.N * 1e6, d1: v.d1, d2: v.d2, s1: v.s1 / 100, s2: v.s2 / 100, K: v.K / 100, F: v.F, rd: v.rd / 100 };
+    const r = fva(o);
+    const v2 = fva({ ...o, s2: o.s2 + 0.01 }).pv - r.pv, v1 = fva({ ...o, s1: o.s1 + 0.01 }).pv - r.pv;
+    const fwdVega = o.N * (r.strad(r.sf + 0.005) - r.strad(r.sf - 0.005));
+    return {
+      out: [
+        ['Option life τ', C.fmt(r.tau, 6) + ' y'],
+        ['Forward vol σf', C.pct(r.sf, 4)],
+        ['Straddle at σf (JPY per EUR)', C.fmt(r.strad(r.sf), 6)],
+        ['Straddle at strike vol', C.fmt(r.strad(o.K), 6)],
+        ['FVA PV', 'JPY ' + C.fmt(r.pv, 0), true],
+        ['0.8-rule approximation', 'JPY ' + C.fmt(r.approx, 0)],
+        ['Forward vega (+1 point)', 'JPY ' + C.fmt(fwdVega, 0)],
+        ['Vega to long vol σ₂ (+1 point)', 'JPY ' + C.fmt(v2, 0)],
+        ['Vega to short vol σ₁ (+1 point)', 'JPY ' + C.fmt(v1, 0)],
+      ],
+      chart: {
+        x: [Math.max(0.01, o.K - 0.04), o.K + 0.04], xLabel: 'market ATM vol on the strike date', yLabel: 'value to the buyer (JPY)',
+        xFmt: x => C.pct(x, 0), yFmt: y => C.fmt(y / 1e6, 0) + 'm', tipFmt: y => 'JPY ' + C.fmt(y, 0),
+        series: [{ name: 'Value on the strike date', f: s => o.N * (r.strad(s) - r.strad(o.K)), color: 1 }],
+        marks: [{ x: o.K, label: 'K' }, { x: r.sf, label: 'σf' }],
+      },
+      note: 'ATM-forward straddle, deterministic rates, flat smile. Forward-smile and vol-of-vol adjustments are not included.',
+    };
+  },
+});
+</script>
+</body>
+</html>

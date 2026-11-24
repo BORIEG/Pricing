@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Forward Rate Agreements</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=JetBrains+Mono:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..600&display=swap">
+<link rel="stylesheet" href="assets/course.css">
+</head>
+<body data-page="fra.html">
+<div class="shell">
+<aside class="toc" id="toc"></aside>
+<main class="page">
+
+<header class="ph">
+  <p class="eyebrow">Part 3 · Swaps</p>
+  <h1>Forward rate agreements</h1>
+  <p class="lede">A bet on one future interest rate fixing, settled with a single payment. It is the smallest building block of every swap, so it is where the swaps part of the course starts.</p>
+  <div class="ptypes" data-ptypes data-eg="FRA SEK|STIBOR|3M|2.357500 %|16/Jun/27"></div>
+</header>
+
+<section class="lvl" id="idea">
+  <h2><span class="lv">Level 1</span> The idea</h2>
+  <div class="prose">
+    <p>Your family plans to borrow money in June next year for three months. The bank will charge whatever the 3-month interest rate is <em>on that day</em>. You are worried rates will go up before then.</p>
+    <p>An FRA lets you lock the rate today. You agree a rate now (say 2.3575%). In June you look at the real 3-month rate. If it came out higher than your locked rate, the other side pays you the difference. If it came out lower, you pay them. Either way, your borrowing ends up costing you the locked rate.</p>
+  </div>
+  <aside class="analogy"><p>Think of pre-ordering a concert ticket at a fixed price. If tickets later sell for more, you saved money. If they sell for less, you overpaid. Nobody exchanges the ticket itself in an FRA: you only settle the price difference.</p></aside>
+  <p>No loan is actually made. The notional (here SEK 100 million) is only used to size the payment.</p>
+</section>
+
+<section class="lvl" id="cashflows">
+  <h2><span class="lv">Level 2</span> The cashflows</h2>
+  <div class="prose">
+    <p>Four dates matter: <b>today</b> (trade), the <b>fixing date</b> (when the floating rate is observed, usually two business days before the start), the <b>start</b> <var>T</var><sub>1</sub>, and the <b>end</b> <var>T</var><sub>2</sub> of the interest period.</p>
+    <p>Think of it as two promised payments at <var>T</var><sub>2</sub>. The <span class="rec-c">floating leg</span> is the interest at the rate that fixes in June. The <span class="pay-c">fixed leg</span> is the interest at the rate agreed today. Only the difference changes hands. The buyer of the FRA pays fixed and receives floating.</p>
+  </div>
+  <figure class="fig">
+    <div class="fig-title">FRA buyer, SEK 100m, 3M STIBOR, start 16 Jun 2027</div>
+    <div id="legs-fra"></div>
+    <figcaption>Dashed arrow = <b>floating</b> (amount unknown today). Solid arrow = <b>fixed</b> (known today). In practice both are netted into one payment. Hover an arrow for details.</figcaption>
+  </figure>
+  <div class="f"><span class="lbl">Net payment to the FRA buyer, if paid at the end</span>
+    <var>N</var> × (<var>L</var> − <var>K</var>) × <var>τ</var>
+  </div>
+  <dl class="where">
+    <dt><var>N</var></dt><dd>notional (SEK 100,000,000)</dd>
+    <dt><var>L</var></dt><dd>the floating rate that fixes for the period (3M STIBOR)</dd>
+    <dt><var>K</var></dt><dd>the fixed rate agreed today (2.3575%)</dd>
+    <dt><var>τ</var></dt><dd>year fraction of the period: days ÷ 360 for STIBOR (ACT/360); 92 days gives 0.2556</dd>
+  </dl>
+</section>
+
+<section class="lvl" id="pv">
+  <h2><span class="lv">Level 3</span> The PV formula</h2>
+  <div class="prose">
+    <p>We don't know <var>L</var> today, but the market tells us what it <em>expects</em> it to be: the <b>forward rate</b> <var>F</var>. You read it off the projection curve's discount factors <var>P</var>(<var>t</var>), as covered in <a href="toolkit.html#forwards">the toolkit</a>:</p>
+  </div>
+  <div class="f"><span class="lbl">Step 1 · forward rate from the projection (STIBOR) curve</span>
+    <var>F</var> = <span class="frac"><span>1</span><span><var>τ</var></span></span> ( <span class="frac"><span><var>P</var><sub>proj</sub>(<var>T</var><sub>1</sub>)</span><span><var>P</var><sub>proj</sub>(<var>T</var><sub>2</sub>)</span></span> − 1 )
+  </div>
+  <div class="prose"><p>Replace the unknown <var>L</var> by <var>F</var>, then bring the payment back to today with the discount curve (the OIS curve for collateralised trades):</p></div>
+  <div class="f"><span class="lbl">Step 2 · present value for the buyer (pay fixed, receive floating)</span>
+    PV = <var>N</var> × <var>τ</var> × (<var>F</var> − <var>K</var>) × <var>D</var>(<var>T</var><sub>2</sub>)
+  </div>
+  <dl class="where">
+    <dt><var>P</var><sub>proj</sub>(<var>t</var>)</dt><dd>projection-curve discount factor, used <em>only</em> to compute forwards</dd>
+    <dt><var>D</var>(<var>t</var>)</dt><dd>discounting-curve factor (SEK OIS for a cleared or CSA trade)</dd>
+  </dl>
+  <aside class="key"><p>Replacing an unknown future rate by its forward is legitimate for <b>linear</b> payoffs, where the payment moves one-for-one with the rate. That single trick prices FRAs, swaps and forwards. It stops working for options, which is why they need a volatility.</p></aside>
+</section>
+
+<section class="lvl" id="desk">
+  <h2><span class="lv">Level 4</span> Desk reality</h2>
+  <ul>
+    <li><b>Paid at the start, discounted.</b> Real FRAs settle at <var>T</var><sub>1</sub>, not <var>T</var><sub>2</sub>. The amount is the end payment discounted at the fixing itself: <var>N</var>(<var>L</var> − <var>K</var>)<var>τ</var> ÷ (1 + <var>L</var><var>τ</var>). Its PV is almost identical to Step 2. The tiny difference is a convexity effect that desks ignore on a 3-month FRA.</li>
+    <li><b>Two curves.</b> Forwards come from the STIBOR (or EURIBOR, SOFR term) curve and discounting from OIS. Using one curve for both is the classic pre-2008 shortcut and is wrong today.</li>
+    <li><b>Reading the trade description.</b> <code>FRA SEK|STIBOR|3M|2.357500 %|16/Jun/27</code> means currency, index, tenor, fixed rate and start date. The end date is start + 3M, adjusted to a business day (modified following).</li>
+    <li><b>FRA vs STIR future.</b> A 3M STIR future (next part of the course) is the exchange-traded cousin. It is margined daily, which creates a small <em>convexity adjustment</em>: future-implied rate &gt; FRA rate.</li>
+  </ul>
+</section>
+
+<section class="sec" id="greeks">
+  <h2>Greeks that matter</h2>
+  <div class="tbl greeks"><table>
+    <thead><tr><th>Greek</th><th>What it measures</th><th>For an FRA</th></tr></thead>
+    <tbody>
+      <tr><td>DV01 / PV01</td><td>PV change if the rate moves +1bp (0.01%)</td><td>≈ <var>N</var> × <var>τ</var> × <var>D</var>(<var>T</var><sub>2</sub>) × 0.0001. About SEK 2,500 per bp on SEK 100m 3M. The buyer gains when rates rise.</td></tr>
+      <tr><td>Bucketed delta</td><td>Which part of the curve the risk sits on</td><td>All of it sits in the single forward bucket <var>T</var><sub>1</sub>→<var>T</var><sub>2</sub>. That is why traders use FRAs to hedge one precise point.</td></tr>
+      <tr><td>Gamma</td><td>How DV01 itself changes</td><td>Practically zero, because the payoff is linear.</td></tr>
+      <tr><td>Theta</td><td>PV change from one day passing</td><td>Small: discounting rolls in, and the forward slides along the curve (roll-down).</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="sec" id="example">
+  <h2>Worked example</h2>
+  <p>We price an example trade on 23 Nov 2026. The trade is a buyer of SEK 100m 3M STIBOR FRA at <var>K</var> = 2.3575%, starting 16 Jun 2027 (205 days away) and ending 16 Sep 2027 (297 days, so 92 days long). For simplicity both curves are flat: STIBOR zero rate 2.40% and SEK OIS zero rate 2.25%, both continuously compounded ACT/365.</p>
+  <ol class="steps">
+    <li><span>Year fractions. Curve time uses ACT/365, the accrual uses ACT/360.</span>
+      <div class="calc-line">T1 = 205/365 = 0.56164    T2 = 297/365 = 0.81370    τ = 92/360 = 0.25556</div></li>
+    <li><span>Projection discount factors <var>P</var> = e<sup>−<var>z</var><var>t</var></sup>.</span>
+      <div class="calc-line">P(T1) = e^(−0.024×0.56164) = 0.986611    P(T2) = e^(−0.024×0.81370) = 0.980661</div></li>
+    <li><span>Forward rate.</span>
+      <div class="calc-line">F = (0.986611 / 0.980661 − 1) / 0.25556 = 0.0060676 / 0.25556 = 2.3743%</div>
+      <span>It is slightly below 2.40% because a continuously compounded ACT/365 rate is not quoted the same way as a simple ACT/360 rate.</span></li>
+    <li><span>Discount factor to the end date from OIS.</span>
+      <div class="calc-line">D(T2) = e^(−0.0225×0.81370) = 0.981858</div></li>
+    <li><span>PV.</span>
+      <div class="calc-line">PV = 100,000,000 × 0.25556 × (0.023743 − 0.023575) × 0.981858 = SEK 4,215</div></li>
+    <li><span>DV01.</span>
+      <div class="calc-line">DV01 ≈ 100,000,000 × 0.25556 × 0.981858 × 0.0001 = SEK 2,509 per bp</div></li>
+  </ol>
+  <p class="answer">The buyer's FRA is worth <b>+SEK 4,215</b>. The market's forward (2.374%) is 1.7bp above the locked 2.3575%, and 1.7 × 2,509 ≈ 4,215.</p>
+</section>
+
+<section class="sec" id="try">
+  <h2>Try it</h2>
+  <p>Change the curves or the strike and watch the PV. The chart shows what the buyer is paid on settlement day for each possible fixing.</p>
+  <div id="calc-fra"></div>
+</section>
+
+<section class="sec" id="recap">
+  <h2>Remember</h2>
+  <ul class="recap">
+    <li>An FRA is one fixed-vs-floating exchange on one future period, netted into one payment.</li>
+    <li>PV = notional × accrual × (forward − strike) × discount factor.</li>
+    <li>Forwards come from the projection curve. Discounting comes from OIS.</li>
+    <li>Its risk is one DV01 bucket and almost no gamma. A swap is simply a strip of these. See <a href="irs.html">interest rate swaps</a>.</li>
+  </ul>
+</section>
+
+</main>
+</div>
+<script src="assets/course.js"></script>
+<script>
+C.legs('#legs-fra', {
+  tMin: 0, tMax: 0.9, ticks: [0, 0.25, 0.5, 0.75], tickFmt: t => C.fmt(t, 2),
+  events: [{ t: 0, label: 'Trade 23 Nov 26' }, { t: 0.5562, label: 'Fixing' }, { t: 0.5616, label: '' }, { t: 0.8137, label: 'End 16 Sep 27' }],
+  legs: [
+    { name: 'Floating leg: you receive N × L × τ', dir: 1, style: 'float', flows: [{ t: 0.8137, a: 1.01, label: 'L × τ × N', tip: 'Floating: 100m × 3M STIBOR × 92/360 (unknown until fixing)' }] },
+    { name: 'Fixed leg: you pay N × K × τ', dir: -1, style: 'fixed', flows: [{ t: 0.8137, a: 1, label: '602,472', tip: 'Fixed: 100m × 2.3575% × 92/360 = SEK 602,472' }] },
+  ],
+});
+
+C.calc('#calc-fra', {
+  title: 'FRA pricer',
+  inputs: [
+    { id: 'side', label: 'Position', value: 1, options: [[1, 'Buy (pay fixed)'], [-1, 'Sell (receive fixed)']] },
+    { id: 'N', label: 'Notional', unit: 'SEK m', value: 100, step: 10 },
+    { id: 'K', label: 'Fixed rate K', unit: '%', value: 2.3575, step: 0.0025 },
+    { id: 'd1', label: 'Days to start', value: 205, step: 1, min: 1 },
+    { id: 'len', label: 'Period length', unit: 'days', value: 92, step: 1, min: 1 },
+    { id: 'zp', label: 'STIBOR zero rate', unit: '%', value: 2.40, step: 0.01 },
+    { id: 'zd', label: 'OIS zero rate', unit: '%', value: 2.25, step: 0.01 },
+  ],
+  compute: v => {
+    const N = v.N * 1e6, K = v.K / 100, t1 = v.d1 / 365, t2 = (v.d1 + v.len) / 365, tau = v.len / 360;
+    const price = (zp, zd) => {
+      const F = (Math.exp(-zp * t1) / Math.exp(-zp * t2) - 1) / tau;
+      return { F, pv: v.side * N * tau * (F - K) * Math.exp(-zd * t2) };
+    };
+    const base = price(v.zp / 100, v.zd / 100), up = price(v.zp / 100 + 1e-4, v.zd / 100 + 1e-4);
+    const D2 = Math.exp(-v.zd / 100 * t2);
+    return {
+      out: [
+        ['Forward rate F', C.pct(base.F, 4)],
+        ['Discount factor D(T2)', C.fmt(D2, 6)],
+        ['Accrual τ (ACT/360)', C.fmt(tau, 5)],
+        ['PV', 'SEK ' + C.fmt(base.pv, 0), true],
+        ['DV01 (both curves +1bp)', 'SEK ' + C.fmt(up.pv - base.pv, 0)],
+      ],
+      chart: {
+        x: [K - 0.01, K + 0.01], xLabel: 'STIBOR fixing', yLabel: 'settlement amount at start (SEK)',
+        xFmt: x => C.pct(x, 2), yFmt: y => C.fmt(y / 1e3, 0) + 'k', tipFmt: y => 'SEK ' + C.fmt(y, 0),
+        series: [{ name: 'Settlement at T1', f: L => v.side * N * (L - K) * tau / (1 + L * tau), color: 1 }],
+        marks: [{ x: K, label: 'K' }, { x: base.F, label: 'F' }],
+      },
+      note: 'Flat continuously compounded zero curves, ACT/365 for curve time; accrual ACT/360. A real desk would use a full bootstrapped curve.',
+    };
+  },
+});
+</script>
+</body>
+</html>

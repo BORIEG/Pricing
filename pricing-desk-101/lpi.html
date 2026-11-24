@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LPI Inflation Swaps</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=JetBrains+Mono:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..600&display=swap">
+<link rel="stylesheet" href="assets/course.css">
+</head>
+<body data-page="lpi.html">
+<div class="shell">
+<aside class="toc" id="toc"></aside>
+<main class="page">
+
+<header class="ph">
+  <p class="eyebrow">Part 6 · Vanilla options</p>
+  <h1>LPI: capped &amp; floored inflation</h1>
+  <p class="lede">An inflation swap where each year's inflation is squeezed between 0% and 5% before it is added up. Under the hood it is a zero-coupon inflation swap plus a strip of small inflation options, one cap and one floor per year.</p>
+  <div class="ptypes" data-ptypes data-eg="20Y GBP P FloaterCapFloor: Max(Min[GBP-LPI Mar-2M,5%], 0%) 2/15/2023 - 2/15/2043 20Y/R 3.421 %"></div>
+</header>
+
+<section class="lvl" id="idea">
+  <h2><span class="lv">Level 1</span> The idea</h2>
+  <div class="prose">
+    <p>Many UK pensions grow every year with inflation, but with two rules. If prices rise by more than 5% in a year, the pension only grows by 5%. If prices fall, the pension does not shrink: it grows by 0%. This rule is called <b>Limited Price Indexation</b>, or LPI.</p>
+    <p>A pension fund that has promised LPI pensions wants to receive exactly that kind of inflation. An <b>LPI swap</b> gives it that. One side pays the LPI-indexed growth of a notional, the other side pays a fixed growth rate agreed today.</p>
+  </div>
+  <aside class="analogy"><p>Picture a thermostat that keeps a room between 0°C and 5°C above outside. Whatever the weather does, the reading you record each year is clipped into that band. LPI does the same thing to the yearly inflation number, then multiplies the clipped years together.</p></aside>
+  <p>If you already know <a href="inflation-swap.html">zero-coupon inflation swaps</a>, you know 90% of this product. The new part is the clipping, and clipping is an option.</p>
+</section>
+
+<section class="lvl" id="cashflows">
+  <h2><span class="lv">Level 2</span> The cashflows</h2>
+  <div class="prose">
+    <p>Like a zero-coupon inflation swap, nothing is paid until maturity. Each year in between, an <b>LPI rate</b> is recorded:</p>
+  </div>
+  <div class="f"><span class="lbl">One year's LPI rate</span>
+    <var>X</var><sub><var>i</var></sub> = min( max( <var>y</var><sub><var>i</var></sub> , 0% ) , 5% )
+    &nbsp;&nbsp;with&nbsp;&nbsp;
+    <var>y</var><sub><var>i</var></sub> = <span class="frac"><span>RPI<sub><var>i</var></sub></span><span>RPI<sub><var>i</var>−1</sub></span></span> − 1
+  </div>
+  <div class="prose"><p>At maturity <var>T</var> (in years), the two legs pay:</p></div>
+  <div class="f"><span class="lbl">Payments at maturity</span>
+    <span class="rec-c">Fixed leg</span>: <var>N</var> × [ (1 + <var>K</var>)<sup><var>T</var></sup> − 1 ]
+    &nbsp;&nbsp;&nbsp;
+    <span class="pay-c">LPI leg</span>: <var>N</var> × [ (1 + <var>X</var><sub>1</sub>)(1 + <var>X</var><sub>2</sub>)…(1 + <var>X</var><sub><var>T</var></sub>) − 1 ]
+  </div>
+  <figure class="fig">
+    <div class="fig-title">Pay LPI, receive fixed 3.00%, GBP 10m, 5 years (the worked example below)</div>
+    <div id="legs-lpi"></div>
+    <figcaption>Small dotted arrows are the yearly LPI rates being <b>recorded</b>, not paid. Everything is settled in one exchange at year 5. The LPI amount is unknown today (dashed). Hover an arrow for details.</figcaption>
+  </figure>
+  <figure class="fig">
+    <div class="fig-title">One year: what LPI records for each possible RPI inflation</div>
+    <div id="chart-clip"></div>
+    <figcaption>The <b>blue line</b> is the LPI rate: flat at 0% below zero inflation, flat at 5% above 5%. The <b>orange dashed line</b> is plain RPI inflation. The gaps between them are exactly a floor (bottom left) and a cap (top right).</figcaption>
+  </figure>
+</section>
+
+<section class="lvl" id="pv">
+  <h2><span class="lv">Level 3</span> The PV formula</h2>
+  <h3>Step 1 · Split the clipped rate into pieces you can price</h3>
+  <div class="prose"><p>Clipping a number between 0% and 5% is the same as taking the number, removing the part above 5%, and adding back the part below 0%:</p></div>
+  <div class="f"><span class="lbl">Exact identity (when floor &lt; cap)</span>
+    min(max(<var>y</var>, 0%), 5%) = <var>y</var> − max(<var>y</var> − 5%, 0) + max(0% − <var>y</var>, 0)
+  </div>
+  <div class="prose"><p>Read it as: <b>LPI rate = inflation − a cap at 5% + a floor at 0%</b>. The cap and the floor are options on one year's inflation, called a <b>year-on-year (YoY) caplet</b> and <b>floorlet</b>.</p></div>
+
+  <h3>Step 2 · Price each yearly caplet and floorlet with Bachelier</h3>
+  <div class="prose"><p>For year <var>i</var>, the market gives a <b>forward YoY rate</b> <var>f</var><sub><var>i</var></sub> (what it expects that year's inflation to be) and a <b>normal volatility</b> <var>σ</var> (how many percentage points it might typically move per year). YoY inflation can be negative, so desks use the normal (Bachelier) model from <a href="toolkit.html#black">the toolkit</a> rather than Black:</p></div>
+  <div class="f left"><span class="lbl">Undiscounted YoY caplet (strike 5%) and floorlet (strike 0%), year i</span>
+    Caplet<sub><var>i</var></sub> = (<var>f</var><sub><var>i</var></sub> − 5%) <var>N</var>(<var>d</var><sub>c</sub>) + <var>σ</var>√<var>t</var><sub><var>i</var></sub> <var>n</var>(<var>d</var><sub>c</sub>),
+    &nbsp; <var>d</var><sub>c</sub> = <span class="frac"><span><var>f</var><sub><var>i</var></sub> − 5%</span><span><var>σ</var>√<var>t</var><sub><var>i</var></sub></span></span><br>
+    Floorlet<sub><var>i</var></sub> = (0% − <var>f</var><sub><var>i</var></sub>) <var>N</var>(−<var>d</var><sub>f</sub>) + <var>σ</var>√<var>t</var><sub><var>i</var></sub> <var>n</var>(<var>d</var><sub>f</sub>),
+    &nbsp; <var>d</var><sub>f</sub> = <span class="frac"><span><var>f</var><sub><var>i</var></sub> − 0%</span><span><var>σ</var>√<var>t</var><sub><var>i</var></sub></span></span>
+  </div>
+  <dl class="where">
+    <dt><var>t</var><sub><var>i</var></sub></dt><dd>years until year <var>i</var>'s inflation is known (about <var>i</var>)</dd>
+    <dt><var>N</var>(<var>x</var>)</dt><dd>the normal "probability table": chance a standard bell-curve number is below <var>x</var></dd>
+    <dt><var>n</var>(<var>x</var>)</dt><dd>the height of the bell curve at <var>x</var>: e<sup>−<var>x</var>²/2</sup> ÷ √(2π)</dd>
+  </dl>
+  <div class="f"><span class="lbl">Expected LPI rate for year i</span>
+    E[<var>X</var><sub><var>i</var></sub>] = <var>f</var><sub><var>i</var></sub> − Caplet<sub><var>i</var></sub> + Floorlet<sub><var>i</var></sub>
+  </div>
+
+  <h3>Step 3 · Compound the years and discount</h3>
+  <div class="f"><span class="lbl">PV of the LPI leg (simplified)</span>
+    PV<sub>LPI</sub> = <var>N</var> × <var>D</var>(<var>T</var>) × [ <span class="sum"><span class="s">∏</span><small>i = 1…T</small></span> (1 + E[<var>X</var><sub><var>i</var></sub>]) − 1 ]
+  </div>
+  <div class="f"><span class="lbl">PV of the fixed leg, and of the swap for the LPI payer</span>
+    PV<sub>fixed</sub> = <var>N</var> × <var>D</var>(<var>T</var>) × [ (1 + <var>K</var>)<sup><var>T</var></sup> − 1 ]
+    &nbsp;&nbsp;&nbsp; PV = PV<sub>fixed</sub> − PV<sub>LPI</sub>
+  </div>
+  <dl class="where">
+    <dt>∏</dt><dd>"multiply together", the product version of Σ</dd>
+    <dt><var>D</var>(<var>T</var>)</dt><dd>GBP discount factor to maturity (SONIA curve)</dd>
+  </dl>
+  <aside class="trap"><p>Step 3 replaces "expected value of a product" by "product of expected values". That is exact only if each year's inflation is independent of the others. In reality a high-inflation year tends to be followed by another, and the real LPI index is path-dependent. Treat this formula as a teaching approximation. Production models (for example Jarrow–Yildirim, or a YoY market model with year-to-year correlation) handle the dependence.</p></aside>
+</section>
+
+<section class="lvl" id="desk">
+  <h2><span class="lv">Level 4</span> Desk reality</h2>
+  <ul>
+    <li><b>Reading the trade description.</b> <code>Max(Min[GBP-LPI Mar-2M,5%], 0%)</code> is the clipping rule. <code>Mar-2M</code> means the index is observed with a 2-month lag, anchored on March RPI. <code>P</code> on the LPI leg and <code>R 3.421 %</code> mean we pay LPI and receive 3.421% compounded over 20 years.</li>
+    <li><b>Who trades it.</b> UK defined-benefit pension schemes are the natural receivers of LPI, because their liabilities are LPI-linked. Banks pay LPI to them and hedge with RPI zero-coupon swaps plus YoY caps and floors.</li>
+    <li><b>Smile.</b> The 0% floor and the 5% cap sit far from the forward (around 3%), so each strike has its own normal vol. A single flat <var>σ</var> as in the calculator understates both options when the smile is steep.</li>
+    <li><b>The 0% floor is expensive when inflation is low.</b> In 2020, with RPI near 1%, the floor was valuable. In 2022–23, with RPI above 10%, the 5% cap was deep in the money and LPI receivers got far less than RPI.</li>
+    <li><b>RPI reform.</b> From February 2030 RPI is aligned with CPIH, which lowers expected RPI after 2030. This shows up as a drop in long-dated forward YoY rates.</li>
+    <li><b>Seasonality and lag.</b> Monthly RPI has seasonal patterns. The 2-month lag means the first year's rate may be partly known already, which removes its option value.</li>
+  </ul>
+</section>
+
+<section class="sec" id="greeks">
+  <h2>Greeks that matter</h2>
+  <div class="tbl greeks"><table>
+    <thead><tr><th>Greek</th><th>What it measures</th><th>For an LPI swap</th></tr></thead>
+    <tbody>
+      <tr><td>Inflation01 (IE01)</td><td>PV change if all forward YoY rates move +1bp</td><td>The main risk. It is smaller than for a plain RPI swap of the same size, because when inflation is near the cap or floor, extra inflation stops counting. The LPI payer loses when inflation rises.</td></tr>
+      <tr><td>Normal vega</td><td>PV change if YoY vol moves +1bp</td><td>Higher vol makes both the cap and the floor more valuable. They push the expected LPI rate in opposite directions. With forwards near 3%, the cap usually wins, so the LPI payer gains from higher vol.</td></tr>
+      <tr><td>DV01</td><td>PV change if GBP rates move +1bp</td><td>Comes from <var>D</var>(<var>T</var>) on the net amount. It is small for a near-zero PV trade, but large on long 20Y+ trades that have drifted.</td></tr>
+      <tr><td>Correlation</td><td>Sensitivity to year-to-year inflation correlation</td><td>Not visible in the simple formula. A real risk on long LPI books.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="sec" id="example">
+  <h2>Worked example</h2>
+  <p>We pay LPI [0%, 5%] and receive fixed 3.00% on GBP 10m for 5 years. The forward YoY RPI is flat at 3.20%, the YoY normal vol is 1.20% (120bp) for every year, and the GBP discount rate is 4.00% continuously compounded.</p>
+  <ol class="steps">
+    <li><span>Year 1 caplet at 5%. Here <var>σ</var>√<var>t</var> = 1.20%.</span>
+      <div class="calc-line">d_c = (3.20% − 5%) / 1.20% = −1.500     Caplet = (−1.80%)·N(−1.5) + 1.20%·n(1.5) = 0.03517%</div></li>
+    <li><span>Year 1 floorlet at 0%.</span>
+      <div class="calc-line">d_f = 3.20% / 1.20% = 2.667     Floorlet = (−3.20%)·N(−2.667) + 1.20%·n(2.667) = 0.00142%</div></li>
+    <li><span>Year 1 expected LPI rate.</span>
+      <div class="calc-line">E[X1] = 3.20% − 0.03517% + 0.00142% = 3.16625%</div></li>
+    <li><span>Repeat for years 2 to 5. <var>σ</var>√<var>t</var> grows (1.70%, 2.08%, 2.40%, 2.68%), so both options grow.</span>
+      <div class="calc-line">E[X2] = 3.09367%   E[X3] = 3.03356%   E[X4] = 2.98695%   E[X5] = 2.95016%</div></li>
+    <li><span>Compound the five years.</span>
+      <div class="calc-line">1.0316625 × 1.0309367 × 1.0303356 × 1.0298695 × 1.0295016 = 1.1618701</div></li>
+    <li><span>Fixed leg factor and discount factor.</span>
+      <div class="calc-line">(1.03)^5 = 1.1592741        D(5) = e^(−0.04×5) = 0.818731</div></li>
+    <li><span>Leg values.</span>
+      <div class="calc-line">PV_LPI   = 10,000,000 × 0.818731 × 0.1618701 = 1,325,280
+PV_fixed = 10,000,000 × 0.818731 × 0.1592741 = 1,304,026</div></li>
+    <li><span>Swap PV for the LPI payer.</span>
+      <div class="calc-line">PV = 1,304,026 − 1,325,280 = −21,254</div></li>
+  </ol>
+  <p class="answer">The swap is worth <b>−GBP 21,254</b> to the LPI payer. Without the cap and floor, the RPI leg would be worth GBP 1,396,533. Clipping removes about GBP 71k of value, because the 5% cap removes more inflation than the 0% floor adds back.</p>
+</section>
+
+<section class="sec" id="try">
+  <h2>Try it</h2>
+  <p>Raise the vol and watch the expected LPI rates fall away from the forward. Move the forward towards 0% and watch the floor take over. The table shows each year's pieces.</p>
+  <div id="calc-lpi"></div>
+</section>
+
+<section class="sec" id="recap">
+  <h2>Remember</h2>
+  <ul class="recap">
+    <li>LPI clips each year's inflation into [0%, 5%] and then compounds the years.</li>
+    <li>Clipped rate = inflation − YoY caplet at 5% + YoY floorlet at 0%.</li>
+    <li>Price each yearly option with Bachelier on the forward YoY rate, then multiply the expected yearly factors and discount.</li>
+    <li>Multiplying expectations ignores year-to-year correlation. It is a simplification, and the real product is path-dependent.</li>
+    <li>Risks: inflation01 (damped by the clipping), normal vega, DV01 and inflation correlation.</li>
+  </ul>
+</section>
+
+</main>
+</div>
+<script src="assets/course.js"></script>
+<script>
+// Expected LPI factors with independent years (teaching approximation).
+function lpiLeg(o) {
+  const rows = []; let prod = 1;
+  for (let i = 1; i <= o.T; i++) {
+    const cap = C.bachelier({ F: o.f, K: o.cap, T: i, volN: o.s, call: true }).pv;
+    const flr = C.bachelier({ F: o.f, K: o.flr, T: i, volN: o.s, call: false }).pv;
+    const e = o.f - cap + flr; prod *= 1 + e;
+    rows.push({ i, cap, flr, e, prod });
+  }
+  return { rows, prod };
+}
+
+C.legs('#legs-lpi', {
+  tMin: 0, tMax: 5.3, ticks: [0, 1, 2, 3, 4, 5],
+  events: [{ t: 0, label: 'Trade' }, { t: 5, label: 'Maturity: one exchange' }],
+  legs: [
+    { name: 'Fixed leg: you receive N × [(1.03)^5 − 1]', dir: 1, style: 'fixed', flows: [{ t: 5, a: 1.59, label: '1,592,741', tip: 'Fixed: 10m × (1.03^5 − 1) = GBP 1,592,741, paid at year 5' }] },
+    { name: 'Yearly LPI rate recorded (not paid)', dir: -1, style: 'contingent', color: 'aqua', flows: [1, 2, 3, 4].map(t => ({ t, a: 0.35, tip: `Year ${t}: LPI rate X${t} = clip(RPI YoY, 0%, 5%) is recorded` })) },
+    { name: 'LPI leg: you pay N × [∏(1 + X_i) − 1]', dir: -1, style: 'float', flows: [{ t: 5, a: 1.62, label: '≈ 1,618,701', tip: 'LPI: 10m × (∏(1+X_i) − 1); expected ≈ GBP 1,618,701, paid at year 5' }] },
+  ],
+});
+
+C.chart('#chart-clip', {
+  x: [-0.03, 0.10], xLabel: 'RPI inflation over the year', yLabel: 'rate recorded for the year',
+  xFmt: x => C.pct(x, 0), yFmt: y => C.pct(y, 0), tipFmt: y => C.pct(y, 2), height: 240,
+  series: [
+    { name: 'Plain RPI inflation', f: y => y, color: 2, dashed: true },
+    { name: 'LPI rate [0%, 5%]', f: y => Math.min(Math.max(y, 0), 0.05), color: 1 },
+  ],
+  marks: [{ x: 0, label: 'floor 0%' }, { x: 0.05, label: 'cap 5%' }],
+});
+
+C.calc('#calc-lpi', {
+  title: 'LPI swap pricer (independent-years approximation)',
+  inputs: [
+    { id: 'side', label: 'Position', value: 1, options: [[1, 'Pay LPI, receive fixed'], [-1, 'Receive LPI, pay fixed']] },
+    { id: 'N', label: 'Notional', unit: 'GBP m', value: 10, step: 1 },
+    { id: 'T', label: 'Maturity', unit: 'years', value: 5, step: 1, min: 1, max: 40 },
+    { id: 'f', label: 'Forward YoY RPI', unit: '%', value: 3.20, step: 0.05 },
+    { id: 's', label: 'YoY normal vol', unit: '%', value: 1.20, step: 0.05, min: 0 },
+    { id: 'flr', label: 'Floor', unit: '%', value: 0, step: 0.5 },
+    { id: 'cap', label: 'Cap', unit: '%', value: 5, step: 0.5 },
+    { id: 'K', label: 'Fixed rate K', unit: '%', value: 3.00, step: 0.01 },
+    { id: 'r', label: 'GBP discount rate', unit: '%', value: 4.00, step: 0.05 },
+  ],
+  compute: v => {
+    const T = Math.max(1, Math.round(v.T));
+    if (v.cap <= v.flr) throw new Error('the cap must be above the floor');
+    const base = { T, f: v.f / 100, s: v.s / 100, cap: v.cap / 100, flr: v.flr / 100 };
+    const N = v.N * 1e6, D = Math.exp(-v.r / 100 * T), fixF = Math.pow(1 + v.K / 100, T);
+    const pv = o => { const l = lpiLeg(o); return v.side * N * D * ((fixF - 1) - (l.prod - 1)); };
+    const leg = lpiLeg(base), p0 = pv(base);
+    const ie01 = pv({ ...base, f: base.f + 1e-4 }) - p0;
+    const vega = pv({ ...base, s: base.s + 1e-4 }) - p0;
+    const plain = N * D * (Math.pow(1 + base.f, T) - 1);
+    return {
+      out: [
+        ['Expected LPI factor ∏(1+E[X])', C.fmt(leg.prod, 7)],
+        ['Fixed factor (1+K)^T', C.fmt(fixF, 7)],
+        ['Discount factor D(T)', C.fmt(D, 6)],
+        ['LPI leg PV', 'GBP ' + C.fmt(N * D * (leg.prod - 1), 0)],
+        ['Fixed leg PV', 'GBP ' + C.fmt(N * D * (fixF - 1), 0)],
+        ['Swap PV', 'GBP ' + C.fmt(p0, 0), true],
+        ['Inflation01 (forward +1bp)', 'GBP ' + C.fmt(ie01, 0)],
+        ['Vega (normal vol +1bp)', 'GBP ' + C.fmt(vega, 0)],
+        ['Unclipped RPI leg PV (for comparison)', 'GBP ' + C.fmt(plain, 0)],
+      ],
+      table: {
+        head: ['Year', 'Forward YoY', 'Caplet', 'Floorlet', 'E[LPI rate]', 'Cumulative factor'], num: [1, 2, 3, 4, 5],
+        rows: leg.rows.map(r => [r.i, C.pct(base.f, 3), C.pct(r.cap, 5), C.pct(r.flr, 5), C.pct(r.e, 5), C.fmt(r.prod, 7)]),
+      },
+      note: 'Flat forward YoY and flat normal vol; each year treated as independent (product of expectations). Real LPI pricing uses a curve of forwards, a vol smile per strike and year-to-year correlation.',
+    };
+  },
+});
+</script>
+</body>
+</html>

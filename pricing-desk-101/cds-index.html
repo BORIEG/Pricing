@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CDS Indices</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=JetBrains+Mono:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..600&display=swap">
+<link rel="stylesheet" href="assets/course.css">
+</head>
+<body data-page="cds-index.html">
+<div class="shell">
+<aside class="toc" id="toc"></aside>
+<main class="page">
+
+<header class="ph">
+  <p class="eyebrow">Part 4 · Credit</p>
+  <h1>CDS indices</h1>
+  <p class="lede">One contract that sells (or buys) protection on a whole basket of companies at once, in equal slices. It is the most liquid credit product in the world and the way the desk trades "credit" as a market.</p>
+  <div class="ptypes" data-ptypes data-eg="Sell iTraxx Japan Series 34 Version 1 JPY 100 Dec 2030"></div>
+</header>
+
+<section class="lvl" id="idea">
+  <h2><span class="lv">Level 1</span> The idea</h2>
+  <div class="prose">
+    <p>On the <a href="cds.html">CDS page</a> we insured one company. A <b>CDS index</b> insures 125 companies at once, each with the same weight. If you sell EUR 50m of protection on iTraxx Europe Main, you have effectively sold EUR 400,000 of protection on each of 125 large European companies.</p>
+    <p>You receive one premium on the whole basket. Each time one of the companies defaults, you pay its loss on its slice. That slice is then removed and the rest of the contract carries on.</p>
+  </div>
+  <aside class="analogy"><p>Think of a football sticker album where you insure every sticker in the pack, not just one player. Losing one sticker costs you a little and you keep going with the rest. The premium is set by how fragile the whole pack is on average.</p></aside>
+  <div class="tbl"><table>
+    <thead><tr><th>Index family</th><th class="num">Names</th><th class="num">Coupon</th><th>Quoted in</th></tr></thead>
+    <tbody>
+      <tr><td>iTraxx Europe Main</td><td class="num">125</td><td class="num">100bp</td><td>spread</td></tr>
+      <tr><td>iTraxx Europe Crossover</td><td class="num">75</td><td class="num">500bp</td><td>spread</td></tr>
+      <tr><td>iTraxx Japan</td><td class="num">40</td><td class="num">100bp</td><td>spread</td></tr>
+      <tr><td>CDX North America IG</td><td class="num">125</td><td class="num">100bp</td><td>spread</td></tr>
+      <tr><td>CDX North America HY</td><td class="num">100</td><td class="num">500bp</td><td>price</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="lvl" id="cashflows">
+  <h2><span class="lv">Level 2</span> The cashflows</h2>
+  <div class="prose">
+    <p>The legs are the same as a single-name CDS, scaled by the basket.</p>
+    <ul>
+      <li><span class="rec-c">Premium leg</span>. The fixed coupon × <b>outstanding</b> notional × <var>τ</var> is paid on each IMM date (20 Mar, 20 Jun, 20 Sep, 20 Dec).</li>
+      <li><span class="pay-c">Protection leg</span>. When one of the <var>n</var> names defaults, the seller pays (1 − <var>R</var><sub>name</sub>) × <var>N</var> ÷ <var>n</var>. The outstanding notional falls by <var>N</var> ÷ <var>n</var>.</li>
+    </ul>
+    <p>The <b>index factor</b> tracks how much notional survives: <var>f</var> = (names left) ÷ (original names). The <b>version</b> in the name counts defaults. <code>Series 34 Version 1</code> has had no defaults yet. After the first one, trades move to Version 2 with a factor below 1.</p>
+  </div>
+  <figure class="fig">
+    <div class="fig-title">Protection seller, EUR 50m iTraxx Europe Main S46, two hypothetical defaults</div>
+    <div id="legs-idx"></div>
+    <figcaption>Solid arrows = <b>coupons</b> on the surviving notional (100bp × τ × 50m ≈ EUR 126k a quarter). Dotted arrows = <b>contingent</b> payments of (1 − <var>R</var>) × 50m ÷ 125 = EUR 240k, each made only if a name defaults. Each default also trims every later coupon by 1/125.</figcaption>
+  </figure>
+</section>
+
+<section class="lvl" id="pv">
+  <h2><span class="lv">Level 3</span> The PV formula</h2>
+  <h3>Step 1 · An index is an average of single-name CDS</h3>
+  <div class="prose"><p>Each name <var>k</var> has its own hazard rate <var>λ</var><sub><var>k</var></sub>. The exact value of the index is the average of the <var>n</var> single-name contracts, all with the index coupon <var>c</var>:</p></div>
+  <div class="f"><span class="lbl">Intrinsic value (per unit of current notional)</span>
+    PV<sub>seller</sub> = <span class="frac"><span>1</span><span><var>n</var></span></span> <span class="sum"><span class="s">Σ</span><small>k</small></span> [ <var>c</var> × RPV01<sub><var>k</var></sub> − Prot<sub><var>k</var></sub> ]
+  </div>
+  <div class="prose"><p>This sum is called the <b>intrinsic</b> value. Notice that we average <em>values</em>, not spreads. Wide names have a smaller RPV01 because they are likely to drop out early, so the average spread overstates the index spread a little.</p></div>
+
+  <h3>Step 2 · The market shortcut: one flat curve</h3>
+  <div class="prose"><p>In practice the index is quoted as a single spread <var>S</var>. Everyone converts it to cash by pretending the index is one company with a flat hazard rate. That is the single-name model from the CDS page, run once:</p></div>
+  <div class="f left"><span class="lbl">Index quote to cash</span>
+    solve <var>λ</var> so that Prot(<var>λ</var>) ÷ RPV01(<var>λ</var>) = <var>S</var><br>
+    upfront paid by buyer = Prot − <var>c</var> × RPV01<br>
+    price = 100 × (1 − upfront)<br>
+    PV<sub>seller</sub> = <var>f</var> × <var>N</var> × ( <var>c</var> × RPV01 − Prot )
+  </div>
+  <dl class="where">
+    <dt><var>N</var>, <var>f</var></dt><dd>original notional and index factor (outstanding notional = <var>f</var> × <var>N</var>)</dd>
+    <dt><var>S</var></dt><dd>the quoted index spread</dd>
+    <dt><var>c</var></dt><dd>the index's fixed coupon (100bp or 500bp)</dd>
+  </dl>
+  <h3>Step 3 · Price quotes (CDX HY)</h3>
+  <div class="prose"><p>High-yield indices are quoted as a <b>price</b>, like a bond: price = 100 − upfront in points. A price of 106.5 on a 500bp index means the buyer of protection receives 6.5 points, because the 500bp coupon is more than the risk is worth. To get the spread, solve the flat-curve model backwards for the <var>S</var> that gives that price. The calculator below does both directions.</p></div>
+  <aside class="key"><p>The quoted spread is a convention for turning the price into cash. The difference between the quote and the intrinsic value is the <b>index basis</b>, typically a few bp. Arbitrage desks trade the index against its 125 single names when the basis gets large.</p></aside>
+</section>
+
+<section class="lvl" id="desk">
+  <h2><span class="lv">Level 4</span> Desk reality</h2>
+  <ul>
+    <li><b>Rolls.</b> A new series launches every 20 March and 20 September with refreshed constituents and a 5-year maturity (for example Series 46 matures 20 Dec 2031). Most liquidity sits in the newest "on-the-run" series. Older ones such as <code>iTraxx Japan Series 34</code> become "off-the-run".</li>
+    <li><b>Defaults.</b> The defaulted name settles through the ISDA auction at its own recovery. A new version starts trading with factor (<var>n</var> − 1) ÷ <var>n</var>. The trade description keeps the series and version, and the notional shown is usually the <em>original</em> amount, so always multiply by the factor.</li>
+    <li><b>Upfront</b> settles T+3 business days, with accrued since the last IMM date exchanged as for single names.</li>
+    <li><b>Clearing.</b> Index trades are cleared at ICE Clear Credit / ICE Clear Europe, margined daily, and discounted on OIS.</li>
+    <li><b>Japan.</b> <code>JPY 100</code> in the trade description is the 100bp coupon, not the notional.</li>
+  </ul>
+</section>
+
+<section class="sec" id="greeks">
+  <h2>Greeks that matter</h2>
+  <div class="tbl greeks"><table>
+    <thead><tr><th>Greek</th><th>What it measures</th><th>For a CDS index</th></tr></thead>
+    <tbody>
+      <tr><td>CS01</td><td>PV change if the index spread widens 1bp</td><td>≈ −<var>f</var> × <var>N</var> × RPV01 × 0.0001 for the seller. On EUR 50m 5Y Main that is about −EUR 24,000 per bp. This is the main daily risk.</td></tr>
+      <tr><td>JTD per name</td><td>PV change if one constituent defaults now</td><td>≈ −(<var>N</var> ÷ <var>n</var>)(1 − <var>R</var>) − PV ÷ <var>n</var>. On the example: −EUR 248k per name. Summed over the riskiest names, it gives a stress number.</td></tr>
+      <tr><td>Spread convexity</td><td>How CS01 changes as spreads move</td><td>The seller's CS01 shrinks as spreads widen, because RPV01 falls. This matters on 500bp HY and Crossover.</td></tr>
+      <tr><td>Index basis</td><td>Quote minus intrinsic</td><td>Only relevant if you hedge the index with single names.</td></tr>
+      <tr><td>Theta</td><td>Value of one day passing</td><td>The seller earns the coupon and rolls down a (usually upward-sloping) credit curve.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="sec" id="example">
+  <h2>Worked example</h2>
+  <p>Today is 23 Nov 2026. We sell EUR 50m of protection on <b>iTraxx Europe Main Series 46</b> (125 names, 100bp coupon, maturity 20 Dec 2031, no defaults so far, <var>f</var> = 1). The quote is <b>58bp</b>. We use <var>R</var> = 40% and EUR OIS at 2.00% flat.</p>
+  <ol class="steps">
+    <li><span>There are 21 quarterly IMM dates from 20 Dec 2026 to 20 Dec 2031. Solve the flat hazard rate that prices to 58bp. The credit triangle guess is 0.0058 ÷ 0.6 = 0.97%.</span>
+      <div class="calc-line">λ = 0.98009%</div></li>
+    <li><span>Value the two legs per unit notional, exactly as on the CDS page.</span>
+      <div class="calc-line">RPV01 = 4.764964    Prot = 0.027637</div></li>
+    <li><span>Upfront and price. The seller receives 100bp but the risk is only worth 58bp, so the seller pays.</span>
+      <div class="calc-line">upfront (buyer pays) = 0.027637 − 0.01 × 4.764964 = −0.020013  →  −2.0013 points
+price = 100 − (−2.0013) = 102.0013</div></li>
+    <li><span>PV of our short-protection position (equal to what we paid upfront at this quote).</span>
+      <div class="calc-line">PV = 1 × 50,000,000 × (0.01 × 4.764964 − 0.027637) = +EUR 1,000,642</div></li>
+    <li><span>Risks.</span>
+      <div class="calc-line">CS01 = −EUR 24,233 per bp
+JTD per name = −50,000,000/125 × 0.6 − 1,000,642/125 = −240,000 − 8,005 = −EUR 248,005</div></li>
+    <li><span>A default in Crossover (75 names) on EUR 10m with recovery 30%:</span>
+      <div class="calc-line">seller pays 10,000,000/75 × 0.70 = EUR 93,333   new factor = 74/75 = 0.98667   notional → EUR 9,866,667</div></li>
+  </ol>
+  <p class="answer">At 58bp the index trades at a price of <b>102.00</b>. Our EUR 50m short-protection position is worth <b>+EUR 1,000,642</b> and loses about <b>EUR 24,233</b> for each 1bp of widening.</p>
+</section>
+
+<section class="sec" id="try">
+  <h2>Try it</h2>
+  <p>Enter a spread (Main, Crossover, Japan) or a price (CDX HY). The calculator converts between them with the flat-curve convention and shows how the position's value changes with the index spread.</p>
+  <div id="calc-idx"></div>
+</section>
+
+<section class="sec" id="recap">
+  <h2>Remember</h2>
+  <ul class="recap">
+    <li>An index is an equal-weight basket of single-name CDS with one fixed coupon.</li>
+    <li>Quote to cash: one flat hazard rate, upfront = Prot − <var>c</var> × RPV01, price = 100 − upfront.</li>
+    <li>Defaults pay (1 − <var>R</var>)/<var>n</var> per name and shrink the notional by the factor (<var>n</var> − 1)/<var>n</var>.</li>
+    <li>CS01 for daily risk, JTD per name for stress. Next: slicing the basket's losses into <a href="tranche.html">tranches</a>.</li>
+  </ul>
+</section>
+
+</main>
+</div>
+<script src="assets/course.js"></script>
+<script>
+const TODAY = '2026-11-23';
+function sched(mat) {
+  const out = [], end = C.toDate(mat);
+  for (let k = 0; ; k++) { const d = C.addMonths('2026-12-20', 3 * k); if (d > end) break; out.push(d); }
+  return out;
+}
+function credit(mat, lam, R, r) {
+  let prev = TODAY, Qp = 1, rp = 0, pr = 0;
+  for (const d of sched(mat)) {
+    const t = C.days(TODAY, d) / 365, tau = C.days(prev, d) / 360, D = Math.exp(-r * t), Q = Math.exp(-lam * t);
+    rp += tau * D * (Qp + Q) / 2; pr += (1 - R) * D * (Qp - Q); prev = d; Qp = Q;
+  }
+  return { rp, pr };
+}
+function lamFor(mat, s, R, r) { return C.solve(l => { const x = credit(mat, l, R, r); return x.pr / x.rp - s; }, 1e-8, 5); }
+
+// diagram: 21 quarterly coupons, defaults at ~1.4y and ~3.2y
+(function () {
+  const d = sched('2031-12-20'); let prev = TODAY, f = 1; const cps = [];
+  d.forEach(x => {
+    const t = C.days(TODAY, x) / 365; if (t > 1.4 && f === 1) f = 124 / 125; if (t > 3.2 && f > 123.5 / 125) f = 123 / 125;
+    const a = 0.01 * 50e6 * f * C.days(prev, x) / 360; prev = x;
+    cps.push({ t, a, label: '', tip: `Coupon ${C.iso(x)}: EUR ${C.fmt(a, 0)} on ${C.fmt(f * 50, 1)}m outstanding` });
+  });
+  C.legs('#legs-idx', {
+    tMin: 0, tMax: 5.2, ticks: [0, 1, 2, 3, 4, 5],
+    events: [{ t: 0, label: 'Today' }, { t: 1.4, label: 'Default #1' }, { t: 3.2, label: 'Default #2' }, { t: 5.074, label: 'Maturity' }],
+    legs: [
+      { name: 'Coupons: you receive 100bp × τ × outstanding notional', dir: 1, style: 'fixed', flows: cps },
+      { name: 'Protection: you pay (1 − R) × 50m ÷ 125 per default', dir: -1, style: 'contingent', flows: [
+        { t: 1.4, a: 240000, label: '240k', tip: 'Contingent: 0.6 × 50m ÷ 125 = EUR 240,000 if a name defaults' },
+        { t: 3.2, a: 240000, label: '240k', tip: 'Contingent: 0.6 × 50m ÷ 125 = EUR 240,000 if a name defaults' }] },
+    ],
+    height: 110,
+  });
+})();
+
+C.calc('#calc-idx', {
+  title: 'CDS index pricer (flat-curve market convention)',
+  inputs: [
+    { id: 'side', label: 'Position', value: 1, options: [[1, 'Sell protection'], [-1, 'Buy protection']] },
+    { id: 'N', label: 'Original notional', unit: 'm', value: 50, step: 5 },
+    { id: 'n', label: 'Names in index', value: 125, options: [[125, '125 (Main, CDX IG)'], [100, '100 (CDX HY)'], [75, '75 (Crossover)'], [40, '40 (Japan)']] },
+    { id: 'dflt', label: 'Defaults so far', value: 0, step: 1, min: 0 },
+    { id: 'c', label: 'Coupon', unit: 'bp', value: 100, options: [[100, '100bp'], [500, '500bp']] },
+    { id: 'qt', label: 'Quote type', value: 'spread', options: [['spread', 'Spread (bp)'], ['price', 'Price']] },
+    { id: 'q', label: 'Quote', value: 58, step: 1 },
+    { id: 'R', label: 'Recovery', unit: '%', value: 40, step: 5, min: 0, max: 95 },
+    { id: 'mat', label: 'Maturity', value: '2031-12-20', options: [['2030-12-20', '20 Dec 2030'], ['2031-06-20', '20 Jun 2031'], ['2031-12-20', '20 Dec 2031']] },
+    { id: 'r', label: 'OIS rate', unit: '%', value: 2.00, step: 0.05 },
+  ],
+  compute: v => {
+    const c = v.c / 1e4, R = v.R / 100, r = v.r / 100, f = Math.max(0, (v.n - v.dflt) / v.n), N = v.N * 1e6;
+    const up = s => { const x = credit(v.mat, lamFor(v.mat, s, R, r), R, r); return { x, u: x.pr - c * x.rp }; };
+    let S;
+    if (v.qt === 'price') {
+      const target = 1 - v.q / 100;
+      S = C.solve(s => up(s).u - target, 1e-6, 0.5);
+      if (!Number.isFinite(S)) throw new Error('price is outside the range the model can match');
+    } else S = v.q / 1e4;
+    const b = up(S), b1 = up(S + 1e-4);
+    const pv = v.side * f * N * (c * b.x.rp - b.x.pr), pv1 = v.side * f * N * (c * b1.x.rp - b1.x.pr);
+    const lo = Math.max(5, S * 1e4 * 0.3), hi = S * 1e4 * 2.2 + 20;
+    const jtd = v.side * (-(N / v.n) * (1 - R)) - pv / Math.max(1, v.n - v.dflt);
+    return {
+      out: [
+        ['Index factor f', C.fmt(f, 5)],
+        ['Spread', C.fmt(S * 1e4, 2) + 'bp'],
+        ['Price', C.fmt(100 * (1 - b.u), 4)],
+        ['Upfront paid by buyer', C.fmt(100 * b.u, 4) + ' pts'],
+        ['RPV01', C.fmt(b.x.rp, 5)],
+        ['PV of position', C.fmt(pv, 0), true],
+        ['CS01 (+1bp)', C.fmt(pv1 - pv, 0)],
+        ['JTD per name', C.fmt(jtd, 0)],
+      ],
+      chart: {
+        x: [lo, hi], n: 60, xLabel: 'index spread (bp)', yLabel: 'PV of position',
+        xFmt: x => C.fmt(x, 0), yFmt: y => C.fmt(y / 1e3, 0) + 'k', tipFmt: y => C.fmt(y, 0), zero: false,
+        series: [{ name: 'PV', f: s => { const u = up(s / 1e4); return v.side * f * N * (c * u.x.rp - u.x.pr); }, color: 1 }],
+        marks: [{ x: S * 1e4, label: 'quote' }, { x: v.c, label: 'coupon' }].filter(m => m.x >= lo && m.x <= hi),
+      },
+      note: 'Flat hazard rate solved to the quoted spread, premium accrues from today, quarterly IMM schedule. A price quote is converted to spread by solving the same model.',
+    };
+  },
+});
+</script>
+</body>
+</html>

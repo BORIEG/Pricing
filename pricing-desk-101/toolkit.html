@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Pricing Toolkit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=JetBrains+Mono:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..600&display=swap">
+<link rel="stylesheet" href="assets/course.css">
+</head>
+<body data-page="toolkit.html">
+<div class="shell">
+<aside class="toc" id="toc"></aside>
+<main class="page">
+
+<header class="ph">
+  <p class="eyebrow">Part 0 · Start here</p>
+  <h1>The pricing toolkit</h1>
+  <p class="lede">Every product in this course is priced with the same few tools: discount factors, forward rates, a little probability and two option formulas. Learn these once and every later page is just a new arrangement of them.</p>
+</header>
+
+<section class="sec" id="tvm">
+  <h2>1 · Money has a time stamp</h2>
+  <div class="prose">
+    <p>£100 today is worth more than £100 in two years, because today's £100 can be put in the bank and earn interest. Pricing is mostly about moving money through time.</p>
+    <p>If the bank pays 4% a year, £100 grows to 100 × 1.04 = £104 after one year and 100 × 1.04<sup>2</sup> = £108.16 after two. Run it backwards: to <em>have</em> £100 in two years you only need 100 ÷ 1.04<sup>2</sup> = £92.46 today. That £92.46 is the <b>present value</b> (PV) of £100 paid in two years.</p>
+  </div>
+  <aside class="analogy"><p>A discount factor is an exchange rate between dates. Just as 1 euro buys 0.86 pounds, £1 delivered in two years "buys" £0.9246 today.</p></aside>
+  <div class="f"><span class="lbl">Discount factor and present value</span>
+    <var>D</var>(<var>T</var>) = <span class="frac"><span>1</span><span>(1 + <var>r</var>)<sup><var>T</var></sup></span></span>
+    &nbsp;&nbsp;&nbsp; PV = <span class="sum"><small></small><span class="s">Σ</span><small>i</small></span> <var>CF</var><sub><var>i</var></sub> × <var>D</var>(<var>t</var><sub><var>i</var></sub>)
+  </div>
+  <dl class="where">
+    <dt><var>D</var>(<var>T</var>)</dt><dd>discount factor: today's value of 1 unit paid at time <var>T</var> (in years). Always between 0 and 1 when rates are positive.</dd>
+    <dt><var>CF</var><sub><var>i</var></sub></dt><dd>the <var>i</var>-th cashflow, positive if you receive it and negative if you pay it</dd>
+    <dt>Σ</dt><dd>"add them all up"</dd>
+  </dl>
+  <aside class="key"><p>The PV of <em>any</em> product is the sum of its cashflows, each multiplied by its discount factor. The hard part is only ever working out what the cashflows will be.</p></aside>
+</section>
+
+<section class="sec" id="compounding">
+  <h2>2 · Compounding: the same rate, written four ways</h2>
+  <div class="prose">
+    <p>"5%" means nothing until you say how often interest is added. The discount factor is what matters. A rate is just a way of quoting it.</p>
+  </div>
+  <div class="tbl"><table>
+    <thead><tr><th>Convention</th><th>Discount factor <var>D</var>(<var>T</var>)</th><th>Where you meet it</th></tr></thead>
+    <tbody>
+      <tr><td>Simple</td><td>1 ÷ (1 + <var>r</var><var>T</var>)</td><td>Money markets, deposits, repo, FRAs (periods under a year)</td></tr>
+      <tr><td>Annual</td><td>1 ÷ (1 + <var>r</var>)<sup><var>T</var></sup></td><td>EUR bond yields, swap fixed legs</td></tr>
+      <tr><td><var>m</var> times a year</td><td>1 ÷ (1 + <var>r</var>/<var>m</var>)<sup><var>m</var><var>T</var></sup></td><td>US Treasury yields (<var>m</var> = 2), mortgages (<var>m</var> = 12)</td></tr>
+      <tr><td>Continuous</td><td>e<sup>−<var>r</var><var>T</var></sup></td><td>Zero curves inside pricing systems, option formulas</td></tr>
+    </tbody>
+  </table></div>
+  <p>Example: 5% annual compounding is the same as 4.879% continuous (ln 1.05 = 0.04879) and 4.939% semi-annual. All three give the same discount factor.</p>
+  <div id="calc-comp"></div>
+</section>
+
+<section class="sec" id="daycount">
+  <h2>3 · Day counts: how long is "half a year"?</h2>
+  <div class="prose">
+    <p>Interest is rate × time, so we need a rule that turns two dates into a year fraction <var>τ</var>. Each market has its own rule, called a <b>day count</b>. Getting it wrong is the most common reason a price is off by a few hundred dollars.</p>
+  </div>
+  <div class="tbl"><table>
+    <thead><tr><th>Day count</th><th>Rule</th><th class="num">15 Jan → 15 Jul 2027</th><th>Used for</th></tr></thead>
+    <tbody>
+      <tr><td>ACT/360</td><td>actual days ÷ 360</td><td class="num">181/360 = 0.50278</td><td>USD, EUR, CHF money markets, SOFR, €STR, EURIBOR, repo</td></tr>
+      <tr><td>ACT/365F</td><td>actual days ÷ 365</td><td class="num">181/365 = 0.49589</td><td>GBP (SONIA), JPY, AUD, ZAR, and most curve time</td></tr>
+      <tr><td>30/360</td><td>every month counts as 30 days</td><td class="num">180/360 = 0.50000</td><td>USD swap fixed legs, many corporate bonds</td></tr>
+      <tr><td>ACT/ACT</td><td>actual days ÷ actual days in the year (or period)</td><td class="num">181/365 = 0.49589</td><td>Government bonds (UST, Gilts, Bunds)</td></tr>
+    </tbody>
+  </table></div>
+  <aside class="trap"><p>Using ACT/365 where the market uses ACT/360 makes interest 1.4% too small. On a $100m one-year deposit at 4% that is about $56,000.</p></aside>
+</section>
+
+<section class="sec" id="forwards">
+  <h2>4 · Zero curves and forward rates</h2>
+  <div class="prose">
+    <p>The market does not pay the same rate for every horizon. A <b>zero curve</b> lists, for each maturity <var>T</var>, the rate <var>z</var>(<var>T</var>) for money locked up from today until <var>T</var> with nothing paid in between. From it we get a discount factor for every date: <var>P</var>(<var>T</var>) = e<sup>−<var>z</var>(<var>T</var>)<var>T</var></sup>.</p>
+    <p>A <b>forward rate</b> is the rate the curve implies for a period that starts in the future. Investing to <var>T</var><sub>2</sub> directly must give the same as investing to <var>T</var><sub>1</sub> and then rolling at the forward rate. If it did not, you could make free money.</p>
+  </div>
+  <div class="f"><span class="lbl">Forward rate between T1 and T2 (simple, accrual τ)</span>
+    <span class="frac"><span>1</span><span><var>P</var>(<var>T</var><sub>2</sub>)</span></span> = <span class="frac"><span>1</span><span><var>P</var>(<var>T</var><sub>1</sub>)</span></span> × (1 + <var>F</var><var>τ</var>)
+    &nbsp;&nbsp;⇒&nbsp;&nbsp;
+    <var>F</var> = <span class="frac"><span>1</span><span><var>τ</var></span></span> ( <span class="frac"><span><var>P</var>(<var>T</var><sub>1</sub>)</span><span><var>P</var>(<var>T</var><sub>2</sub>)</span></span> − 1 )
+  </div>
+  <p>Example: 1-year zero 3.0% and 2-year zero 3.5% (continuous). <var>P</var>(1) = e<sup>−0.03</sup> = 0.970446, <var>P</var>(2) = e<sup>−0.07</sup> = 0.932394, so the 1y-into-1y forward is 0.970446 ÷ 0.932394 − 1 = <b>4.081%</b> simple. In continuous terms it is (3.5 × 2 − 3.0 × 1) ÷ 1 = 4.0%. When the curve slopes up, forwards sit above the zero rates.</p>
+  <div id="calc-fwd"></div>
+</section>
+
+<section class="sec" id="curves">
+  <h2>5 · Two curves: discounting vs projection</h2>
+  <div class="prose">
+    <p>Since 2008 desks use <b>separate curves for two separate jobs</b>.</p>
+    <ul>
+      <li><b>Discounting curve (OIS).</b> Most trades are collateralised: whoever is losing posts cash, and that cash earns the overnight rate (SOFR, €STR, SONIA, SARON, TONA). So the cost of carrying a trade is the overnight rate, and we discount with the OIS curve built from it.</li>
+      <li><b>Projection curves.</b> A floating leg paying 3M EURIBOR or 3M STIBOR pays more than overnight, because a 3-month unsecured loan carries bank credit risk. Each index gets its own curve, used <em>only</em> to compute its forwards.</li>
+    </ul>
+    <p>For a currency without collateral in that currency (for example a USD-collateralised ZAR swap), the discount curve is the ZAR curve adjusted by the cross-currency basis. The <a href="xccy.html">cross-currency</a> page covers this.</p>
+  </div>
+  <aside class="desk"><p>In pricing systems you will see a "rates provider" or "curve set": one discount curve per currency and collateral type, plus one projection curve per index and tenor (SOFR, EURIBOR-3M, EURIBOR-6M, TIIE-28D and so on).</p></aside>
+</section>
+
+<section class="sec" id="dv01">
+  <h2>6 · Basis points, DV01 and bucketed risk</h2>
+  <div class="prose">
+    <p>Rates move in <b>basis points</b>: 1bp = 0.01% = 0.0001. The first question a trader asks about any rates position is "what is my DV01?". That is how much the PV changes if rates rise by 1bp. It is also called PV01.</p>
+  </div>
+  <div class="f"><span class="lbl">DV01 by bump-and-reprice</span>
+    DV01 = PV(curve + 1bp) − PV(curve)
+  </div>
+  <p>Example: receiving $100m in 5 years, zero rate 4% continuous. PV = 100m × e<sup>−0.20</sup> = $81,873,075. Bumping to 4.01% gives a PV $40,926 lower, so DV01 = −$40,926. A quick rule: DV01 ≈ PV × <var>T</var> × 0.0001 = $40,937.</p>
+  <div class="prose">
+    <p><b>Bucketed risk</b> bumps one point of the curve at a time (2y, 5y, 10y, ...) instead of the whole curve. It shows <em>where</em> on the curve you are exposed. A 5y-vs-10y steepener can have zero total DV01 and large bucket risks.</p>
+  </div>
+</section>
+
+<section class="sec" id="probability">
+  <h2>7 · Probability and the normal table N(x)</h2>
+  <div class="prose">
+    <p>Options pay only in some outcomes, so we need probability. The <b>expected value</b> is each outcome times its probability, added up. A ticket that pays £100 on heads is worth 0.5 × 100 = £50, or £48 if it pays in a year and <var>D</var> = 0.96.</p>
+    <p>For pricing we use <b>risk-neutral</b> probabilities. They are the probabilities that make today's market prices consistent, since anyone can hedge. In practice this means: assume the underlying grows on average at its forward, take the expected payoff, and discount it.</p>
+    <p>Many moves in markets look like a bell curve. <b>N(x)</b> is the probability that a standard bell-curve variable ends up below <var>x</var>. You can read it from a table, or from the chart below.</p>
+  </div>
+  <div class="tbl"><table>
+    <thead><tr><th>x</th><th class="num">−2</th><th class="num">−1</th><th class="num">0</th><th class="num">1</th><th class="num">1.645</th><th class="num">1.96</th><th class="num">2</th></tr></thead>
+    <tbody><tr><td>N(x)</td><td class="num">0.0228</td><td class="num">0.1587</td><td class="num">0.5000</td><td class="num">0.8413</td><td class="num">0.9500</td><td class="num">0.9750</td><td class="num">0.9772</td></tr></tbody>
+  </table></div>
+  <figure class="fig">
+    <div class="fig-title">The bell curve n(x) and its running total N(x)</div>
+    <div id="chart-n"></div>
+    <figcaption><b>N(x)</b> is the area under the bell curve to the left of <var>x</var>. Symmetry gives N(−x) = 1 − N(x). Hover to read values.</figcaption>
+  </figure>
+</section>
+
+<section class="sec" id="vol">
+  <h2>8 · Volatility: lognormal or normal</h2>
+  <div class="prose">
+    <p><b>Volatility</b> σ measures how much the underlying wiggles, quoted per year. Uncertainty grows with the square root of time. 20% annual vol means a one-standard-deviation move over 3 months is 20% × √0.25 = 10%.</p>
+    <ul>
+      <li><b>Lognormal vol</b> (Black) is in percent of the price. Use it for stocks, FX, commodities and bond futures, which cannot go below zero.</li>
+      <li><b>Normal vol</b> (Bachelier) is in absolute units, such as "90bp a year". Rates desks quote swaption and cap vols this way because rates can be negative and move by similar amounts whatever their level.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="sec" id="black">
+  <h2>9 · Black-76 and Bachelier: the two option formulas</h2>
+  <div class="prose">
+    <p>A call pays max(<var>S</var><sub>T</sub> − <var>K</var>, 0) at expiry. A put pays max(<var>K</var> − <var>S</var><sub>T</sub>, 0). Both formulas below follow the same recipe: take the expected payoff under a bell-curve assumption around the forward <var>F</var>, then multiply by the discount factor. Almost every option in this course uses one of them.</p>
+  </div>
+  <div class="f"><span class="lbl">Black-76 (lognormal), on a forward F</span>
+    Call = <var>D</var> × [ <var>F</var> N(<var>d</var><sub>1</sub>) − <var>K</var> N(<var>d</var><sub>2</sub>) ]
+    &nbsp;&nbsp; Put = <var>D</var> × [ <var>K</var> N(−<var>d</var><sub>2</sub>) − <var>F</var> N(−<var>d</var><sub>1</sub>) ]<br>
+    <var>d</var><sub>1</sub> = <span class="frac"><span>ln(<var>F</var>/<var>K</var>) + ½σ<sup>2</sup><var>T</var></span><span>σ√<var>T</var></span></span>
+    &nbsp;&nbsp; <var>d</var><sub>2</sub> = <var>d</var><sub>1</sub> − σ√<var>T</var>
+  </div>
+  <div class="f"><span class="lbl">Bachelier (normal), on a forward F</span>
+    Call = <var>D</var> × [ (<var>F</var> − <var>K</var>) N(<var>d</var>) + σ<sub>N</sub>√<var>T</var> n(<var>d</var>) ]
+    &nbsp;&nbsp; Put = <var>D</var> × [ (<var>K</var> − <var>F</var>) N(−<var>d</var>) + σ<sub>N</sub>√<var>T</var> n(<var>d</var>) ]<br>
+    <var>d</var> = <span class="frac"><span><var>F</var> − <var>K</var></span><span>σ<sub>N</sub>√<var>T</var></span></span>
+    &nbsp;&nbsp; n(<var>d</var>) = <span class="frac"><span>e<sup>−<var>d</var>²/2</sup></span><span>√(2π)</span></span>
+  </div>
+  <dl class="where">
+    <dt><var>F</var></dt><dd>forward price of the underlying for the expiry date</dd>
+    <dt><var>K</var></dt><dd>strike</dd>
+    <dt><var>T</var></dt><dd>years to expiry</dd>
+    <dt>σ, σ<sub>N</sub></dt><dd>lognormal vol (e.g. 0.20) and normal vol (e.g. 0.0100 = 100bp)</dd>
+    <dt><var>D</var></dt><dd>discount factor to the payment date</dd>
+    <dt>N(<var>d</var><sub>2</sub>)</dt><dd>for a Black call, the risk-neutral probability of finishing in the money</dd>
+  </dl>
+  <p><b>Put-call parity</b> checks any option price: Call − Put = <var>D</var> × (<var>F</var> − <var>K</var>). A call and a short put with the same strike are together a forward.</p>
+  <ol class="steps">
+    <li><span>Black call: <var>F</var> = 100, <var>K</var> = 105, <var>T</var> = 1, σ = 20%, <var>D</var> = 0.96.</span>
+      <div class="calc-line">d1 = (ln(100/105) + 0.5×0.04) / 0.20 = −0.14395    d2 = −0.34395</div>
+      <div class="calc-line">N(d1) = 0.44277   N(d2) = 0.36544   Call = 0.96 × (100×0.44277 − 105×0.36544) = 5.6694</div></li>
+    <li><span>Parity check: Put = Call − <var>D</var>(<var>F</var> − <var>K</var>) = 5.6694 + 4.80 = 10.4694.</span></li>
+    <li><span>Bachelier payer on a rate: <var>F</var> = 4.00%, <var>K</var> = 4.25%, <var>T</var> = 1, σ<sub>N</sub> = 100bp, <var>D</var> = 0.96.</span>
+      <div class="calc-line">d = (4.00 − 4.25) / 1.00 = −0.25   N(d) = 0.40129   n(d) = 0.38667</div>
+      <div class="calc-line">Call = 0.96 × (−0.25×0.40129 + 1.00×0.38667) = 0.2749% of notional per year of accrual</div></li>
+  </ol>
+  <p class="answer">Black call <b>5.6694</b>, put <b>10.4694</b>. Bachelier call <b>0.2749%</b>. Switch the model in the calculator to check the second one.</p>
+  <div id="calc-black"></div>
+</section>
+
+<section class="sec" id="greeks">
+  <h2>10 · The Greeks dictionary</h2>
+  <p>Greeks are "what if" numbers: how much the PV moves when one input moves a little. Each product page lists the ones that matter for it.</p>
+  <div class="tbl greeks"><table>
+    <thead><tr><th>Greek</th><th>Question it answers</th><th>Typical units</th><th>Where it matters most</th></tr></thead>
+    <tbody>
+      <tr><td>Delta</td><td>If the underlying moves by 1, how much does PV move?</td><td>shares, contracts, or currency per 1% move</td><td><a href="equity.html">Shares</a>, <a href="futures.html">futures</a>, <a href="options-intro.html">options</a></td></tr>
+      <tr><td>Gamma</td><td>If the underlying moves by 1, how much does delta move?</td><td>delta per 1% move</td><td><a href="options-intro.html">Options</a>, <a href="fx-digitals.html">digitals</a></td></tr>
+      <tr><td>Vega</td><td>If volatility rises by 1 point (or 1bp normal), how much does PV move?</td><td>currency per vol point</td><td><a href="fx-options.html">FX options</a>, <a href="swaption.html">swaptions</a>, <a href="var-vol-swaps.html">vol swaps</a></td></tr>
+      <tr><td>Theta</td><td>If one day passes with nothing else moving, how much does PV move?</td><td>currency per day</td><td><a href="options-intro.html">Options</a> (time decay), <a href="repo.html">carry trades</a></td></tr>
+      <tr><td>Rho</td><td>If the discount rate rises by 1%, how much does an option's PV move?</td><td>currency per 1%</td><td>Long-dated <a href="options-intro.html">equity options</a></td></tr>
+      <tr><td>DV01 / PV01</td><td>If the rate curve rises by 1bp, how much does PV move?</td><td>currency per bp</td><td><a href="bond.html">Bonds</a>, <a href="irs.html">swaps</a>, <a href="stir-futures.html">STIR futures</a></td></tr>
+      <tr><td>CS01</td><td>If the credit spread widens by 1bp, how much does PV move?</td><td>currency per bp</td><td><a href="cds.html">CDS</a>, <a href="cds-index.html">CDS indices</a>, <a href="bond.html">corporate and EM bonds</a></td></tr>
+      <tr><td>Inflation01</td><td>If expected inflation rises by 1bp, how much does PV move?</td><td>currency per bp</td><td><a href="inflation-swap.html">Inflation swaps</a>, <a href="lpi.html">LPI</a></td></tr>
+      <tr><td>FX delta</td><td>How much foreign currency am I effectively long or short?</td><td>foreign-currency amount</td><td><a href="fx-forward.html">FX forwards</a>, <a href="xccy.html">cross-currency swaps</a>, any foreign position</td></tr>
+      <tr><td>Correlation sensitivity</td><td>If the correlation between two underlyings rises by 1 point, how much does PV move?</td><td>currency per correlation point</td><td><a href="correlation-swap.html">Correlation swaps</a>, <a href="cms-spread.html">CMS spreads</a>, <a href="tranche.html">tranches</a>, <a href="fx-digitals.html">dual digitals</a></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="sec" id="recap">
+  <h2>Remember</h2>
+  <ul class="recap">
+    <li>PV = Σ cashflow × discount factor. Everything else is working out the cashflows.</li>
+    <li>Quote rates with their compounding and day count, or they mean nothing.</li>
+    <li>Forwards come from ratios of discount factors on the projection curve. Discounting uses OIS.</li>
+    <li>Linear products: replace unknown rates and prices by forwards. Options: use Black (lognormal) or Bachelier (normal) around the forward.</li>
+    <li>Greeks are bump-and-reprice "what ifs": delta, gamma, vega, theta, DV01, CS01.</li>
+  </ul>
+</section>
+
+</main>
+</div>
+<script src="assets/course.js"></script>
+<script>
+// ---- compounding converter
+C.calc('#calc-comp', {
+  title: 'Compounding converter',
+  inputs: [
+    { id: 'r', label: 'Rate', unit: '%', value: 5, step: 0.05 },
+    { id: 'conv', label: 'Quoted as', value: 1, options: [[1, 'Annual'], [2, 'Semi-annual'], [4, 'Quarterly'], [12, 'Monthly'], ['cont', 'Continuous'], ['simple', 'Simple']] },
+    { id: 'T', label: 'Horizon T', unit: 'years', value: 1, step: 0.25, min: 0.01 },
+  ],
+  compute: v => {
+    const r = v.r / 100, T = v.T, D = C.df(r, T, v.conv);
+    const eq = m => m === 'cont' ? -Math.log(D) / T : m === 'simple' ? (1 / D - 1) / T : m * (Math.pow(D, -1 / (m * T)) - 1);
+    return {
+      out: [
+        ['Discount factor D(T)', C.fmt(D, 6), true],
+        ['PV of 100 paid at T', C.fmt(100 * D, 4)],
+        ['Simple', C.pct(eq('simple'), 4)],
+        ['Annual', C.pct(eq(1), 4)],
+        ['Semi-annual', C.pct(eq(2), 4)],
+        ['Monthly', C.pct(eq(12), 4)],
+        ['Continuous', C.pct(eq('cont'), 4)],
+      ],
+      chart: {
+        x: [0, 30], xLabel: 'years', yLabel: 'discount factor at this rate', y: [0, 1.02],
+        xFmt: x => C.fmt(x, 0), yFmt: y => C.fmt(y, 2), tipFmt: y => C.fmt(y, 4),
+        series: [{ name: 'D(t)', f: t => C.df(r, t, v.conv), color: 1 }],
+        marks: [{ x: Math.min(T, 30), label: 'T' }],
+      },
+    };
+  },
+});
+
+// ---- forward from two zero rates
+C.calc('#calc-fwd', {
+  title: 'Forward rate from a zero curve',
+  inputs: [
+    { id: 'z1', label: 'Zero rate to T1', unit: '% cont.', value: 3.0, step: 0.05 },
+    { id: 't1', label: 'T1', unit: 'years', value: 1, step: 0.25, min: 0.01 },
+    { id: 'z2', label: 'Zero rate to T2', unit: '% cont.', value: 3.5, step: 0.05 },
+    { id: 't2', label: 'T2', unit: 'years', value: 2, step: 0.25, min: 0.02 },
+  ],
+  compute: v => {
+    if (v.t2 <= v.t1) throw new Error('T2 must be after T1');
+    const z1 = v.z1 / 100, z2 = v.z2 / 100, P1 = Math.exp(-z1 * v.t1), P2 = Math.exp(-z2 * v.t2), tau = v.t2 - v.t1;
+    const zAt = t => t <= v.t1 ? z1 : t >= v.t2 ? z2 : z1 + (z2 - z1) * (t - v.t1) / (v.t2 - v.t1);
+    return {
+      out: [
+        ['P(T1)', C.fmt(P1, 6)], ['P(T2)', C.fmt(P2, 6)],
+        ['Forward, simple', C.pct((P1 / P2 - 1) / tau, 4), true],
+        ['Forward, continuous', C.pct(Math.log(P1 / P2) / tau, 4)],
+      ],
+      chart: {
+        x: [0, v.t2 * 1.4], xLabel: 'years', yLabel: 'rate (%)', xFmt: x => C.fmt(x, 1), yFmt: y => C.fmt(y, 2), tipFmt: y => C.fmt(y, 3) + '%',
+        series: [
+          { name: 'Zero rate z(t)', f: t => 100 * zAt(t), color: 1 },
+          { name: 'Forward T1→T2 (continuous)', f: t => (t >= v.t1 && t <= v.t2) ? 100 * Math.log(P1 / P2) / tau : NaN, color: 2 },
+        ],
+        marks: [{ x: v.t1, label: 'T1' }, { x: v.t2, label: 'T2' }],
+      },
+    };
+  },
+});
+
+// ---- normal distribution chart
+C.chart('#chart-n', {
+  x: [-3.5, 3.5], xLabel: 'x', yLabel: 'probability', y: [0, 1.02], xFmt: x => C.fmt(x, 1), yFmt: y => C.fmt(y, 1), tipFmt: y => C.fmt(y, 4),
+  series: [{ name: 'Bell curve n(x)', f: C.n, color: 1 }, { name: 'N(x): probability of ending below x', f: C.N, color: 2 }],
+  marks: [{ x: 0, label: '0' }, { x: 1.645, label: '1.645' }],
+});
+
+// ---- Black / Bachelier
+C.calc('#calc-black', {
+  title: 'Black-76 and Bachelier option pricer',
+  inputs: [
+    { id: 'model', label: 'Model', value: 'black', options: [['black', 'Black-76 (lognormal)'], ['bach', 'Bachelier (normal)']] },
+    { id: 'cp', label: 'Type', value: 1, options: [[1, 'Call'], [0, 'Put']] },
+    { id: 'F', label: 'Forward F', value: 100, step: 0.5 },
+    { id: 'K', label: 'Strike K', value: 105, step: 0.5 },
+    { id: 'T', label: 'Expiry T', unit: 'years', value: 1, step: 0.25, min: 0 },
+    { id: 'vol', label: 'Vol (Black: %; Bachelier: F units)', value: 20, step: 0.5, min: 0 },
+    { id: 'D', label: 'Discount factor D', value: 0.96, step: 0.01, min: 0 },
+  ],
+  compute: v => {
+    const call = v.cp === 1, black = v.model === 'black';
+    const price = F => black ? C.black({ F, K: v.K, T: v.T, vol: v.vol / 100, df: v.D, call })
+      : C.bachelier({ F, K: v.K, T: v.T, volN: v.vol, df: v.D, call });
+    const r = price(v.F);
+    // Bachelier vega from the engine is per 0.0001 of vol; with F in % units, 1bp of vol = 0.01 units
+    const vega = black ? r.vega : r.vega * 100;
+    const sd = black ? v.F * v.vol / 100 * Math.sqrt(Math.max(v.T, 0.01)) : v.vol * Math.sqrt(Math.max(v.T, 0.01));
+    const lo = Math.max(black ? 0.01 : -Infinity, Math.min(v.K, v.F) - 3 * sd), hi = Math.max(v.K, v.F) + 3 * sd;
+    return {
+      out: [
+        [black ? 'd1 / d2' : 'd', black ? C.fmt(r.d1, 4) + ' / ' + C.fmt(r.d2, 4) : C.fmt(r.d, 4)],
+        ['Option PV', C.fmt(r.pv, 4), true],
+        ['Delta (per 1 of F)', C.fmt(r.delta, 4)],
+        ['Gamma', C.fmt(r.gamma, 5)],
+        [black ? 'Vega (per vol point)' : 'Vega (per 0.01 of vol)', C.fmt(vega, 5)],
+        ['Theta (per day)', C.fmt(r.theta, 5)],
+        ['Parity check C − P', C.fmt(v.D * (v.F - v.K), 4)],
+      ],
+      chart: {
+        x: [lo, hi], xLabel: 'forward F', yLabel: 'option value', xFmt: x => C.fmt(x, black ? 0 : 2), yFmt: y => C.fmt(y, black ? 0 : 2), tipFmt: y => C.fmt(y, 4),
+        series: [
+          { name: 'Payoff at expiry × D', f: F => v.D * Math.max(call ? F - v.K : v.K - F, 0), color: 0 },
+          { name: 'Value today', f: F => price(F).pv, color: 1 },
+        ],
+        marks: [{ x: v.K, label: 'K' }, { x: v.F, label: 'F' }],
+      },
+      note: 'For a rate option in Bachelier, enter F, K and vol in percent (4.00, 4.25, 1.00). The PV is then in % of notional per year of accrual.',
+    };
+  },
+});
+</script>
+</body>
+</html>

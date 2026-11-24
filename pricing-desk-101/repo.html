@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Repo & Reverse Repo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=JetBrains+Mono:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..600&display=swap">
+<link rel="stylesheet" href="assets/course.css">
+</head>
+<body data-page="repo.html">
+<div class="shell">
+<aside class="toc" id="toc"></aside>
+<main class="page">
+
+<header class="ph">
+  <p class="eyebrow">Part 1 · Cash products</p>
+  <h1>Repo &amp; reverse repo</h1>
+  <p class="lede">A short-term loan of cash secured by a bond. It is how bond positions are financed and how cash earns a safe return overnight. The pricing is simple interest. The skill lies in the collateral.</p>
+  <div class="ptypes" data-ptypes data-eg="ReverseRepo Term UNIT 6 01/15/30 144A 4.1 % · CollateralPool GMRA"></div>
+</header>
+
+<section class="lvl" id="idea">
+  <h2><span class="lv">Level 1</span> The idea</h2>
+  <div class="prose">
+    <p>You own a bond and need cash for two months. You "sell" the bond to a bank for cash today and promise to buy it back on a fixed date for a slightly higher price. The difference is the interest. That is a <b>repo</b> (sale and <b>re</b>purchase agreement). The bank, on the other side, is doing a <b>reverse repo</b>: it lends cash and holds your bond as security.</p>
+    <p>If you fail to pay, the bank keeps and sells the bond. Because the loan is secured, the interest rate (the <b>repo rate</b>) is low, close to the overnight rate.</p>
+  </div>
+  <aside class="analogy"><p>A pawn shop. You hand over a watch, get cash, and come back later to pay the cash plus a fee to reclaim it. The shop lends a bit less than the watch is worth, in case its value drops. In repo that safety margin is called the <b>haircut</b>.</p></aside>
+</section>
+
+<section class="lvl" id="cashflows">
+  <h2><span class="lv">Level 2</span> The cashflows</h2>
+  <div class="prose"><p>A reverse repo, where you lend cash, has two cash legs. On the start date you <span class="pay-c">pay</span> the cash and receive the bond. On the end date you <span class="rec-c">receive</span> the cash plus interest and hand the bond back. Both cash amounts are known from the start.</p></div>
+  <figure class="fig">
+    <div class="fig-title">Term reverse repo at 4.10%, 63 days, against a corporate bond</div>
+    <div id="legs-repo"></div>
+    <figcaption>Two <b>fixed</b> cash legs. The bond moves the opposite way to the cash, and is not shown here because it is returned at the end. While the repo is open, the bond's coupons are passed back to its owner.</figcaption>
+  </figure>
+</section>
+
+<section class="lvl" id="pv">
+  <h2><span class="lv">Level 3</span> The PV formula</h2>
+  <div class="f"><span class="lbl">Step 1 · how much cash is lent</span>
+    <var>C</var> = <span class="frac"><span>face</span><span>100</span></span> × <var>P</var><sub>dirty</sub> × (1 − <var>h</var>)
+  </div>
+  <div class="f"><span class="lbl">Step 2 · the repurchase amount (simple interest)</span>
+    <var>R</var> = <var>C</var> × ( 1 + <var>r</var><sub>repo</sub> × <span class="frac"><span><var>d</var></span><span>360</span></span> )
+  </div>
+  <dl class="where">
+    <dt><var>P</var><sub>dirty</sub></dt><dd>collateral bond's dirty price (clean + accrued), per 100 face</dd>
+    <dt><var>h</var></dt><dd>haircut, e.g. 2% for an investment-grade corporate, 0–1% for Treasuries, 10%+ for high yield or EM</dd>
+    <dt><var>r</var><sub>repo</sub></dt><dd>agreed repo rate. ACT/360 in USD and EUR, ACT/365 in GBP.</dd>
+    <dt><var>d</var></dt><dd>days from start to end</dd>
+  </dl>
+  <div class="f"><span class="lbl">Step 3 · PV today for the cash lender</span>
+    before start: PV = −<var>C</var> × <var>D</var>(<var>T</var><sub>1</sub>) + <var>R</var> × <var>D</var>(<var>T</var><sub>2</sub>)
+    <br>after start: PV = <var>R</var> × <var>D</var>(<var>T</var><sub>2</sub>)
+    &nbsp;&nbsp;&nbsp; MTM = <var>R</var> × <var>D</var>(<var>T</var><sub>2</sub>) − <var>C</var>
+  </div>
+  <div class="prose">
+    <p><var>D</var>(<var>t</var>) comes from today's market repo or OIS rate for the remaining term: <var>D</var> = 1 ÷ (1 + <var>r</var><sub>mkt</sub> × days left ÷ 360). The MTM is the value over and above the cash you handed over. It has two parts: the interest earned so far, and a small gain or loss because market rates moved since you traded.</p>
+    <p>A repo, where you borrow cash, is the same with every sign flipped.</p>
+  </div>
+</section>
+
+<section class="lvl" id="desk">
+  <h2><span class="lv">Level 4</span> Desk reality</h2>
+  <ul>
+    <li><b>GC vs special.</b> General collateral (GC) is any bond from an accepted basket and pays close to OIS. A bond that many people want to borrow, for example to deliver into a short sale, goes <b>special</b>. Its repo rate drops, sometimes below zero, because lenders of that bond accept less interest on the cash.</li>
+    <li><b>Margin calls.</b> If the collateral's value falls below cash × (1 + haircut), the borrower posts more bonds or cash. This happens daily under the GMRA (Global Master Repurchase Agreement), the standard legal contract.</li>
+    <li><b>Open vs term.</b> A term repo has a fixed end date and rate. An open repo rolls every day at a rate that can be reset, and either side can end it with notice.</li>
+    <li><b>Who keeps the bond risk.</b> The repo borrower still owns the economics of the bond: its price moves and its coupons are paid back to them. The cash lender is only exposed if the borrower defaults <em>and</em> the bond has fallen by more than the haircut.</li>
+    <li><b>Reading the trade description.</b> <code>ReverseRepo Term UNIT 6 01/15/30 144A 4.1 %</code> means a term reverse repo at 4.10% against the Uniti Group 6% 2030 bond. "144A" means the bond was privately placed with large institutional buyers. <code>CollateralPool GMRA</code> groups the collateral held under one GMRA agreement. It has no PV of its own, because its value is the sum of the pieces it holds.</li>
+  </ul>
+</section>
+
+<section class="sec" id="greeks">
+  <h2>Greeks that matter</h2>
+  <div class="tbl greeks"><table>
+    <thead><tr><th>Greek</th><th>What it measures</th><th>For a repo</th></tr></thead>
+    <tbody>
+      <tr><td>DV01</td><td>PV change if short rates rise 1bp</td><td>Small, because the term is short: about −$160 per bp on $9.7m for 60 days. The cash lender loses when rates rise.</td></tr>
+      <tr><td>Theta (carry)</td><td>PV change per day</td><td>The interest earned each day: <var>C</var> × <var>r</var> ÷ 360 ≈ $1,099 a day in the example.</td></tr>
+      <tr><td>Collateral cover</td><td>Collateral value ÷ cash lent</td><td>Starts at 1 ÷ (1 − <var>h</var>). It falls if the bond price drops, which triggers a margin call.</td></tr>
+      <tr><td>Bond delta</td><td>Exposure to the bond's price</td><td>Stays with the repo <em>borrower</em>. A desk that repos out a bond it owns still has the bond's DV01 and CS01.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="sec" id="example">
+  <h2>Worked example</h2>
+  <p>On 20 Nov 2026 we lent cash for 63 days, to 22 Jan 2027, at 4.10%. The collateral was $10m face of a bond with a dirty price of 98.50 and a 2% haircut. Today is 23 Nov 2026, so 60 days are left, and 60-day repo now trades at 3.95%.</p>
+  <ol class="steps">
+    <li><span>Cash lent.</span><div class="calc-line">C = 10,000,000/100 × 98.50 × (1 − 0.02) = $9,653,000</div></li>
+    <li><span>Interest and repurchase amount.</span><div class="calc-line">interest = 9,653,000 × 0.041 × 63/360 = $69,260.28      R = $9,722,260.28</div></li>
+    <li><span>Discount factor for the 60 days left, at today's market rate.</span><div class="calc-line">D = 1 / (1 + 0.0395 × 60/360) = 0.993460</div></li>
+    <li><span>PV and MTM.</span><div class="calc-line">PV = 9,722,260.28 × 0.993460 = $9,658,674      MTM = 9,658,674 − 9,653,000 = +$5,674</div></li>
+    <li><span>Explain the MTM. Three days of interest is 9,653,000 × 0.041 × 3/360 = $3,298. The rest, about $2,376, comes from locking 4.10% when the market now pays 3.95%.</span></li>
+    <li><span>DV01: reprice with the market rate at 3.96%.</span><div class="calc-line">PV falls by $160</div></li>
+  </ol>
+  <p class="answer">The reverse repo is worth <b>$9,658,674</b>, which is <b>+$5,674</b> above the cash lent.</p>
+</section>
+
+<section class="sec" id="try">
+  <h2>Try it</h2>
+  <p>Set "days elapsed" to a negative number to price a forward-starting repo.</p>
+  <div id="calc-repo"></div>
+</section>
+
+<section class="sec" id="recap">
+  <h2>Remember</h2>
+  <ul class="recap">
+    <li>Repo = borrow cash against a bond. Reverse repo = lend cash and take the bond.</li>
+    <li>Cash = collateral value × (1 − haircut). Repurchase = cash × (1 + rate × days/360).</li>
+    <li>PV after start = repurchase amount × discount factor. MTM = accrued interest + rate move.</li>
+    <li>The bond's price risk stays with the borrower. The lender only cares about collateral cover.</li>
+  </ul>
+</section>
+
+</main>
+</div>
+<script src="assets/course.js"></script>
+<script>
+C.legs('#legs-repo', {
+  tMin: -8, tMax: 68, ticks: [0, 10, 20, 30, 40, 50, 60], tickFmt: t => C.fmt(t, 0), axisLabel: 'days from start',
+  events: [{ t: 0, label: 'Start 20 Nov' }, { t: 3, label: '' }, { t: 63, label: 'End 22 Jan' }],
+  legs: [
+    { name: 'Cash lent: you pay $9,653,000', dir: -1, style: 'notional', flows: [{ t: 0, a: 9653000, label: '9,653,000' }] },
+    { name: 'Repurchase: you receive $9,722,260', dir: 1, style: 'notional', flows: [{ t: 63, a: 9722260, label: '9,722,260' }] },
+  ],
+});
+
+C.calc('#calc-repo', {
+  title: 'Repo pricer',
+  inputs: [
+    { id: 'side', label: 'Position', value: 1, options: [[1, 'Reverse repo (lend cash)'], [-1, 'Repo (borrow cash)']] },
+    { id: 'face', label: 'Collateral face', unit: '$m', value: 10, step: 1 },
+    { id: 'px', label: 'Collateral dirty price', value: 98.5, step: 0.25 },
+    { id: 'h', label: 'Haircut', unit: '%', value: 2, step: 0.5, min: 0 },
+    { id: 'r', label: 'Repo rate', unit: '%', value: 4.10, step: 0.05 },
+    { id: 'd', label: 'Term', unit: 'days', value: 63, step: 1, min: 1 },
+    { id: 'el', label: 'Days elapsed since start', value: 3, step: 1 },
+    { id: 'rm', label: 'Market rate, remaining term', unit: '%', value: 3.95, step: 0.05 },
+    { id: 'B', label: 'Day count', value: 360, options: [[360, 'ACT/360'], [365, 'ACT/365']] },
+  ],
+  compute: v => {
+    if (v.el >= v.d) throw new Error('the repo has already matured');
+    const C0 = v.face * 1e4 * v.px * (1 - v.h / 100), R = C0 * (1 + v.r / 100 * v.d / v.B);
+    const left = v.d - v.el, toStart = Math.max(0, -v.el);
+    const pvAt = rm => {
+      const D2 = 1 / (1 + rm * left / v.B), D1 = 1 / (1 + rm * toStart / v.B);
+      return v.side * (v.el < 0 ? -C0 * D1 + R * D2 : R * D2);
+    };
+    const pv = pvAt(v.rm / 100), mtm = v.el < 0 ? pv : pv - v.side * C0;
+    return {
+      out: [
+        ['Cash amount C', '$' + C.fmt(C0, 0)],
+        ['Repo interest', '$' + C.fmt(R - C0, 2)],
+        ['Repurchase amount R', '$' + C.fmt(R, 2)],
+        ['PV', '$' + C.fmt(pv, 0), true],
+        [v.el < 0 ? 'MTM (forward start)' : 'MTM vs cash', '$' + C.signed(mtm, 0)],
+        ['Accrued interest so far', '$' + C.fmt(v.side * C0 * v.r / 100 * Math.max(0, v.el) / v.B, 0)],
+        ['DV01 (market rate +1bp)', '$' + C.signed(pvAt(v.rm / 100 + 1e-4) - pv, 0)],
+        ['Collateral cover', C.fmt(v.face * 1e4 * v.px / C0 * 100, 1) + '%'],
+      ],
+      legs: {
+        tMin: Math.min(-8, v.el - 5), tMax: v.d + 5, axisLabel: 'days from start', tickFmt: t => C.fmt(t, 0),
+        events: [{ t: v.el, label: 'Today' }],
+        legs: [
+          { name: (v.side > 0 ? 'You pay ' : 'You receive ') + 'the cash at start', dir: -v.side, style: 'notional', flows: [{ t: 0, a: C0, label: C.fmt(C0, 0) }] },
+          { name: (v.side > 0 ? 'You receive ' : 'You pay ') + 'the repurchase amount', dir: v.side, style: 'notional', flows: [{ t: v.d, a: R, label: C.fmt(R, 0) }] },
+        ],
+      },
+    };
+  },
+});
+</script>
+</body>
+</html>

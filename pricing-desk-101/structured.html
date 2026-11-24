@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Structured Products &amp; Other Records</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=JetBrains+Mono:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..600&display=swap">
+<link rel="stylesheet" href="assets/course.css">
+</head>
+<body data-page="structured.html">
+<div class="shell">
+<aside class="toc" id="toc"></aside>
+<main class="page">
+
+<header class="ph">
+  <p class="eyebrow">Part 7 · Exotics &amp; volatility</p>
+  <h1>Structured products &amp; other records</h1>
+  <p class="lede">A structured product is a bundle of pieces you already know: a zero-coupon bond plus some options, wrapped into one note. The skill is taking it apart. This page also covers the booking records that are cash, fees or bookkeeping rather than market products, and how to value them.</p>
+  <div class="ptypes" data-ptypes data-eg="Security Pay 25/Nov/26 23,000,000,000.00 JTDB 0 01/12/27 1410"></div>
+</header>
+
+<section class="lvl" id="idea">
+  <h2><span class="lv">Level 1</span> The idea</h2>
+  <div class="prose">
+    <p>An investor says: "I want to profit if the stock market rises over 5 years, but I must get my 10 million back even if it crashes." A bank builds a <b>capital-protected note</b> for them. They pay 10 million today. In 5 years they get at least 10 million back, plus a share of any rise in the index.</p>
+    <p>How can the bank promise that? It splits the 10 million in two. Most of it buys a 5-year zero-coupon bond that grows back to exactly 10 million. The small remainder buys call options on the index. If the index rises, the calls pay out. If it falls, the calls expire worthless but the bond still returns the 10 million.</p>
+  </div>
+  <aside class="analogy"><p>It is like a meal deal. The menu shows one price, but the restaurant has costed a sandwich, a drink and a snack separately. To know whether the deal is fair, price each item on its own and add them up.</p></aside>
+  <p>Desks book many of these as <code>StructuredProduct</code>, each with its own term sheet. There is no single formula. There is a single method: <b>decompose, price each piece, add</b>.</p>
+</section>
+
+<section class="lvl" id="cashflows">
+  <h2><span class="lv">Level 2</span> The cashflows</h2>
+  <div class="prose"><p>For the capital-protected note: the investor pays the issue price today. At maturity they receive the protected amount, which is certain (apart from the issuer defaulting), plus a participation <var>p</var> in the index's rise, which is contingent.</p></div>
+  <figure class="fig">
+    <div class="fig-title">Investor in a 5-year, 100%-protected note on an equity index, USD 10m, participation 85.5%</div>
+    <div id="legs-note"></div>
+    <figcaption>Thick arrows = notional. The dotted arrow with "?" is the option payout: 10m × 85.5% × (index rise), and zero if the index is down.</figcaption>
+  </figure>
+  <figure class="fig">
+    <div class="fig-title">What the investor receives at maturity</div>
+    <div id="chart-note"></div>
+    <figcaption>A floor at 10m (the bond) plus a rising slope above the starting level (the calls). Compare with simply holding the index (dashed): less upside, no downside.</figcaption>
+  </figure>
+</section>
+
+<section class="lvl" id="pv">
+  <h2><span class="lv">Level 3</span> The PV formula</h2>
+  <h3>Step 1 · Write the payoff as known pieces</h3>
+  <div class="f"><span class="lbl">Maturity payoff of the note</span>
+    <var>N</var> × [ <var>π</var> + <var>p</var> × max( <var>S</var><sub><var>T</var></sub>/<var>S</var><sub>0</sub> − 1 , 0 ) ]
+    &nbsp;=&nbsp; <var>N</var><var>π</var> (zero-coupon bond) + <span class="frac"><span><var>N</var><var>p</var></span><span><var>S</var><sub>0</sub></span></span> × Call(<var>K</var> = <var>S</var><sub>0</sub>)
+  </div>
+  <dl class="where">
+    <dt><var>π</var></dt><dd>protection level (100% here; 90% notes exist and buy more options)</dd>
+    <dt><var>p</var></dt><dd>participation: the share of the index rise paid out</dd>
+  </dl>
+  <h3>Step 2 · Price each piece</h3>
+  <div class="f"><span class="lbl">PV of the note</span>
+    PV = <var>N</var> <var>π</var> <var>D</var>(<var>T</var>) + <span class="frac"><span><var>N</var> <var>p</var></span><span><var>S</var><sub>0</sub></span></span> × BS<sub>call</sub>(<var>S</var><sub>0</sub>, <var>K</var> = <var>S</var><sub>0</sub>, <var>T</var>, <var>r</var>, <var>q</var>, <var>σ</var>)
+  </div>
+  <div class="prose"><p>The bond uses the issuer's funding curve. The call uses <a href="options-intro.html">Black-Scholes</a> with dividend yield <var>q</var>.</p></div>
+  <h3>Step 3 · Solve for the fair participation</h3>
+  <div class="prose"><p>The bank sets <var>p</var> so the pieces cost what the client pays, minus the bank's margin <var>m</var>:</p></div>
+  <div class="f"><span class="lbl">Fair participation</span>
+    <var>p</var> = <span class="frac"><span><var>N</var>(1 − <var>m</var>) − <var>N</var><var>π</var><var>D</var>(<var>T</var>)</span><span><var>N</var> × BS<sub>call</sub> / <var>S</var><sub>0</sub></span></span>
+  </div>
+  <aside class="key"><p>Higher rates make the bond cheaper, which leaves more money for options and a higher participation. That is why capital-protected notes were popular in high-rate years and almost disappeared when rates were near zero.</p></aside>
+</section>
+
+<section class="lvl" id="desk">
+  <h2><span class="lv">Level 4</span> Desk reality</h2>
+  <ul>
+    <li><b>Issuer credit.</b> "Protected" means protected by the issuer. If the issuer defaults, the investor is an unsecured creditor. Desks discount the bond piece at the issuer's funding spread, not at the risk-free rate.</li>
+    <li><b>Autocallables.</b> The most common equity note today. On each observation date (say yearly), if the index is at or above its starting level, the note repays early with a coupon. If it never calls and the index ends below a barrier (say 60%), the investor loses like the index. In pieces: a bond, a strip of digital coupons that may stop early, and a <b>down-and-in put</b> sold by the investor. Path dependence means Monte Carlo pricing, with local or stochastic vol for the smile.</li>
+    <li><b>Reading the trade description.</b> <code>StructuredProduct</code> trades carry a generic description. The payoff lives in the term sheet and in the pricing model attached to the trade, so always read the term sheet before quoting a price.</li>
+    <li><b>Hedging.</b> The issuer hedges each piece: rates risk on the bond with swaps, delta and vega on the options with listed options or futures.</li>
+  </ul>
+</section>
+
+<section class="lvl" id="records">
+  <h2><span class="lv">Level 5</span> Other booking records</h2>
+  <div class="prose"><p>Not every booked "product" is a market instrument. These record types hold cash, fees and bookkeeping. Each still has a PV, usually simple, and it matters for P&amp;L and cash forecasts.</p></div>
+  <div class="tbl"><table>
+    <thead><tr><th>Product type</th><th>What it is</th><th>PV</th><th>Risk</th></tr></thead>
+    <tbody>
+      <tr><td><code>SimpleFlow</code></td><td>One known payment on one date. Example: <code>Security Pay 25/Nov/26 23,000,000,000.00 JTDB 0 01/12/27</code> is the JPY 23bn cash leg for buying a Japanese Treasury discount bill.</td><td>± amount × <var>D</var>(pay date), negative if we pay</td><td>Tiny DV01 until paid. FX if not in base currency.</td></tr>
+      <tr><td><code>Expense</code></td><td>Fees and taxes accrued over a period and paid on a date, e.g. <code>Tax Fees USD 31/Oct/25 3/Nov/25</code>.</td><td>− amount × <var>D</var>(pay date)</td><td>None beyond FX. It reduces P&amp;L.</td></tr>
+      <tr><td><code>CashPool</code></td><td>A cash balance in an account, such as a margin account at a prime broker or clearer.</td><td>Balance + accrued interest</td><td>FX to base currency, counterparty risk on the holder.</td></tr>
+      <tr><td><code>CollateralPool</code></td><td>Groups the collateral exchanged under one master agreement, e.g. <code>CollateralPool GMRA</code> for repos.</td><td>Market value of the collateral it holds; no extra value of its own</td><td>Sits in the securities themselves. See <a href="repo.html">repo</a>.</td></tr>
+      <tr><td><code>CapitalTransaction</code></td><td>Investor subscriptions and redemptions in the fund.</td><td>The cash amount; it changes capital, not trading P&amp;L</td><td>None. It is not an investment.</td></tr>
+      <tr><td><code>PayToHold</code></td><td>A holding-cost record attached to an equity position (example: <code>PayToHold Open YUANJIE SEMICO-A CG</code>, a China A-share). It tracks fees charged to keep the position open. The exact contract terms sit with operations.</td><td>− accrued fees × <var>D</var>(pay date)</td><td>Market risk sits in the referenced share position, not here.</td></tr>
+    </tbody>
+  </table></div>
+  <div class="f"><span class="lbl">The one formula for all known cash amounts</span>
+    PV = ± Amount × <var>D</var>(pay date) &nbsp;&nbsp; (converted at spot FX if not in base currency)
+  </div>
+</section>
+
+<section class="sec" id="greeks">
+  <h2>Greeks that matter</h2>
+  <div class="tbl greeks"><table>
+    <thead><tr><th>Greek</th><th>What it measures</th><th>For the capital-protected note (investor side)</th></tr></thead>
+    <tbody>
+      <tr><td>Delta</td><td>PV change if the index moves 1%</td><td><var>N</var> × <var>p</var> × call delta × 1%. Positive but below a plain index holding.</td></tr>
+      <tr><td>DV01</td><td>PV change if rates move +1bp</td><td>Large and negative, from the 5-year bond: about <var>N</var> × <var>T</var> × <var>D</var> × 0.0001 ≈ USD 4,100 per bp on 10m.</td></tr>
+      <tr><td>Vega</td><td>PV change if vol moves +1 point</td><td>Positive (long the calls).</td></tr>
+      <tr><td>Credit spread (CS01)</td><td>PV change if the issuer's spread widens 1bp</td><td>Negative, roughly the same size as the DV01. The bond is discounted at the issuer's spread.</td></tr>
+      <tr><td>Cash records</td><td>Any of the above</td><td>None, apart from FX and a negligible DV01.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="sec" id="example">
+  <h2>Worked example</h2>
+  <h3>A · Fair participation of a capital-protected note</h3>
+  <p>USD 10m, 5 years, 100% protection. The issuer's rate is 4.00% (continuous), index dividend yield 1.50%, index vol 18%. The bank keeps a 1% margin.</p>
+  <ol class="steps">
+    <li><span>Zero-coupon bond.</span>
+      <div class="calc-line">D(5) = e^(−0.04 × 5) = 0.818731    Bond = 10,000,000 × 0.818731 = 8,187,308</div></li>
+    <li><span>Option budget.</span>
+      <div class="calc-line">Budget = 10,000,000 × (1 − 0.01) − 8,187,308 = 1,712,692</div></li>
+    <li><span>Price of a 5-year at-the-money call, per 100 of index (Black-Scholes, r = 4%, q = 1.5%, σ = 18%).</span>
+      <div class="calc-line">Call = 20.0345 per 100   →   on USD 10m: 10,000,000 × 0.200345 = 2,003,453</div></li>
+    <li><span>Fair participation.</span>
+      <div class="calc-line">p = 1,712,692 / 2,003,453 = 85.49%</div></li>
+  </ol>
+  <p class="answer">The bank can offer <b>85.5% participation</b>. The note is worth USD 9.90m to the investor on day one, and the 1% difference is the bank's margin.</p>
+  <h3>B · A SimpleFlow</h3>
+  <p>The JPY 23,000,000,000 payment on 25 Nov 2026, valued on 23 Nov 2026 (2 days) at a JPY rate of 0.75%.</p>
+  <ol class="steps">
+    <li><span>Discount factor and PV. We pay, so the sign is negative.</span>
+      <div class="calc-line">D = e^(−0.0075 × 2/365) = 0.99995890    PV = −23,000,000,000 × 0.99995890 = JPY −22,999,054,814</div></li>
+  </ol>
+  <p class="answer">PV <b>JPY −22.999bn</b>. Discounting a 2-day payment changes it by under JPY 1m, which is why desks treat these almost as cash.</p>
+</section>
+
+<section class="sec" id="try">
+  <h2>Try it</h2>
+  <p>Lower the protection to 90% and watch the fair participation jump. Raise rates and the bond gets cheaper, leaving more for options.</p>
+  <div id="calc-note"></div>
+</section>
+
+<section class="sec" id="recap">
+  <h2>Remember</h2>
+  <ul class="recap">
+    <li>Structured product = known pieces. Decompose, price each piece, add.</li>
+    <li>Capital-protected note = zero-coupon bond + participation × at-the-money calls.</li>
+    <li>Fair participation = (price after margin − bond) ÷ call cost. It is higher when rates and vol are favourable.</li>
+    <li>Autocalls add early redemption and a sold down-and-in put, so they need Monte Carlo.</li>
+    <li>Cash, fee and bookkeeping records: PV = ± amount × discount factor, with FX if needed.</li>
+  </ul>
+</section>
+
+</main>
+</div>
+<script src="assets/course.js"></script>
+<script>
+C.legs('#legs-note', {
+  tMin: 0, tMax: 5.3, ticks: [0, 1, 2, 3, 4, 5],
+  events: [{ t: 0, label: 'Issue' }, { t: 5, label: 'Maturity' }],
+  legs: [
+    { name: 'Protected amount: you receive 10m', dir: 1, style: 'notional', flows: [{ t: 5, a: 10, label: '10,000,000', tip: 'Protected notional repaid at maturity' }] },
+    { name: 'Upside: you receive 10m × 85.5% × index rise', dir: 1, style: 'contingent', flows: [{ t: 5.12, a: 4, label: '?', tip: 'Option payout: 10m × 85.49% × max(S_T/S_0 − 1, 0)' }] },
+    { name: 'Issue price: you pay 10m', dir: -1, style: 'notional', flows: [{ t: 0, a: 10, label: '10,000,000', tip: 'Issue price paid today' }] },
+  ],
+});
+
+C.chart('#chart-note', {
+  x: [40, 200], xLabel: 'index at maturity (% of start)', yLabel: 'amount received (USD)',
+  xFmt: x => C.fmt(x, 0) + '%', yFmt: y => C.fmt(y / 1e6, 0) + 'm', tipFmt: y => 'USD ' + C.fmt(y, 0), height: 240,
+  series: [
+    { name: 'Capital-protected note', f: s => 1e7 * (1 + 0.8549 * Math.max(s / 100 - 1, 0)), color: 1 },
+    { name: 'Holding the index directly', f: s => 1e7 * s / 100, color: 2, dashed: true },
+  ],
+  marks: [{ x: 100, label: 'start level' }],
+});
+
+C.calc('#calc-note', {
+  title: 'Capital-protected note: decomposition',
+  inputs: [
+    { id: 'N', label: 'Notional', unit: 'USD m', value: 10, step: 1 },
+    { id: 'T', label: 'Maturity', unit: 'years', value: 5, step: 0.5, min: 0.5 },
+    { id: 'pi', label: 'Protection', unit: '%', value: 100, step: 5, min: 0 },
+    { id: 'p', label: 'Participation', unit: '%', value: 85.49, step: 1, min: 0 },
+    { id: 'm', label: 'Bank margin', unit: '%', value: 1, step: 0.25, min: 0 },
+    { id: 'r', label: 'Issuer rate', unit: '%', value: 4, step: 0.1 },
+    { id: 'q', label: 'Dividend yield', unit: '%', value: 1.5, step: 0.1 },
+    { id: 'vol', label: 'Index vol', unit: '%', value: 18, step: 0.5, min: 0.1 },
+  ],
+  compute: v => {
+    const N = v.N * 1e6, D = Math.exp(-v.r / 100 * v.T);
+    const c = C.bs({ S: 100, K: 100, T: v.T, r: v.r / 100, q: v.q / 100, vol: v.vol / 100, call: true });
+    const bond = N * v.pi / 100 * D, opt = N * v.p / 100 * c.pv / 100, pv = bond + opt;
+    const fair = (N * (1 - v.m / 100) - bond) / (N * c.pv / 100);
+    return {
+      out: [
+        ['Zero-coupon bond', 'USD ' + C.fmt(bond, 0)],
+        ['ATM call per 100 of index', C.fmt(c.pv, 4)],
+        ['Options at chosen participation', 'USD ' + C.fmt(opt, 0)],
+        ['Note PV', 'USD ' + C.fmt(pv, 0) + ' (' + C.fmt(100 * pv / N, 2) + '%)', true],
+        ['Fair participation for this margin', C.pct(fair, 2), true],
+        ['Delta (index +1%)', 'USD ' + C.fmt(N * v.p / 100 * c.delta * 0.01, 0)],
+        ['Vega (+1 vol point)', 'USD ' + C.fmt(N * v.p / 100 * c.vega / 100, 0)],
+        ['Bond DV01 (+1bp)', 'USD ' + C.fmt(-bond * v.T * 1e-4, 0)],
+      ],
+      chart: {
+        x: [40, 200], xLabel: 'index at maturity (% of start)', yLabel: 'amount received (USD)',
+        xFmt: x => C.fmt(x, 0) + '%', yFmt: y => C.fmt(y / 1e6, 1) + 'm', tipFmt: y => 'USD ' + C.fmt(y, 0),
+        series: [
+          { name: 'Note payoff', f: s => N * (v.pi / 100 + v.p / 100 * Math.max(s / 100 - 1, 0)), color: 1 },
+          { name: 'Index', f: s => N * s / 100, color: 2, dashed: true },
+        ],
+        marks: [{ x: 100, label: 'start' }],
+      },
+      note: 'Black-Scholes call with continuous dividend yield, bond discounted at a flat issuer rate. Issuer default and the smile are ignored.',
+    };
+  },
+});
+</script>
+</body>
+</html>

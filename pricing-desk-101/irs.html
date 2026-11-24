@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Interest Rate Swaps</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=JetBrains+Mono:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..600&display=swap">
+<link rel="stylesheet" href="assets/course.css">
+</head>
+<body data-page="irs.html">
+<div class="shell">
+<aside class="toc" id="toc"></aside>
+<main class="page">
+
+<header class="ph">
+  <p class="eyebrow">Part 3 · Swaps</p>
+  <h1>Interest rate swaps &amp; OIS</h1>
+  <p class="lede">Two parties swap interest payments on the same notional for years: one pays a fixed rate, the other pays a floating rate. A swap is just a strip of <a href="fra.html">FRAs</a>, and once you can price one, you can price most of the rates world.</p>
+  <div class="ptypes" data-ptypes data-eg="9Y USD P SOFRCMP-1D-0.0415 %/R OIS-1D 16/Dec/35"></div>
+</header>
+
+<section class="lvl" id="idea">
+  <h2><span class="lv">Level 1</span> The idea</h2>
+  <div class="prose">
+    <p>A company has a $50m loan whose interest rate resets every year to the market rate. It is worried rates will rise. A bank offers a deal: "You pay us 3.40% a year, fixed, for five years. We pay you the floating rate each year." The company's floating payments to its lender are now covered by the bank. What is left is a fixed 3.40%.</p>
+    <p>That deal is an <b>interest rate swap</b>. Nobody exchanges the $50m. It only sizes the payments. The side paying fixed is the <b>payer</b>. The side receiving fixed is the <b>receiver</b>.</p>
+  </div>
+  <aside class="analogy"><p>It is like swapping a pay-as-you-go phone plan for a fixed monthly contract. Your usage (the floating rate) still varies, but someone else now absorbs the variation, and you pay the same amount every month.</p></aside>
+  <p>When the floating rate is an overnight rate compounded over each period (SOFR, SONIA, €STR), the swap is called an <b>OIS</b> (overnight index swap). Today almost all new USD, GBP and CHF swaps are OIS.</p>
+</section>
+
+<section class="lvl" id="cashflows">
+  <h2><span class="lv">Level 2</span> The cashflows</h2>
+  <div class="prose">
+    <p>Each year, on each payment date, two amounts are due:</p>
+    <ul>
+      <li><span class="pay-c">Fixed leg</span>: <var>N</var> × <var>K</var> × <var>τ</var><sub><var>i</var></sub>. Known today.</li>
+      <li><span class="rec-c">Floating leg</span>: <var>N</var> × <var>R</var><sub><var>i</var></sub> × <var>τ</var><sub><var>i</var></sub>, where <var>R</var><sub><var>i</var></sub> is the compounded overnight rate for that period. Only known at the end of the period.</li>
+    </ul>
+    <p>The two amounts on the same date are netted. Here is the 5-year payer swap from the worked example below.</p>
+  </div>
+  <figure class="fig">
+    <div class="fig-title">Pay fixed 3.40% vs receive compounded SOFR, $50m, 5 years, annual</div>
+    <div id="legs-irs"></div>
+    <figcaption>Solid orange: <b>fixed payments</b> (about $1.72m each, slightly larger in 2028 because it is a leap year). Dashed blue: <b>expected floating payments</b>, sized from today's forward rates. Hover for amounts.</figcaption>
+  </figure>
+  <div class="f"><span class="lbl">The floating rate for period i (compounded in arrears)</span>
+    <var>R</var><sub><var>i</var></sub> = ( <span class="sum"><span class="s">Π</span><small>days j</small></span> (1 + <var>r</var><sub><var>j</var></sub> <span class="frac"><span><var>δ</var><sub><var>j</var></sub></span><span>360</span></span>) − 1 ) × <span class="frac"><span>360</span><span><var>d</var><sub><var>i</var></sub></span></span>
+  </div>
+  <dl class="where">
+    <dt><var>r</var><sub><var>j</var></sub></dt><dd>SOFR published for business day <var>j</var></dd>
+    <dt><var>δ</var><sub><var>j</var></sub></dt><dd>calendar days that fixing applies for (3 over a weekend)</dd>
+    <dt><var>d</var><sub><var>i</var></sub></dt><dd>calendar days in the period. Π means "multiply all of these together".</dd>
+  </dl>
+</section>
+
+<section class="lvl" id="pv">
+  <h2><span class="lv">Level 3</span> The PV formula</h2>
+  <h3>Step 1 · Value the fixed leg</h3>
+  <div class="prose"><p>Each fixed payment is known, so discount it. The sum of accrual × discount factor appears so often it has its own name, the <b>annuity</b> (or PV01 of the leg):</p></div>
+  <div class="f"><span class="lbl">Fixed leg</span>
+    PV<sub>fixed</sub> = <var>N</var> × <var>K</var> × <var>A</var>,&nbsp;&nbsp;&nbsp; <var>A</var> = <span class="sum"><span class="s">Σ</span><small>i = 1..n</small></span> <var>τ</var><sub><var>i</var></sub> <var>D</var>(<var>T</var><sub><var>i</var></sub>)
+  </div>
+  <h3>Step 2 · Value the floating leg</h3>
+  <div class="prose"><p>Replace each unknown <var>R</var><sub><var>i</var></sub> by its forward <var>F</var><sub><var>i</var></sub> = (<var>D</var>(<var>T</var><sub><var>i</var>−1</sub>)/<var>D</var>(<var>T</var><sub><var>i</var></sub>) − 1)/<var>τ</var><sub><var>i</var></sub>, exactly as for an FRA. When the same OIS curve projects and discounts, something lovely happens: each term <var>τ</var><sub><var>i</var></sub><var>F</var><sub><var>i</var></sub><var>D</var>(<var>T</var><sub><var>i</var></sub>) equals <var>D</var>(<var>T</var><sub><var>i</var>−1</sub>) − <var>D</var>(<var>T</var><sub><var>i</var></sub>). The sum telescopes:</p></div>
+  <div class="f"><span class="lbl">Floating leg (OIS, single curve)</span>
+    PV<sub>float</sub> = <var>N</var> <span class="sum"><span class="s">Σ</span><small>i</small></span> <var>τ</var><sub><var>i</var></sub> <var>F</var><sub><var>i</var></sub> <var>D</var>(<var>T</var><sub><var>i</var></sub>) = <var>N</var> × ( <var>D</var>(<var>T</var><sub>0</sub>) − <var>D</var>(<var>T</var><sub><var>n</var></sub>) )
+  </div>
+  <h3>Step 3 · Par rate and PV</h3>
+  <div class="prose"><p>The <b>par swap rate</b> <var>S</var> is the fixed rate that makes both legs equal. It is what the market quotes on screens.</p></div>
+  <div class="f"><span class="lbl">Par rate and PV of a payer swap (pay K, receive floating)</span>
+    <var>S</var> = <span class="frac"><span><var>D</var>(<var>T</var><sub>0</sub>) − <var>D</var>(<var>T</var><sub><var>n</var></sub>)</span><span><var>A</var></span></span>
+    &nbsp;&nbsp;&nbsp;&nbsp; PV<sub>payer</sub> = <var>N</var> × (<var>S</var> − <var>K</var>) × <var>A</var>
+  </div>
+  <p>A receiver swap has the opposite sign. This one line is the most used formula on a rates desk.</p>
+  <h3>Step 4 · Multi-curve: IBOR or term-rate legs</h3>
+  <div class="prose"><p>For legs on EURIBOR, STIBOR, TAIFX or other term rates with bank credit risk, forwards come from a separate <b>projection curve</b>, while discounting stays on OIS. The telescoping trick no longer works:</p></div>
+  <div class="f"><span class="lbl">General par rate</span>
+    <var>S</var> = <span class="frac"><span><span class="sum"><span class="s">Σ</span><small>j</small></span> <var>τ</var><sub><var>j</var></sub><sup>flt</sup> <var>F</var><sub><var>j</var></sub><sup>proj</sup> <var>D</var><sub>OIS</sub>(<var>T</var><sub><var>j</var></sub>)</span><span><span class="sum"><span class="s">Σ</span><small>i</small></span> <var>τ</var><sub><var>i</var></sub><sup>fix</sup> <var>D</var><sub>OIS</sub>(<var>T</var><sub><var>i</var></sub>)</span></span>
+  </div>
+  <p>Fixed and floating legs may also have different frequencies (EUR: annual fixed vs 6M EURIBOR). That is why the sums use separate indices <var>i</var> and <var>j</var>. A spread on the floating leg simply adds <var>N</var> × spread × <var>A</var><sup>flt</sup> to that leg.</p>
+</section>
+
+<section class="lvl" id="desk">
+  <h2><span class="lv">Level 4</span> Desk reality</h2>
+  <ul>
+    <li><b>Conventions.</b> USD SOFR OIS: annual both legs, ACT/360, payment 2 business days after each period end, modified following, US government securities calendar. GBP SONIA: ACT/365F. EUR: fixed annual 30/360 against €STR, or 6M EURIBOR.</li>
+    <li><b>Spot start.</b> A new swap usually starts two business days after trade (T+2), so <var>D</var>(<var>T</var><sub>0</sub>) is slightly below 1.</li>
+    <li><b>Lookback and observation shift.</b> To know the amount before paying it, some contracts use fixings from a few days earlier (a 2- or 5-day lookback). The value impact is tiny but must match the confirmation.</li>
+    <li><b>Live trades are partly fixed.</b> For the current period, compound the SOFR already published, then forward to the period end. Past periods are already paid and have dropped out.</li>
+    <li><b>Clearing.</b> Most swaps are cleared at LCH or CME. They are margined daily with price alignment interest (PAI) and discounted on OIS.</li>
+    <li><b>Reading the trade description.</b> <code>9Y USD P SOFRCMP-1D-0.0415 %/R OIS-1D 16/Dec/35</code> reads as a 9-year USD swap maturing 16 Dec 2035. The side <code>P</code> is the leg you pay, here SOFR compounded daily (<code>SOFRCMP-1D</code>) with a spread figure attached. <code>R</code> is the leg you receive. Check the trade's leg details for the exact rate and spread fields before pricing.</li>
+    <li><b>Swap spread.</b> Swap rate minus the government bond yield of the same maturity. Traders use it to compare rates and bond markets. It can be negative (USD 30Y has been for years).</li>
+  </ul>
+</section>
+
+<section class="sec" id="greeks">
+  <h2>Greeks that matter</h2>
+  <div class="tbl greeks"><table>
+    <thead><tr><th>Greek</th><th>What it measures</th><th>For a swap</th></tr></thead>
+    <tbody>
+      <tr><td>DV01 / PV01</td><td>PV change if all rates move +1bp</td><td>≈ <var>N</var> × <var>A</var> × 0.0001. About $23k on $50m 5Y. A payer gains when rates rise and a receiver loses.</td></tr>
+      <tr><td>Bucketed delta</td><td>DV01 split by curve tenor (1Y, 2Y, ..., 30Y)</td><td>A par swap's risk sits almost entirely at its maturity pillar. Off-market or aged swaps spread risk across buckets. This is how books are hedged.</td></tr>
+      <tr><td>Basis delta</td><td>Sensitivity to projection vs OIS spread</td><td>Only for IBOR or term-rate legs: the risk to the gap between the two curves.</td></tr>
+      <tr><td>Gamma (convexity)</td><td>How DV01 changes as rates move</td><td>Small and positive. Higher rates lower the annuity, so DV01 shrinks a little.</td></tr>
+      <tr><td>Theta (carry and roll)</td><td>PV change from one day passing</td><td>Carry = fixed accrual vs floating accrual. Roll-down = the swap sliding to a shorter maturity on a sloped curve.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="sec" id="example">
+  <h2>Worked example</h2>
+  <p>We value at the start date, 25 Nov 2026, a 5-year USD SOFR OIS. You pay 3.40% fixed on $50m and receive compounded SOFR. Both legs are annual and ACT/360. Payment dates are 25 Nov each year (we ignore weekend adjustment and the 2-day payment lag). Zero rates (continuous, ACT/365) for the 1 to 5 year dates are 3.55%, 3.45%, 3.45%, 3.50% and 3.55%.</p>
+  <ol class="steps">
+    <li><span>Accruals and discount factors. 2028 has 366 days.</span>
+      <div class="calc-line">τ = 1.01389, 1.01667, 1.01389, 1.01389, 1.01389
+D = 0.965123, 0.933238, 0.901591, 0.869275, 0.837280</div></li>
+    <li><span>Annuity.</span>
+      <div class="calc-line">A = Σ τ·D = 0.97853 + 0.94879 + 0.91412 + 0.88135 + 0.84891 = 4.571689</div></li>
+    <li><span>Floating leg by telescoping (the forwards are 3.56%, 3.36%, 3.46%, 3.67%, 3.77%).</span>
+      <div class="calc-line">PV_float / N = 1 − 0.837280 = 0.162720</div></li>
+    <li><span>Par swap rate.</span>
+      <div class="calc-line">S = 0.162720 / 4.571689 = 3.5593%</div></li>
+    <li><span>PV of the payer swap.</span>
+      <div class="calc-line">PV = 50,000,000 × (0.035593 − 0.034000) × 4.571689 = $364,150</div></li>
+    <li><span>DV01 by shifting every zero rate up 1bp and repricing.</span>
+      <div class="calc-line">DV01 = $23,216   (shortcut N × A × 0.0001 = $22,858)</div></li>
+  </ol>
+  <p class="answer">The payer swap is worth <b>+$364,150</b>, because the market rate (3.56%) is 15.9bp above the 3.40% you pay. DV01 is about <b>$23k per bp</b>.</p>
+</section>
+
+<section class="sec" id="try">
+  <h2>Try it</h2>
+  <p>Change the curve, tenor or frequency. The table lists every cashflow of both legs. Add a projection spread to see a two-curve (IBOR-style) swap.</p>
+  <div id="calc-irs"></div>
+</section>
+
+<section class="sec" id="recap">
+  <h2>Remember</h2>
+  <ul class="recap">
+    <li>A swap exchanges fixed for floating interest on a notional that never changes hands.</li>
+    <li>Annuity <var>A</var> = Σ accrual × discount factor. Fixed leg = <var>N</var> × <var>K</var> × <var>A</var>.</li>
+    <li>With one OIS curve, floating leg = <var>N</var> × (<var>D</var><sub>start</sub> − <var>D</var><sub>end</sub>), so par rate = (<var>D</var><sub>start</sub> − <var>D</var><sub>end</sub>) / <var>A</var>.</li>
+    <li>PV<sub>payer</sub> = <var>N</var> × (par − fixed) × <var>A</var>. DV01 ≈ <var>N</var> × <var>A</var> × 1bp.</li>
+    <li>IBOR legs need a projection curve for forwards and OIS for discounting.</li>
+  </ul>
+</section>
+
+</main>
+</div>
+<script src="assets/course.js"></script>
+<script>
+(function () {
+  const PILLARS = [1, 2, 3, 5, 10, 30];
+  // Zero rate at nominal tenor x (years), linear between pillars, flat outside.
+  const zAt = (zs, x) => {
+    if (x <= PILLARS[0]) return zs[0];
+    for (let k = 1; k < PILLARS.length; k++) if (x <= PILLARS[k]) return zs[k - 1] + (zs[k] - zs[k - 1]) * (x - PILLARS[k - 1]) / (PILLARS[k] - PILLARS[k - 1]);
+    return zs[zs.length - 1];
+  };
+  // Build and price a swap. zs in decimals; spread = projection minus OIS (decimal).
+  function swap(o, bump = 0) {
+    const nPer = Math.round(o.tenor * o.freq), m = 12 / o.freq, rows = [];
+    let A = 0, pvFlt = 0, prevD = 1, prevDp = 1, prev = C.toDate('2026-11-25');
+    for (let i = 1; i <= nPer; i++) {
+      const end = C.addMonths('2026-11-25', i * m), d = C.days(prev, end), tau = d / 360;
+      const t = C.days('2026-11-25', end) / 365, x = i / o.freq;
+      const z = zAt(o.zs, x) + bump, D = Math.exp(-z * t), Dp = Math.exp(-(z + o.spread) * t);
+      const F = (prevDp / Dp - 1) / tau;
+      A += tau * D; pvFlt += tau * F * D;
+      rows.push({ i, start: prev, end, d, tau, D, F, t });
+      prev = end; prevD = D; prevDp = Dp;
+    }
+    const S = pvFlt / A;
+    return { rows, A, pvFlt, S, pv: o.side * o.N * (S - o.K) * A };
+  }
+
+  // Static diagram: worked example
+  const ex = swap({ tenor: 5, freq: 1, zs: [0.0355, 0.0345, 0.0345, 0.0355, 0.0385, 0.042], spread: 0, K: 0.034, N: 5e7, side: 1 });
+  C.legs('#legs-irs', {
+    tMin: 0, tMax: 5.3, ticks: [0, 1, 2, 3, 4, 5], tickFmt: t => String(2026 + t),
+    events: [{ t: 0, label: 'Start 25 Nov 26' }, { t: ex.rows[4].t, label: 'Maturity 25 Nov 31' }],
+    legs: [
+      { name: 'Receive compounded SOFR (expected, from forwards)', dir: 1, style: 'float', flows: ex.rows.map(r => ({ t: r.t, a: 5e7 * r.F * r.tau, label: C.fmt(5e7 * r.F * r.tau / 1e6, 2) + 'm', tip: `Period ${r.i}: forward ${C.pct(r.F, 3)} × ${C.fmt(r.tau, 5)} × $50m = $${C.fmt(5e7 * r.F * r.tau, 0)}` })) },
+      { name: 'Pay fixed 3.40%', dir: -1, style: 'fixed', flows: ex.rows.map(r => ({ t: r.t, a: 5e7 * 0.034 * r.tau, label: C.fmt(5e7 * 0.034 * r.tau / 1e6, 2) + 'm', tip: `Period ${r.i}: 3.40% × ${r.d}/360 × $50m = $${C.fmt(5e7 * 0.034 * r.tau, 0)}` })) },
+    ],
+  });
+
+  C.calc('#calc-irs', {
+    title: 'Swap pricer with full schedule',
+    inputs: [
+      { id: 'side', label: 'Position', value: 1, options: [[1, 'Payer (pay fixed)'], [-1, 'Receiver (receive fixed)']] },
+      { id: 'N', label: 'Notional', unit: '$m', value: 50, step: 5 },
+      { id: 'K', label: 'Fixed rate K', unit: '%', value: 3.40, step: 0.01 },
+      { id: 'tenor', label: 'Tenor', unit: 'years', value: 5, step: 1, min: 1, max: 30 },
+      { id: 'freq', label: 'Frequency (both legs)', value: 1, options: [[1, 'Annual'], [2, 'Semi-annual'], [4, 'Quarterly']] },
+      { id: 'spr', label: 'Projection spread', unit: 'bp', value: 0, step: 1 },
+      { id: 'z1', label: '1Y zero', unit: '%', value: 3.55, step: 0.01 },
+      { id: 'z2', label: '2Y zero', unit: '%', value: 3.45, step: 0.01 },
+      { id: 'z3', label: '3Y zero', unit: '%', value: 3.45, step: 0.01 },
+      { id: 'z5', label: '5Y zero', unit: '%', value: 3.55, step: 0.01 },
+      { id: 'z10', label: '10Y zero', unit: '%', value: 3.85, step: 0.01 },
+      { id: 'z30', label: '30Y zero', unit: '%', value: 4.20, step: 0.01 },
+    ],
+    compute: v => {
+      const o = { tenor: Math.max(1, Math.min(30, Math.round(v.tenor))), freq: v.freq, zs: [v.z1, v.z2, v.z3, v.z5, v.z10, v.z30].map(x => x / 100), spread: v.spr / 1e4, K: v.K / 100, N: v.N * 1e6, side: v.side };
+      const b = swap(o), u = swap(o, 1e-4);
+      const sgn = v.side, many = b.rows.length > 12;
+      const rows = b.rows.map(r => {
+        const fx = -sgn * o.N * o.K * r.tau, fl = sgn * o.N * r.F * r.tau;
+        return [r.i, C.iso(r.end), r.d, C.fmt(r.tau, 5), C.fmt(r.D, 6), C.fmt(fx, 0), C.pct(r.F, 4), C.fmt(fl, 0), C.fmt((fx + fl) * r.D, 0)];
+      });
+      return {
+        out: [
+          ['Annuity A', C.fmt(b.A, 6)],
+          ['Par swap rate S', C.pct(b.S, 4)],
+          ['PV', '$' + C.fmt(b.pv, 0), true],
+          ['DV01 (zeros +1bp)', '$' + C.fmt(u.pv - b.pv, 0)],
+          ['Shortcut N × A × 1bp', '$' + C.fmt(o.N * b.A * 1e-4, 0)],
+        ],
+        legs: {
+          tMin: 0, tMax: b.rows[b.rows.length - 1].t * 1.05, axisLabel: 'years from start', height: 100,
+          legs: [
+            { name: sgn > 0 ? 'Receive floating (expected)' : 'Pay floating (expected)', dir: sgn, style: 'float', flows: b.rows.map(r => ({ t: r.t, a: o.N * Math.abs(r.F) * r.tau, label: many ? '' : C.fmt(o.N * r.F * r.tau / 1e6, 2) + 'm' })) },
+            { name: sgn > 0 ? 'Pay fixed' : 'Receive fixed', dir: -sgn, style: 'fixed', flows: b.rows.map(r => ({ t: r.t, a: o.N * o.K * r.tau, label: many ? '' : C.fmt(o.N * o.K * r.tau / 1e6, 2) + 'm' })) },
+          ],
+        },
+        table: { head: ['#', 'Pay date', 'Days', 'τ', 'D(T)', 'Fixed CF', 'Forward', 'Float CF', 'PV net'], rows, num: [2, 3, 4, 5, 6, 7, 8] },
+        note: 'Start 25 Nov 2026, no business-day adjustment or payment lag. Zero rates continuous ACT/365, linearly interpolated by tenor. Accruals ACT/360. Signs are from your side: + received, − paid.',
+      };
+    },
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Asset Swaps</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=JetBrains+Mono:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..600&display=swap">
+<link rel="stylesheet" href="assets/course.css">
+</head>
+<body data-page="asset-swap.html">
+<div class="shell">
+<aside class="toc" id="toc"></aside>
+<main class="page">
+
+<header class="ph">
+  <p class="eyebrow">Part 3 · Swaps</p>
+  <h1>Asset swaps</h1>
+  <p class="lede">Buy a fixed-coupon bond and, in the same breath, swap its fixed coupons for a floating rate plus a spread. The spread you lock in, the asset swap spread, is how the market measures whether a bond is cheap or rich against swaps.</p>
+  <div class="ptypes" data-ptypes data-eg="AssetSwap P TII 1.875 07/15/35 R SOFRCMP-1D+0.529 %"></div>
+</header>
+
+<section class="lvl" id="idea">
+  <h2><span class="lv">Level 1</span> The idea</h2>
+  <div class="prose">
+    <p>A bond pays fixed coupons. If rates rise, its price falls. Some investors, such as banks funding themselves at floating rates, like the bond's credit or its cheapness but don't want that interest rate risk.</p>
+    <p>An asset swap removes it. You buy the bond and enter a swap with a dealer. You pass every fixed coupon of the bond to the dealer, and the dealer pays you a floating rate (SOFR) plus a fixed extra, the <b>asset swap spread</b>. You now own something that behaves like a floating-rate note. Your return is SOFR plus the spread, as long as the bond doesn't default.</p>
+  </div>
+  <aside class="analogy"><p>You buy a flat that comes with a tenant on a fixed 5-year lease. You then agree with a bank to hand over the fixed rent each month, and the bank pays you a rent that follows the market, plus a bonus. That bonus tells you how good a deal the flat was. If the tenant stops paying, you still owe the bank.</p></aside>
+</section>
+
+<section class="lvl" id="cashflows">
+  <h2><span class="lv">Level 2</span> The cashflows</h2>
+  <div class="prose">
+    <p>In the standard <b>par-par</b> asset swap you pay exactly 100 per 100 face for the whole package, whatever the bond's market price. The bond costs its dirty price <var>P</var> (say 99.10). The leftover 100 − <var>P</var> = 0.90 goes to the dealer as an upfront payment. If the bond trades above par, the dealer pays you the difference instead.</p>
+    <p>After that, the bond's coupons come in and go straight out to the dealer, and SOFR + spread comes back on the full 100 notional. At maturity the bond repays 100.</p>
+  </div>
+  <figure class="fig">
+    <div class="fig-title">Par-par asset swap on a 5-year 4.25% bond, per 100 face</div>
+    <div id="legs-asw"></div>
+    <figcaption>The blue and orange <b>solid</b> coupon arrows are the same size and cancel: the bond's coupons pass straight to the dealer. What remains is <b>pay 100 today, receive SOFR + spread quarterly, receive 100 at maturity</b>, which is a floating-rate note.</figcaption>
+  </figure>
+</section>
+
+<section class="lvl" id="pv">
+  <h2><span class="lv">Level 3</span> The PV formula</h2>
+  <div class="prose"><p>Look at the deal from the dealer's side. The dealer receives the upfront 100 − <var>P</var> and the bond's coupons, and pays SOFR + <var>s</var> on 100. For the trade to be fair, these must have equal value on the swap (SOFR OIS) curve <var>D</var>(<var>t</var>).</p></div>
+  <div class="f"><span class="lbl">Step 1 · value of each piece, per 100 face</span>
+    upfront = 100 − <var>P</var> &nbsp;&nbsp;·&nbsp;&nbsp; coupons = <span class="sum"><span class="s">Σ</span><small>j</small></span> <var>c</var> <var>τ</var><sub><var>j</var></sub> <var>D</var>(<var>t</var><sub><var>j</var></sub>) &nbsp;&nbsp;·&nbsp;&nbsp; SOFR leg = 100 (1 − <var>D</var>(<var>T</var>)) &nbsp;&nbsp;·&nbsp;&nbsp; spread leg = 100 <var>s</var> <var>A</var>
+  </div>
+  <div class="prose"><p>The SOFR leg without a notional is worth 100 (1 − <var>D</var>(<var>T</var>)). This is the par-floater fact from the <a href="xccy.html">cross-currency</a> page. <var>A</var> = Σ<var>τ</var><sub><var>i</var></sub><var>D</var>(<var>t</var><sub><var>i</var></sub>) is the annuity of the floating schedule. Setting the dealer's PV to zero:</p></div>
+  <div class="f"><span class="lbl">Step 2 · solve for the spread</span>
+    100 − <var>P</var> + Σ <var>c</var> <var>τ</var><sub><var>j</var></sub> <var>D</var><sub><var>j</var></sub> − 100(1 − <var>D</var>(<var>T</var>)) − 100 <var>s</var> <var>A</var> = 0
+  </div>
+  <div class="f"><span class="lbl">Step 3 · the asset swap spread</span>
+    <var>s</var><sub>ASW</sub> = <span class="frac"><span><var>P</var><sub>swap</sub> − <var>P</var></span><span>100 × <var>A</var></span></span>
+    &nbsp;&nbsp; where &nbsp; <var>P</var><sub>swap</sub> = Σ <var>c</var> <var>τ</var><sub><var>j</var></sub> <var>D</var>(<var>t</var><sub><var>j</var></sub>) + 100 <var>D</var>(<var>T</var>)
+  </div>
+  <dl class="where">
+    <dt><var>P</var></dt><dd>the bond's market dirty price (clean + accrued)</dd>
+    <dt><var>P</var><sub>swap</sub></dt><dd>what the bond would be worth if it were discounted on the swap curve, as if it were riskless</dd>
+    <dt><var>A</var></dt><dd>annuity of the floating leg: Σ accrual × discount factor (quarterly for SOFR)</dd>
+  </dl>
+  <aside class="key"><p>The ASW spread is the gap between the swap-curve price and the market price, spread out over the life of the trade. A cheap bond (low <var>P</var>) has a high ASW spread.</p></aside>
+  <div class="f"><span class="lbl">Step 4 · PV of an existing asset swap position traded at spread s</span>
+    PV = <var>N</var> × (<var>s</var> − <var>s</var><sub>ASW,today</sub>) × <var>A</var>
+  </div>
+  <h3>ASW spread vs Z-spread</h3>
+  <div class="prose"><p>The <b>Z-spread</b> is the single number <var>Z</var> you add to every swap zero rate so that the bond's discounted flows equal its price:</p></div>
+  <div class="f"><var>P</var> = <span class="sum"><span class="s">Σ</span><small>j</small></span> CF<sub><var>j</var></sub> × e<sup>−(<var>z</var>(<var>t</var><sub><var>j</var></sub>) + <var>Z</var>) <var>t</var><sub><var>j</var></sub></sup></div>
+  <div class="prose"><p>Both measure cheapness. For a bond priced near par they are almost equal. For a bond far from par they drift apart, because par-par ASW puts the price difference into an upfront amount spread over 100 notional, while the Z-spread spreads it over the bond's own flows. The calculator chart shows both as the price changes.</p></div>
+</section>
+
+<section class="lvl" id="desk">
+  <h2><span class="lv">Level 4</span> Desk reality</h2>
+  <ul>
+    <li><b>Reading the trade description.</b> <code>AssetSwap P TII 1.875 07/15/35 R SOFRCMP-1D+0.529 %</code> means you <b>P</b>ay the cashflows of the TIPS 1.875% July 2035 and <b>R</b>eceive compounded SOFR + 52.9bp. TII is the US inflation-linked Treasury (TIPS).</li>
+    <li><b>Inflation-linked bonds.</b> A TIPS coupon is 1.875% × index ratio, and its principal also grows with CPI. The "bond coupons" leg is therefore an inflation leg, projected with the CPI forward curve from the <a href="inflation-swap.html">inflation swaps</a> page. The formula is unchanged: ASW = (PV of projected bond flows on the swap curve − dirty price) ÷ (100 × annuity).</li>
+    <li><b>Par-par vs proceeds.</b> In a <em>proceeds</em> (market-value) asset swap the notional is the dirty price <var>P</var> instead of 100, so there is no upfront. The spread becomes (<var>P</var><sub>swap</sub> − <var>P</var>) ÷ (<var>P</var> × <var>A</var>).</li>
+    <li><b>Conventions.</b> Treasury coupons are semi-annual ACT/ACT. The SOFR leg is ACT/360, compounded in arrears, usually annual or quarterly. The bond settles T+1.</li>
+    <li><b>Default.</b> If the bond defaults, you keep owing its coupons on the swap. You lose 100 − recovery on the bond, plus or minus the swap's value. Asset swap spreads are therefore a credit measure.</li>
+    <li><b>Treasury asset swaps.</b> For Treasuries the spread is often negative at long maturities, a reflection of balance-sheet and funding costs. Traders call the opposite trade a "swap spread" trade.</li>
+  </ul>
+</section>
+
+<section class="sec" id="greeks">
+  <h2>Greeks that matter</h2>
+  <div class="tbl greeks"><table>
+    <thead><tr><th>Greek</th><th>What it measures</th><th>For an asset swap package</th></tr></thead>
+    <tbody>
+      <tr><td>DV01</td><td>PV change if all swap rates rise 1bp</td><td>Close to zero. The bond's loss is offset by the swap's gain, and only the floating-note risk to the next reset remains.</td></tr>
+      <tr><td>Spread01</td><td>PV change if the bond's ASW spread widens 1bp</td><td>≈ −<var>N</var> × <var>A</var> × 0.0001. About −USD 4,500 per bp on USD 10m over 5 years. This is the main risk.</td></tr>
+      <tr><td>Jump to default</td><td>Loss if the issuer defaults tomorrow</td><td>≈ −<var>N</var> × (1 − recovery), plus or minus the swap MTM.</td></tr>
+      <tr><td>Inflation01 (TIPS only)</td><td>PV change if breakeven inflation rises 1bp</td><td>Large on the bond and on the swap's inflation leg. They offset in the package, leaving a small residual.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="sec" id="example">
+  <h2>Worked example</h2>
+  <p>A 5-year bond pays 4.25% semi-annually and has just paid a coupon, so dirty = clean = 99.10. The SOFR curve is flat at 3.70% continuously compounded, with quarterly floating periods of ¼ year. Notional USD 10m.</p>
+  <ol class="steps">
+    <li><span>Price the bond on the swap curve: 10 coupons of 2.125 and 100 at year 5.</span>
+      <div class="calc-line">P_swap = Σ 2.125 × e^(−0.037 × j/2) + 100 × e^(−0.037×5) = 102.3317</div></li>
+    <li><span>Annuity of the quarterly floating leg (20 periods).</span>
+      <div class="calc-line">A = Σ 0.25 × e^(−0.037 × i/4) = 4.54367</div></li>
+    <li><span>Asset swap spread.</span>
+      <div class="calc-line">s_ASW = (102.3317 − 99.10) / (100 × 4.54367) = 0.7113% = 71.1bp</div></li>
+    <li><span>Compare with the Z-spread, solved by trial and error.</span>
+      <div class="calc-line">Z such that Σ CF × e^(−(0.037+Z)t) = 99.10   →   Z = 70.4bp</div></li>
+    <li><span>Risk of the package.</span>
+      <div class="calc-line">Spread01 = 10,000,000 × 4.54367 × 0.0001 = USD 4,544 per bp</div></li>
+  </ol>
+  <p class="answer">You can swap this bond into <b>SOFR + 71.1bp</b>. The bond is 3.23 points cheap to the swap curve. A package traded earlier at SOFR + 52.9bp would now be worth (52.9 − 71.13)bp × 4,544 ≈ −USD 82,800 to its buyer.</p>
+</section>
+
+<section class="sec" id="try">
+  <h2>Try it</h2>
+  <p>The chart compares the ASW spread and the Z-spread across bond prices. They meet near par and drift apart at discounts and premiums.</p>
+  <div id="calc-asw"></div>
+</section>
+
+<section class="sec" id="recap">
+  <h2>Remember</h2>
+  <ul class="recap">
+    <li>Asset swap = buy the bond + pay its fixed coupons in a swap + receive SOFR + spread.</li>
+    <li>s<sub>ASW</sub> = (bond price on the swap curve − market dirty price) ÷ (100 × floating annuity).</li>
+    <li>The package has little rate risk. It keeps the bond's spread and default risk.</li>
+    <li>For TIPS, the bond leg is an inflation leg. The method is the same.</li>
+  </ul>
+</section>
+
+</main>
+</div>
+<script src="assets/course.js"></script>
+<script>
+(function () {
+  const sa = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5], qt = []; for (let i = 1; i <= 20; i++) qt.push(i / 4);
+  C.legs('#legs-asw', {
+    tMin: -0.55, tMax: 5.15, ticks: [0, 1, 2, 3, 4, 5], height: 130,
+    events: [{ t: 0, label: 'Buy package' }, { t: 5, label: 'Bond matures' }],
+    legs: [
+      { name: 'Bond coupons received (4.25%)', dir: 1, style: 'fixed', flows: sa.map(t => ({ t, a: 2.125, tip: 'Bond coupon 2.125 per 100' })) },
+      { name: 'SOFR + spread from the dealer', dir: 1, style: 'float', color: 'aqua', flows: qt.map((t, i) => ({ t, a: 1.1, label: i === 6 ? 'SOFR+s' : '', tip: '100 × (SOFR + s) × 0.25' })) },
+      { name: 'Bond redemption', dir: 1, style: 'notional', flows: [{ t: 5, a: 30, label: '100' }] },
+      { name: 'Package price (bond P + upfront 100 − P)', dir: -1, style: 'notional', flows: [{ t: 0, a: 30, label: '100' }] },
+      { name: 'Same coupons passed to the dealer', dir: -1, style: 'fixed', flows: sa.map((t, i) => ({ t, a: 2.125, label: i === 0 ? '2.125' : '', tip: 'Fixed coupon paid on the swap' })) },
+    ],
+  });
+
+  function bondFlows(c, f, T) { const out = []; const n = Math.round(T * f); for (let j = 1; j <= n; j++) out.push([j / f, 100 * c / f + (j === n ? 100 : 0)]); return out; }
+  function pAt(flows, r, Z) { return flows.reduce((s, [t, cf]) => s + cf * Math.exp(-(r + Z) * t), 0); }
+  function zSpread(flows, r, P) { return C.solve(Z => pAt(flows, r, Z) - P, -0.2, 0.5); }
+  function annuity(T, r) { let A = 0; const n = Math.round(T * 4); for (let i = 1; i <= n; i++) A += 0.25 * Math.exp(-r * i / 4); return A; }
+
+  C.calc('#calc-asw', {
+    title: 'Par-par asset swap spread and Z-spread',
+    inputs: [
+      { id: 'N', label: 'Notional', unit: 'USD m', value: 10, step: 1 },
+      { id: 'c', label: 'Bond coupon', unit: '%', value: 4.25, step: 0.125 },
+      { id: 'f', label: 'Coupon frequency', value: 2, options: [[1, 'Annual'], [2, 'Semi-annual'], [4, 'Quarterly']] },
+      { id: 'T', label: 'Maturity', unit: 'years', value: 5, step: 0.5, min: 0.5 },
+      { id: 'P', label: 'Dirty price', unit: 'per 100', value: 99.10, step: 0.05 },
+      { id: 'r', label: 'SOFR zero (flat)', unit: '%', value: 3.70, step: 0.01 },
+      { id: 'st', label: 'Traded spread', unit: 'bp', value: 52.9, step: 0.5 },
+    ],
+    compute: v => {
+      const fl = bondFlows(v.c / 100, v.f, v.T), r = v.r / 100, A = annuity(v.T, r);
+      const Ps = pAt(fl, r, 0), asw = (Ps - v.P) / (100 * A), Z = zSpread(fl, r, v.P);
+      const N = v.N * 1e6;
+      return {
+        out: [
+          ['Bond price on swap curve P_swap', C.fmt(Ps, 4)],
+          ['Floating annuity A', C.fmt(A, 5)],
+          ['Asset swap spread', C.fmt(asw * 1e4, 1) + 'bp', true],
+          ['Z-spread', C.fmt(Z * 1e4, 1) + 'bp'],
+          ['PV of package traded at spread', 'USD ' + C.fmt(N * (v.st / 1e4 - asw) * A, 0)],
+          ['Spread01', 'USD ' + C.fmt(-N * A * 1e-4, 0)],
+        ],
+        chart: {
+          x: [Math.max(50, v.P - 15), v.P + 15], n: 90, xLabel: 'dirty price', yLabel: 'spread over SOFR (bp)',
+          xFmt: x => C.fmt(x, 0), yFmt: y => C.fmt(y, 0), tipFmt: y => C.fmt(y, 1) + 'bp', zero: false,
+          series: [
+            { name: 'Par-par ASW', f: P => (Ps - P) / (100 * A) * 1e4, color: 1 },
+            { name: 'Z-spread', f: P => zSpread(fl, r, P) * 1e4, color: 2, dashed: true },
+          ],
+          marks: [{ x: v.P, label: 'market' }, { x: 100, label: 'par' }],
+        },
+        note: 'Bond assumed to have just paid a coupon (no accrued). Flat continuously compounded SOFR curve, quarterly floating leg of ¼-year periods.',
+      };
+    },
+  });
+})();
+</script>
+</body>
+</html>

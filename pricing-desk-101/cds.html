@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Credit Default Swaps</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=JetBrains+Mono:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..600&display=swap">
+<link rel="stylesheet" href="assets/course.css">
+</head>
+<body data-page="cds.html">
+<div class="shell">
+<aside class="toc" id="toc"></aside>
+<main class="page">
+
+<header class="ph">
+  <p class="eyebrow">Part 4 · Credit</p>
+  <h1>Credit default swaps</h1>
+  <p class="lede">Insurance against a company going bust. One side pays a small premium every quarter. The other side pays a large amount only if the company defaults. Pricing it means estimating how likely that default is.</p>
+  <div class="ptypes" data-ptypes data-eg="Sell XRX SNRFOR USD 100 Dec 2027"></div>
+</header>
+
+<section class="lvl" id="idea">
+  <h2><span class="lv">Level 1</span> The idea</h2>
+  <div class="prose">
+    <p>You lend USD 10 million to Xerox by buying its bonds. If Xerox goes bankrupt, you may only get 40 cents back on each dollar. You want insurance against that.</p>
+    <p>A <b>credit default swap (CDS)</b> is that insurance. The <b>protection buyer</b> pays a fixed premium (the <b>coupon</b>, for example 1% a year) every quarter. The <b>protection seller</b> promises that if Xerox defaults, it pays the loss: the notional minus what the bonds are still worth after default.</p>
+    <p>A <b>default</b> here means a <b>credit event</b>: the company fails to pay, goes bankrupt, or (for some contracts) restructures its debt. After default the bonds still trade at some price, called the <b>recovery rate</b> <var>R</var>. A typical guess for senior debt is 40%.</p>
+  </div>
+  <aside class="analogy"><p>It works like car insurance. You pay a small premium each month. If you crash, the insurer pays for the damage. If you never crash, the insurer keeps the premiums. The insurer prices the policy from how likely you are to crash and how much a crash costs.</p></aside>
+  <p>Nobody has to own the bonds to trade a CDS. A seller of protection is simply taking credit risk on Xerox, much like buying its bond. The example trade <code>Sell XRX SNRFOR USD 100 Dec 2027</code> is exactly that. We sell protection on Xerox senior unsecured debt (<code>SNRFOR</code>). The running coupon is 100bp (1%) and the contract ends on 20 Dec 2027.</p>
+</section>
+
+<section class="lvl" id="cashflows">
+  <h2><span class="lv">Level 2</span> The cashflows</h2>
+  <div class="prose">
+    <p>There are two legs.</p>
+    <ul>
+      <li>The <span class="rec-c">premium leg</span>. The buyer pays coupon × notional × <var>τ</var> on each standard quarterly date (20 Mar, 20 Jun, 20 Sep, 20 Dec), where <var>τ</var> is the year fraction ACT/360. Payments <b>stop at default</b>. On default the buyer also pays the coupon accrued since the last payment date.</li>
+      <li>The <span class="pay-c">protection leg</span>. If default happens before maturity, the seller pays (1 − <var>R</var>) × notional once, and the contract ends. If no default happens, this leg pays nothing.</li>
+    </ul>
+  </div>
+  <figure class="fig">
+    <div class="fig-title">Protection seller, USD 10m Xerox, coupon 100bp, maturity 20 Dec 2027</div>
+    <div id="legs-cds"></div>
+    <figcaption>Solid arrows = <b>premium</b> you receive while Xerox survives (about USD 25,000 a quarter). Dotted arrow = <b>contingent</b> payment of (1 − <var>R</var>) × 10m, made only if Xerox defaults, at a date nobody knows. Every premium arrow is also uncertain, because it only arrives if Xerox has not defaulted first.</figcaption>
+  </figure>
+  <div class="prose"><p>Because both legs depend on survival, we need one new ingredient beyond discount factors: the probability that the company is still alive at each date.</p></div>
+</section>
+
+<section class="lvl" id="pv">
+  <h2><span class="lv">Level 3</span> The PV formula</h2>
+  <h3>Step 1 · Survival probability</h3>
+  <div class="prose">
+    <p>Assume the company defaults at a steady rate <var>λ</var> (the <b>hazard rate</b>). <var>λ</var> = 7.6% means roughly a 7.6% chance of defaulting over the next year, given it is alive today. The probability of surviving to time <var>t</var> is then:</p>
+  </div>
+  <div class="f"><span class="lbl">Survival probability</span><var>Q</var>(<var>t</var>) = e<sup>−<var>λ</var> <var>t</var></sup></div>
+  <figure class="fig">
+    <div class="fig-title">Survival probability Q(t) for three hazard rates</div>
+    <div id="chart-q"></div>
+    <figcaption>The chance of default between two dates is <var>Q</var>(<var>t</var><sub><var>i</var>−1</sub>) − <var>Q</var>(<var>t</var><sub><var>i</var></sub>): the drop in the curve over that period.</figcaption>
+  </figure>
+
+  <h3>Step 2 · The credit triangle (quick estimate)</h3>
+  <div class="prose"><p>The fair premium <var>s</var> (the <b>par spread</b>) must pay for the expected loss. Expected loss per year is the default rate times the loss per default:</p></div>
+  <div class="f"><span class="lbl">Credit triangle</span><var>s</var> ≈ <var>λ</var> × (1 − <var>R</var>)   ⇔   <var>λ</var> ≈ <span class="frac"><span><var>s</var></span><span>1 − <var>R</var></span></span></div>
+  <div class="prose"><p>For Xerox at 450bp with 40% recovery: <var>λ</var> ≈ 0.045 ÷ 0.6 = 7.5%. The exact value solved below is 7.60%.</p></div>
+
+  <h3>Step 3 · Value each leg</h3>
+  <div class="prose"><p>Each premium is weighted by the chance of receiving it and discounted with the OIS curve <var>D</var>(<var>t</var>). On a default inside a period, the buyer still pays accrued coupon. That is worth about half a period on average, so we weight period <var>i</var> by the average survival of its two ends. The resulting sum is the <b>risky annuity</b>, or <b>RPV01</b>: the PV of receiving 1 per year while the name survives.</p></div>
+  <div class="f"><span class="lbl">Risky annuity (premium leg per unit of coupon)</span>
+    RPV01 = <span class="sum"><span class="s">Σ</span><small>i</small></span> <var>τ</var><sub><var>i</var></sub> <var>D</var>(<var>t</var><sub><var>i</var></sub>) <span class="frac"><span><var>Q</var>(<var>t</var><sub><var>i</var>−1</sub>) + <var>Q</var>(<var>t</var><sub><var>i</var></sub>)</span><span>2</span></span>
+  </div>
+  <div class="f"><span class="lbl">Protection leg (per unit notional)</span>
+    Prot = (1 − <var>R</var>) <span class="sum"><span class="s">Σ</span><small>i</small></span> <var>D</var>(<var>t</var><sub><var>i</var></sub>) [ <var>Q</var>(<var>t</var><sub><var>i</var>−1</sub>) − <var>Q</var>(<var>t</var><sub><var>i</var></sub>) ]
+  </div>
+
+  <h3>Step 4 · Par spread, upfront and PV</h3>
+  <div class="f left"><span class="lbl">Putting it together</span>
+    par spread  <var>s</var> = Prot ÷ RPV01<br>
+    upfront paid by the buyer (% of notional) = Prot − <var>c</var> × RPV01<br>
+    PV<sub>seller</sub> = <var>N</var> × ( <var>c</var> × RPV01 − Prot ) ≈ <var>N</var> × (<var>c</var> − <var>s</var>) × RPV01
+  </div>
+  <dl class="where">
+    <dt><var>c</var></dt><dd>the fixed running coupon of the contract (100bp or 500bp)</dd>
+    <dt><var>s</var></dt><dd>the market par spread, the coupon that would make the contract worth zero</dd>
+    <dt><var>t</var><sub><var>i</var></sub>, <var>τ</var><sub><var>i</var></sub></dt><dd>payment dates (years ACT/365 from today) and accrual fractions (ACT/360)</dd>
+    <dt><var>N</var></dt><dd>notional</dd>
+  </dl>
+  <aside class="key"><p>The market quotes a <b>spread</b>, but the contract pays a <b>fixed coupon</b>. The difference is settled as an upfront cash payment, roughly (<var>s</var> − <var>c</var>) × RPV01. To price a CDS: find the hazard rate <var>λ</var> that reproduces the quoted spread, then value both legs with that <var>λ</var>.</p></aside>
+
+  <h3>Recovery swaps (type RecoverySwap</code>)</h3>
+  <div class="prose">
+    <p>A recovery swap (or recovery lock) bets only on the recovery rate. There are no premiums. If default happens, the recovery buyer receives (<var>R</var><sub>realised</sub> − <var>R</var><sub>fixed</sub>) × <var>N</var>, which can be negative. If no default happens, nothing is paid.</p>
+  </div>
+  <div class="f"><span class="lbl">Recovery swap, recovery buyer</span>
+    PV = <var>N</var> × (<var>R</var><sub>expected</sub> − <var>R</var><sub>fixed</sub>) × <span class="sum"><span class="s">Σ</span><small>i</small></span> <var>D</var>(<var>t</var><sub><var>i</var></sub>) [ <var>Q</var>(<var>t</var><sub><var>i</var>−1</sub>) − <var>Q</var>(<var>t</var><sub><var>i</var></sub>) ]
+  </div>
+  <div class="prose"><p>The sum is the protection leg divided by (1 − <var>R</var>). With the Xerox numbers below (0.045852 ÷ 0.6 = 0.076420), a USD 10m lock struck at 35% when the market expects 40% is worth 10m × 5% × 0.076420 = <b>USD 38,210</b> to the recovery buyer.</p></div>
+</section>
+
+<section class="lvl" id="desk">
+  <h2><span class="lv">Level 4</span> Desk reality</h2>
+  <ul>
+    <li><b>Standard contracts.</b> Since 2009 CDS trade with a fixed coupon of 100bp (investment grade) or 500bp (high yield). Maturities fall on the IMM dates 20 Mar, 20 Jun, 20 Sep or 20 Dec, so all trades in one name are fungible. That is why the trade description ends with <code>Dec 2027</code>, not an exact date.</li>
+    <li><b>ISDA standard model.</b> Dealers convert spread to upfront with the same simple model everyone uses: a flat hazard rate, the ISDA OIS-based discount curve, recovery 40% for senior (25% for subordinated), and protection starting today. Our Step 3 is a close cousin. ISDA integrates the default timing exactly, so its numbers differ by a few cents per 100.</li>
+    <li><b>Accrued at trade.</b> The buyer pays a full coupon on the next IMM date. At trade the seller pays back the accrued coupon since the last IMM date. The net effect is premium accruing from today, which is what our first short period (27 days) models.</li>
+    <li><b>Upfront settles T+3</b> business days. Premiums are ACT/360 and the last period includes the maturity day.</li>
+    <li><b>Reference obligation &amp; seniority.</b> <code>SNRFOR</code> means senior unsecured foreign debt. <code>SUBLT2</code> would be subordinated, with lower recovery and a wider spread. Restructuring clauses (CR, MR, MM14, XR14) change which events trigger, so the same name can have several curves.</li>
+    <li><b>After default</b> an ISDA auction fixes the final recovery price. Every CDS settles at (1 − auction price) × notional.</li>
+    <li><b>Real curves.</b> The hazard rate is bootstrapped from quotes at 6M, 1Y, 2Y, 3Y, 5Y, 7Y and 10Y, so it varies by period. Our flat <var>λ</var> is the one-quote version.</li>
+  </ul>
+</section>
+
+<section class="sec" id="greeks">
+  <h2>Greeks that matter</h2>
+  <div class="tbl greeks"><table>
+    <thead><tr><th>Greek</th><th>What it measures</th><th>For a CDS</th></tr></thead>
+    <tbody>
+      <tr><td>CS01</td><td>PV change if the credit spread widens by 1bp</td><td>≈ −<var>N</var> × RPV01 × 0.0001 for the seller. On USD 10m with 1 year left that is about −USD 990. On 5 years it is about −USD 4,500.</td></tr>
+      <tr><td>JTD (jump to default)</td><td>PV change if the name defaults right now</td><td>For the seller ≈ −<var>N</var>(1 − <var>R</var>) − PV. This is the big one: −USD 5.6m on this trade. Risk limits are set on it.</td></tr>
+      <tr><td>Rec01</td><td>PV change if assumed recovery rises 1%, holding the quoted spread</td><td>Small when the spread is fixed, because a higher <var>R</var> forces a higher <var>λ</var>. It matters for distressed names and in JTD.</td></tr>
+      <tr><td>IR01</td><td>PV change if OIS rates rise 1bp</td><td>Tiny. Discounting moves both legs.</td></tr>
+      <tr><td>Theta / carry</td><td>PV change from one day passing</td><td>The seller earns the coupon daily and the remaining risk shrinks (roll-down along the credit curve).</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="sec" id="example">
+  <h2>Worked example</h2>
+  <p>Today is 23 Nov 2026. You have sold USD 10m of protection on Xerox at a 100bp coupon, maturing 20 Dec 2027. The market quotes Xerox at a <b>450bp</b> par spread. We assume <var>R</var> = 40% and a flat USD OIS rate of 4.00% (continuous, ACT/365).</p>
+  <ol class="steps">
+    <li><span>Payment dates and fractions. Accrual starts today.</span>
+      <div class="calc-line">20 Dec 26: 27d τ=0.07500 t=0.07397   20 Mar 27: 90d τ=0.25000 t=0.32055
+20 Jun 27: 92d τ=0.25556 t=0.57260   20 Sep 27: 92d τ=0.25556 t=0.82466
+20 Dec 27: 91d τ=0.25278 t=1.07397</div></li>
+    <li><span>Guess <var>λ</var> with the credit triangle (0.045 ÷ 0.6 = 7.50%). Then adjust until Prot ÷ RPV01 equals exactly 450bp. The solver finds:</span>
+      <div class="calc-line">λ = 7.6044%   Q(1.07397) = e^(−0.076044×1.07397) = 0.921577</div></li>
+    <li><span>Discount factors <var>D</var> = e<sup>−0.04<var>t</var></sup> and survival per date:</span>
+      <div class="calc-line">D: 0.997045 0.987260 0.977356 0.967552 0.957951
+Q: 0.994391 0.975919 0.957391 0.939216 0.921577</div></li>
+    <li><span>Risky annuity. For example, the first term is 0.075 × 0.997045 × (1 + 0.994391)/2 = 0.074569.</span>
+      <div class="calc-line">RPV01 = 0.074569 + 0.243151 + 0.241440 + 0.234481 + 0.225294 = 1.018935</div></li>
+    <li><span>Protection leg. For example, the first term is 0.6 × 0.997045 × (1 − 0.994391) = 0.003356.</span>
+      <div class="calc-line">Prot = 0.003356 + 0.010942 + 0.010865 + 0.010552 + 0.010138 = 0.045852
+check: 0.045852 / 1.018935 = 4.500%</div></li>
+    <li><span>Upfront and PV for the seller.</span>
+      <div class="calc-line">upfront = 0.045852 − 0.01 × 1.018935 = 0.035663  →  3.566% of notional
+PV seller = 10,000,000 × (0.01 × 1.018935 − 0.045852) = −USD 356,627</div></li>
+    <li><span>Risk, by bumping and repricing:</span>
+      <div class="calc-line">CS01 = −USD 987 per bp   Rec01 = +USD 241   JTD = −6,000,000 + 356,627 = −USD 5,643,373</div></li>
+  </ol>
+  <p class="answer">The short-protection position is worth <b>−USD 356,627</b>. Equivalently, a new seller would be paid <b>3.57 points upfront</b> to accept a 100bp coupon on a name the market prices at 450bp.</p>
+</section>
+
+<section class="sec" id="try">
+  <h2>Try it</h2>
+  <p>The model solves the hazard rate from your spread, then values both legs. The chart shows the position's PV for other market spreads. PV is zero where the spread equals the coupon.</p>
+  <div id="calc-cds"></div>
+</section>
+
+<section class="sec" id="recap">
+  <h2>Remember</h2>
+  <ul class="recap">
+    <li>A CDS swaps a running premium for a one-off payment of (1 − <var>R</var>) × notional on default.</li>
+    <li>Survival <var>Q</var>(<var>t</var>) = e<sup>−<var>λ</var><var>t</var></sup>, and <var>λ</var> ≈ spread ÷ (1 − <var>R</var>).</li>
+    <li>PV<sub>seller</sub> = <var>N</var>(<var>c</var> × RPV01 − Prot) ≈ <var>N</var>(<var>c</var> − <var>s</var>) × RPV01. The upfront settles the gap between coupon and spread.</li>
+    <li>Watch CS01 for daily P&amp;L and JTD for the disaster case. Next: a basket of 125 of these in <a href="cds-index.html">CDS indices</a>.</li>
+  </ul>
+</section>
+
+</main>
+</div>
+<script src="assets/course.js"></script>
+<script>
+const TODAY = '2026-11-23';
+function sched(mat) {
+  const out = [], end = C.toDate(mat);
+  for (let k = 0; ; k++) { const d = C.addMonths('2026-12-20', 3 * k); if (d > end) break; out.push(d); }
+  return out;
+}
+function credit(mat, lam, R, r) {
+  let prev = TODAY, Qp = 1, rp = 0, pr = 0; const rows = [];
+  for (const d of sched(mat)) {
+    const t = C.days(TODAY, d) / 365, tau = C.days(prev, d) / 360, D = Math.exp(-r * t), Q = Math.exp(-lam * t);
+    const a = tau * D * (Qp + Q) / 2, b = (1 - R) * D * (Qp - Q);
+    rp += a; pr += b; rows.push({ d, t, tau, D, Q, a, b }); prev = d; Qp = Q;
+  }
+  return { rp, pr, rows };
+}
+function lamFor(mat, s, R, r) { return C.solve(l => { const x = credit(mat, l, R, r); return x.pr / x.rp - s; }, 1e-8, 5); }
+
+C.legs('#legs-cds', {
+  tMin: 0, tMax: 1.15, ticks: [0, 0.25, 0.5, 0.75, 1], tickFmt: t => C.fmt(t, 2),
+  events: [{ t: 0, label: 'Today 23 Nov 26' }, { t: 1.074, label: 'Maturity 20 Dec 27' }],
+  legs: [
+    { name: 'Premium leg: you receive 100bp × τ × 10m while Xerox survives', dir: 1, style: 'fixed', flows: [
+      { t: 0.074, a: 7500, label: '7.5k' }, { t: 0.3205, a: 25000, label: '25.0k' }, { t: 0.5726, a: 25556, label: '25.6k' },
+      { t: 0.8247, a: 25556, label: '25.6k' }, { t: 1.074, a: 25278, label: '25.3k' }] },
+    { name: 'Protection leg: you pay (1 − R) × 10m if Xerox defaults', dir: -1, style: 'contingent', flows: [
+      { t: 0.68, a: 6e6, label: '≈ 6.0m if default', tip: 'Contingent: (1 − R) × 10m = USD 6m at 40% recovery, paid only on default' }] },
+  ],
+  height: 130,
+});
+
+C.chart('#chart-q', {
+  x: [0, 10], xLabel: 'years', yLabel: 'survival probability', y: [0, 1], yFmt: y => C.pct(y, 0), xFmt: x => C.fmt(x, 0),
+  series: [
+    { name: 'λ = 1% (≈ 60bp, investment grade)', f: t => Math.exp(-0.01 * t), color: 1 },
+    { name: 'λ = 7.6% (Xerox, 450bp)', f: t => Math.exp(-0.076 * t), color: 2 },
+    { name: 'λ = 20% (distressed)', f: t => Math.exp(-0.2 * t), color: 3 },
+  ],
+  height: 220,
+});
+
+C.calc('#calc-cds', {
+  title: 'Single-name CDS pricer (flat hazard rate)',
+  inputs: [
+    { id: 'side', label: 'Position', value: 1, options: [[1, 'Sell protection'], [-1, 'Buy protection']] },
+    { id: 'N', label: 'Notional', unit: 'USD m', value: 10, step: 1 },
+    { id: 'c', label: 'Coupon', unit: 'bp', value: 100, options: [[100, '100bp'], [500, '500bp']] },
+    { id: 's', label: 'Market spread', unit: 'bp', value: 450, step: 5, min: 1 },
+    { id: 'R', label: 'Recovery', unit: '%', value: 40, step: 5, min: 0, max: 95 },
+    { id: 'mat', label: 'Maturity', value: '2027-12-20', options: [['2027-06-20', '20 Jun 2027'], ['2027-12-20', '20 Dec 2027'], ['2028-12-20', '20 Dec 2028'], ['2029-12-20', '20 Dec 2029'], ['2031-12-20', '20 Dec 2031 (5Y)']] },
+    { id: 'r', label: 'OIS rate', unit: '%', value: 4.00, step: 0.05 },
+  ],
+  compute: v => {
+    const N = v.N * 1e6, c = v.c / 1e4, s = v.s / 1e4, R = v.R / 100, r = v.r / 100;
+    const pvAt = (sp, rec) => { const l = lamFor(v.mat, sp, rec, r), x = credit(v.mat, l, rec, r); return { l, x, pv: v.side * N * (c * x.rp - x.pr) }; };
+    const b = pvAt(s, R), up = pvAt(s + 1e-4, R), rr = pvAt(s, R + 0.01);
+    const jtd = v.side * (-N * (1 - R)) - b.pv;
+    return {
+      out: [
+        ['Hazard rate λ', C.pct(b.l, 3)],
+        ['Survival to maturity', C.pct(b.x.rows[b.x.rows.length - 1].Q, 2)],
+        ['RPV01 (risky annuity)', C.fmt(b.x.rp, 5)],
+        ['Protection leg', C.fmt(b.x.pr, 6)],
+        ['Upfront paid by buyer', C.fmt(100 * (b.x.pr - c * b.x.rp), 3) + '%'],
+        ['PV of position', 'USD ' + C.fmt(b.pv, 0), true],
+        ['CS01 (+1bp spread)', 'USD ' + C.fmt(up.pv - b.pv, 0)],
+        ['Rec01 (+1% recovery)', 'USD ' + C.fmt(rr.pv - b.pv, 0)],
+        ['Jump to default', 'USD ' + C.fmt(jtd, 0)],
+      ],
+      chart: {
+        x: [10, Math.max(700, v.s * 2)], n: 70, xLabel: 'market spread (bp)', yLabel: 'PV of position (USD)',
+        xFmt: x => C.fmt(x, 0), yFmt: y => C.fmt(y / 1e3, 0) + 'k', tipFmt: y => 'USD ' + C.fmt(y, 0),
+        series: [{ name: 'PV', f: sp => { const l = lamFor(v.mat, sp / 1e4, R, r), x = credit(v.mat, l, R, r); return v.side * N * (c * x.rp - x.pr); }, color: 1 }],
+        marks: [{ x: v.s, label: 'market' }, { x: v.c, label: 'coupon' }], zero: false,
+      },
+      table: {
+        head: ['Date', 'τ', 'D(t)', 'Q(t)', 'premium term', 'protection term'], num: [1, 2, 3, 4, 5],
+        rows: b.x.rows.map(q => [C.iso(q.d), C.fmt(q.tau, 5), C.fmt(q.D, 6), C.fmt(q.Q, 6), C.fmt(q.a, 6), C.fmt(q.b, 6)]),
+      },
+      note: 'Flat hazard rate solved to match the spread; premium accrues from today; accrued-on-default approximated by averaging survival over each period.',
+    };
+  },
+});
+</script>
+</body>
+</html>

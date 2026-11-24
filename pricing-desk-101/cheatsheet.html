@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pricing Desk Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=JetBrains+Mono:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..600&display=swap">
+<link rel="stylesheet" href="assets/course.css">
+</head>
+<body data-page="cheatsheet.html">
+<div class="shell">
+<aside class="toc" id="toc"></aside>
+<main class="page">
+<header class="ph">
+  <p class="eyebrow">Reference</p>
+  <h1>Cheat sheet &amp; glossary</h1>
+  <p class="lede">Every PV formula and the greeks that matter, one card per page, in course order. Below them, every term the course defines.</p>
+</header>
+<section class="sec" id="formulas">
+  <h2>Formulas</h2>
+  <p>Notation used throughout: <var>N</var> notional, <var>τ</var> accrual year fraction, <var>D</var>(<var>t</var>) discount factor from the OIS curve, <var>F</var> forward, <var>K</var> strike or fixed rate, <var>T</var> time to expiry in years, N(<var>x</var>) the normal probability table.</p>
+  <div class="cs-grid">
+<article class="cs"><h3><a href="toolkit.html">The pricing toolkit</a></h3><div class="f left">PV = Σ <var>CF</var><sub><var>i</var></sub> × <var>D</var>(<var>t</var><sub><var>i</var></sub>)<br><var>F</var> = (<var>P</var>(<var>T</var><sub>1</sub>)/<var>P</var>(<var>T</var><sub>2</sub>) − 1) / <var>τ</var><br>Black call = <var>D</var>[<var>F</var>N(<var>d</var><sub>1</sub>) − <var>K</var>N(<var>d</var><sub>2</sub>)], <var>d</var><sub>1,2</sub> = [ln(<var>F</var>/<var>K</var>) ± ½σ²<var>T</var>]/σ√<var>T</var><br>Bachelier call = <var>D</var>[(<var>F</var>−<var>K</var>)N(<var>d</var>) + σ<sub>N</sub>√<var>T</var> n(<var>d</var>)], <var>d</var> = (<var>F</var>−<var>K</var>)/σ<sub>N</sub>√<var>T</var></div><p><b>Greeks:</b> DV01 = PV(curve+1bp) − PV; delta, gamma, vega, theta by bump-and-reprice. Parity: C − P = <var>D</var>(<var>F</var> − <var>K</var>).</p></article>
+
+<article class="cs"><h3><a href="equity.html">Shares, preferreds &amp; warrants</a></h3><div class="f left">PV<sub>USD</sub> = <var>q</var> × <var>S</var> ÷ <var>X</var><sub>local per USD</sub><br><var>F</var>(<var>T</var>) = <var>S</var>e<sup>(<var>r</var>−<var>y</var><sub>d</sub>)<var>T</var></sup><br>Preferred ≈ min(<var>d</var>/<var>y</var>, call price)<br>Warrant = <var>N</var>/(<var>N</var>+<var>M</var>) × BS call</div><p><b>Greeks:</b> delta = 1% of value per 1% move; FX delta for foreign listings; preferred DV01 ≈ PV/<var>y</var> × 1bp; warrants carry option delta, vega, theta.</p></article>
+
+<article class="cs"><h3><a href="fx-forward.html">FX spot, forwards &amp; NDFs</a></h3><div class="f left"><var>F</var> = <var>S</var> × (1 + <var>r</var><sub>quote</sub><var>d</var>/<var>B</var><sub>q</sub>) / (1 + <var>r</var><sub>base</sub><var>d</var>/<var>B</var><sub>b</sub>)<br>PV<sub>quote</sub> = <var>N</var>(<var>F</var> − <var>K</var>)<var>D</var><sub>quote</sub>(<var>T</var>)<br>NDF: PV<sub>USD</sub> = <var>N</var>(<var>F</var> − <var>K</var>)/<var>F</var> × <var>D</var><sub>USD</sub>(<var>T</var>)</div><p><b>Greeks:</b> FX delta ≈ <var>N</var> × <var>D</var><sub>base</sub>; DV01 in each currency (points risk); no gamma or vega.</p></article>
+
+<article class="cs"><h3><a href="bond.html">Bonds &amp; bills</a></h3><div class="f left"><var>P</var><sub>dirty</sub> = Σ (<var>c</var>/<var>f</var>)/(1+<var>y</var>/<var>f</var>)<sup><var>k</var>+<var>w</var></sup> + 100/(1+<var>y</var>/<var>f</var>)<sup><var>n</var>−1+<var>w</var></sup><br>AI = (<var>c</var>/<var>f</var>) × days since coupon / days in period; clean = dirty − AI<br>Bill: <var>P</var> = 100(1 − <var>d</var> × days/360)</div><p><b>Greeks:</b> DV01 = <var>P</var>(<var>y</var>−1bp) − <var>P</var>(<var>y</var>); <var>D</var><sub>mod</sub> = DV01/(<var>P</var> × 1bp); convexity; CS01 via Z-spread.</p></article>
+
+<article class="cs"><h3><a href="repo.html">Repo &amp; reverse repo</a></h3><div class="f left"><var>C</var> = face/100 × <var>P</var><sub>dirty</sub> × (1 − <var>h</var>)<br><var>R</var> = <var>C</var>(1 + <var>r</var><sub>repo</sub> × <var>d</var>/360)<br>PV (lender, after start) = <var>R</var> × <var>D</var>(<var>T</var><sub>2</sub>); MTM = PV − <var>C</var></div><p><b>Greeks:</b> small DV01 to short rates; carry = <var>C</var> × <var>r</var>/360 per day; collateral cover; bond delta stays with the borrower.</p></article>
+
+<article class="cs"><h3><a href="futures.html">Futures: the basics</a></h3><div class="f left">PV = (<var>F</var><sub>now</sub> − <var>F</var><sub>trade</sub>) × <var>M</var> × <var>n</var> &nbsp;(no discounting, settled daily)<br><var>F</var> = <var>S</var> e<sup>(<var>r</var> − <var>q</var> + <var>u</var> − <var>y</var>)<var>T</var></sup> &nbsp;· FX: <var>F</var> = <var>S</var> e<sup>(<var>r</var><sub>d</sub>−<var>r</var><sub>f</sub>)<var>T</var></sup> &nbsp;· stock: (<var>S</var> − PV(divs)) e<sup><var>rT</var></sup></div><p><b>Greeks:</b> delta = <var>M</var> × <var>n</var> per point; small rho and dividend/carry sensitivity; no gamma or vega.</p></article>
+
+<article class="cs"><h3><a href="commodity-swap-futures.html">Commodity swap &amp; spread futures</a></h3><div class="f left">E[<var>A</var>] = (Σ<sub>published</sub> <var>P</var><sub>d</sub> + Σ<sub>remaining</sub> <var>F</var><sub>d</sub>) / <var>D</var><br>PV = (E[<var>A</var>] − <var>K</var>) × <var>Q</var> × <var>n</var> &nbsp;(OTC: × <var>D</var>(<var>T</var><sub>pay</sub>))<br>Spread: (E[<var>A</var><sub>prod</sub>] − E[<var>A</var><sub>crude</sub>] − <var>K</var>) × <var>Q</var> × <var>n</var>, same units (6.35 bbl/t)</div><p><b>Greeks:</b> delta = (remaining days / <var>D</var>) × <var>Q</var> × <var>n</var>, melting daily; bucketed by underlying futures month; no gamma or vega.</p></article>
+
+<article class="cs"><h3><a href="stir-futures.html">Short-rate &amp; swap futures</a></h3><div class="f left"><var>F</var> = (<var>D</var>(<var>T</var><sub>1</sub>)/<var>D</var>(<var>T</var><sub>2</sub>) − 1)/<var>τ</var><br><var>P</var> = 100 − 100(<var>F</var> + ½<var>σ</var><sub>N</sub><sup>2</sup><var>T</var><sub>1</sub><var>T</var><sub>2</sub>)<br>PV = (<var>P</var><sub>now</sub> − <var>P</var><sub>trade</sub>) × 100 × <var>TV</var> × <var>n</var> &nbsp;($25/bp 3M SOFR)<br>ERIS: <var>P</var> = 100 + <var>A</var> + <var>B</var> − <var>C</var></div><p><b>Greeks:</b> DV01 = −<var>TV</var> per long lot, in one forward bucket; small vega through the convexity adjustment.</p></article>
+
+<article class="cs"><h3><a href="bond-futures.html">Bond futures</a></h3><div class="f left"><var>B</var><sub>fwd</sub> = (<var>P</var>+AI<sub>0</sub>)(1+<var>r</var><var>d</var>/360) − <var>c</var>(1+<var>r</var><var>d</var><sub>c</sub>/360)<br><var>F</var><sub>fair</sub> = (<var>B</var><sub>fwd</sub> − AI<sub>del</sub>)/CF<br>Invoice = <var>F</var>×CF + AI<sub>del</sub> · Net basis = <var>P</var> − <var>F</var>×CF − carry<br>PV = (<var>F</var><sub>now</sub> − <var>F</var><sub>trade</sub>)/100 × face × <var>n</var></div><p><b>Greeks:</b> DV01 ≈ CTD DV01 / CF per contract; hedge ratio = bond DV01 / futures DV01; small repo sensitivity; negative convexity near a CTD switch.</p></article>
+
+<article class="cs"><h3><a href="fra.html">Forward rate agreements</a></h3><div class="f left"><var>F</var> = (<var>P</var><sub>proj</sub>(<var>T</var><sub>1</sub>)/<var>P</var><sub>proj</sub>(<var>T</var><sub>2</sub>) − 1)/<var>τ</var><br>PV<sub>buyer</sub> = <var>N</var> <var>τ</var> (<var>F</var> − <var>K</var>) <var>D</var>(<var>T</var><sub>2</sub>)<br>Settlement at <var>T</var><sub>1</sub>: <var>N</var>(<var>L</var> − <var>K</var>)<var>τ</var>/(1 + <var>L</var><var>τ</var>)</div><p><b>Greeks:</b> DV01 ≈ <var>N</var> <var>τ</var> <var>D</var>(<var>T</var><sub>2</sub>) × 1bp, all in one forward bucket; gamma ≈ 0.</p></article>
+
+<article class="cs"><h3><a href="irs.html">Interest rate swaps &amp; OIS</a></h3><div class="f left"><var>A</var> = Σ <var>τ</var><sub>i</sub> <var>D</var>(<var>T</var><sub>i</sub>) &nbsp;· <var>F</var><sub>i</sub> = (<var>D</var><sub>i−1</sub>/<var>D</var><sub>i</sub> − 1)/<var>τ</var><sub>i</sub><br>OIS: <var>S</var> = (<var>D</var>(<var>T</var><sub>0</sub>) − <var>D</var>(<var>T</var><sub>n</sub>))/<var>A</var> &nbsp;· IBOR: <var>S</var> = Σ<var>τ</var><sub>j</sub><var>F</var><sub>j</sub><sup>proj</sup><var>D</var><sub>j</sub> / <var>A</var><br>PV<sub>payer</sub> = <var>N</var>(<var>S</var> − <var>K</var>)<var>A</var></div><p><b>Greeks:</b> DV01 ≈ <var>N</var> × <var>A</var> × 1bp (payer gains when rates rise); bucketed delta at maturity pillar; basis delta for IBOR legs; small positive gamma; carry and roll-down.</p></article>
+
+<article class="cs"><h3><a href="nds.html">Non-deliverable swaps</a></h3><div class="f left">PV<sub>USD</sub> = Σ <var>N</var>(<var>K</var> − <var>F</var><sub><var>i</var></sub>)<var>τ</var><sub><var>i</var></sub> ÷ <var>X</var><sup>fwd</sup>(<var>t</var><sub><var>i</var></sub>) × <var>D</var><sub>USD</sub>(<var>t</var><sub><var>i</var></sub>)<br>= (1/<var>S</var>) Σ <var>N</var>(<var>K</var> − <var>F</var><sub><var>i</var></sub>)<var>τ</var><sub><var>i</var></sub> <var>D</var><sub>local,NDF</sub>(<var>t</var><sub><var>i</var></sub>)</div><p><b>Greeks:</b> local-currency DV01 ≈ (<var>N</var>/<var>S</var>) Σ<var>τD</var> × 1bp; FX delta only on the PV itself; small quanto term.</p></article>
+
+<article class="cs"><h3><a href="xccy.html">Cross-currency swaps</a></h3><div class="f left">PV<sub>leg</sub> = <var>N</var>[−<var>D</var>(<var>t</var><sub>0</sub>) + Σ <var>c</var><sub><var>i</var></sub><var>τ</var><sub><var>i</var></sub><var>D</var>(<var>t</var><sub><var>i</var></sub>) + <var>D</var>(<var>t</var><sub><var>n</var></sub>)] per currency<br>PV<sub>USD</sub> = PV<sub>USD leg</sub> + PV<sub>foreign leg</sub> ÷ <var>S</var><br><var>D</var><sub>foreign</sub>(<var>t</var>) = <var>D</var><sub>USD</sub>(<var>t</var>) × <var>S</var> ÷ <var>X</var><sup>fwd</sup>(<var>t</var>)<br>MTM: PV ≈ <var>N</var><sub>f</sub>(<var>s</var><sub>mkt</sub> − <var>s</var>)<var>A</var><sub>f</sub> ÷ <var>S</var></div><p><b>Greeks:</b> FX delta (large once notionals exchanged), basis01 ≈ <var>N A</var> × 1bp, DV01 on fixed legs.</p></article>
+
+<article class="cs"><h3><a href="asset-swap.html">Asset swaps</a></h3><div class="f left"><var>s</var><sub>ASW</sub> = (<var>P</var><sub>swap</sub> − <var>P</var><sub>dirty</sub>) ÷ (100 × <var>A</var>)<br><var>P</var><sub>swap</sub> = Σ <var>c τ</var><sub><var>j</var></sub><var>D</var>(<var>t</var><sub><var>j</var></sub>) + 100<var>D</var>(<var>T</var>), &nbsp;<var>A</var> = Σ <var>τ</var><sub><var>i</var></sub><var>D</var>(<var>t</var><sub><var>i</var></sub>)<br>Position PV = <var>N</var>(<var>s</var><sub>traded</sub> − <var>s</var><sub>ASW</sub>)<var>A</var></div><p><b>Greeks:</b> spread01 ≈ −<var>N A</var> × 1bp; DV01 near zero; jump-to-default ≈ −<var>N</var>(1 − R) ± swap MTM.</p></article>
+
+<article class="cs"><h3><a href="trs.html">Total return &amp; equity-linked swaps</a></h3><div class="f left">Bond: <var>P</var><sup>fwd</sup> = (<var>P</var><sub>now</sub> − <var>c D</var><sub>repo</sub>(<var>t</var><sub><var>c</var></sub>)) ÷ <var>D</var><sub>repo</sub>(<var>T</var>)<br>PV = <var>N</var>/100 × [(<var>P</var><sup>fwd</sup> − <var>P</var><sub>0</sub>)<var>D</var> + <var>c D</var>(<var>t</var><sub><var>c</var></sub>) − <var>P</var><sub>0</sub>((1 − <var>D</var>) + <var>sτD</var>)]<br>ELS: PV = <var>N</var>[(<var>I</var><sub>now</sub>/<var>I</var><sub>0</sub>)e<sup>−<var>qT</var></sup> − 1 − <var>sτD</var>]</div><p><b>Greeks:</b> full asset delta (<var>N</var>/100 per point; <var>N</var> × 1% per 1%), bond DV01, spread01 ≈ <var>N P</var><sub>0</sub>/100 × <var>τD</var> × 1bp. Fair bond TRS spread ≈ repo − SOFR.</p></article>
+
+<article class="cs"><h3><a href="inflation-swap.html">Zero-coupon inflation swaps</a></h3><div class="f left">Fixed: <var>N</var>[(1+<var>K</var>)<sup><var>T</var></sup> − 1] &nbsp; Inflation: <var>N</var>[<var>I</var>(<var>T</var>)/<var>I</var><sub>base</sub> − 1]<br><var>I</var><sup>fwd</sup>(<var>T</var>) = <var>I</var><sub>ref</sub>(1+<var>b</var>)<sup><var>T</var><sub>rem</sub></sup><br>PV<sub>rec fixed</sub> = <var>N D</var>(<var>T</var><sub>rem</sub>)[(1+<var>K</var>)<sup><var>T</var></sup> − <var>I</var><sup>fwd</sup>/<var>I</var><sub>base</sub>]; new trade: fair <var>K</var> = <var>b</var></div><p><b>Greeks:</b> IE01 ≈ −<var>N D</var>(<var>I</var><sup>fwd</sup>/<var>I</var><sub>base</sub>)<var>T</var><sub>rem</sub>/(1+<var>b</var>) × 1bp; small DV01; fixing risk near maturity.</p></article>
+
+<article class="cs"><h3><a href="cds.html">Credit default swaps</a></h3><div class="f left"><var>Q</var>(<var>t</var>) = e<sup>−<var>λ</var><var>t</var></sup>,  <var>λ</var> ≈ <var>s</var> ÷ (1 − <var>R</var>)<br>RPV01 = Σ <var>τ</var><sub><var>i</var></sub> <var>D</var><sub><var>i</var></sub> (<var>Q</var><sub><var>i</var>−1</sub> + <var>Q</var><sub><var>i</var></sub>)/2<br>Prot = (1 − <var>R</var>) Σ <var>D</var><sub><var>i</var></sub> (<var>Q</var><sub><var>i</var>−1</sub> − <var>Q</var><sub><var>i</var></sub>)<br>PV<sub>seller</sub> = <var>N</var>(<var>c</var> × RPV01 − Prot);  upfront = Prot − <var>c</var> × RPV01<br>Recovery swap: PV = <var>N</var>(<var>R</var><sub>exp</sub> − <var>R</var><sub>fix</sub>) × Prot ÷ (1 − <var>R</var>)</div><p><b>Greeks:</b> CS01 ≈ −<var>N</var> × RPV01 × 1bp (seller); JTD ≈ −<var>N</var>(1 − <var>R</var>) − PV; Rec01; small IR01.</p></article>
+
+<article class="cs"><h3><a href="cds-index.html">CDS indices</a></h3><div class="f left">solve flat <var>λ</var>: Prot ÷ RPV01 = <var>S</var><sub>quote</sub><br>upfront = Prot − <var>c</var> × RPV01;  price = 100 × (1 − upfront)<br>PV<sub>seller</sub> = <var>f</var> × <var>N</var>(<var>c</var> × RPV01 − Prot),  <var>f</var> = names left ÷ <var>n</var><br>default: seller pays (1 − <var>R</var>) × <var>N</var>/<var>n</var></div><p><b>Greeks:</b> CS01 ≈ −<var>f</var><var>N</var> × RPV01 × 1bp; JTD per name ≈ −(<var>N</var>/<var>n</var>)(1 − <var>R</var>) − PV/<var>n</var>; index basis vs intrinsic.</p></article>
+
+<article class="cs"><h3><a href="tranche.html">Index tranches</a></h3><div class="f left">TL = min(max(<var>L</var> − <var>A</var>, 0), <var>D</var> − <var>A</var>) ÷ (<var>D</var> − <var>A</var>)<br><var>L</var>(<var>M</var>) = (1 − <var>R</var>) <var>N</var>((<var>N</var><sup>−1</sup>(<var>p</var>) − √<var>ρ</var><var>M</var>) ÷ √(1 − <var>ρ</var>))<br>ETL = (E[min(<var>L</var>,<var>D</var>)] − E[min(<var>L</var>,<var>A</var>)]) ÷ (<var>D</var> − <var>A</var>)<br>RPV01 = Σ <var>τ</var><sub><var>i</var></sub><var>D</var><sub><var>i</var></sub>(1 − avg ETL);  Prot = Σ <var>D</var><sub><var>i</var></sub> ΔETL<sub><var>i</var></sub><br>PV<sub>seller</sub> = <var>N</var>(<var>c</var> × RPV01 − Prot)</div><p><b>Greeks:</b> index CS01 (leverage / hedge ratio), Correlation01 (equity long, senior short), JTD, recovery sensitivity.</p></article>
+
+<article class="cs"><h3><a href="mbs.html">MBS, TBAs &amp; CMOs</a></h3><div class="f left">SMM = 1 − (1 − CPR)<sup>1/12</sup>;  <var>M</var> = <var>B</var><var>g</var> ÷ (1 − (1 + <var>g</var>)<sup>−<var>n</var></sup>), <var>g</var> = WAC/12<br>CF<sub><var>k</var></sub> = <var>B</var><var>c</var>/12 + SP + SMM(<var>B</var> − SP)<br>PV = Σ CF<sub><var>k</var></sub> ÷ (1 + <var>y</var>/12)<sup><var>k</var></sup><br>TBA: PV = Face × (<var>P</var><sub>mkt</sub> − <var>P</var><sub>trade</sub>)/100 × <var>D</var>(settle)<br>drop ≈ 100<var>c</var>/12 − <var>P</var><var>r</var><sub>repo</sub>/12 + SMM(100 − <var>P</var>)</div><p><b>Greeks:</b> effective duration / DV01 (prepayments react), negative convexity, prepay sensitivity, short vega, OAS01.</p></article>
+
+<article class="cs"><h3><a href="options-intro.html">Options &amp; Black-Scholes</a></h3>
+<div class="f left"><var>F</var> = <var>S</var>e<sup>(<var>r</var>−<var>q</var>)<var>T</var></sup>, &nbsp;<var>d</var><sub>1,2</sub> = [ln(<var>F</var>/<var>K</var>) ± ½<var>σ</var><sup>2</sup><var>T</var>] / <var>σ</var>√<var>T</var><br>Call = <var>S</var>e<sup>−<var>qT</var></sup><var>N</var>(<var>d</var><sub>1</sub>) − <var>K</var>e<sup>−<var>rT</var></sup><var>N</var>(<var>d</var><sub>2</sub>)<br>Put = <var>K</var>e<sup>−<var>rT</var></sup><var>N</var>(−<var>d</var><sub>2</sub>) − <var>S</var>e<sup>−<var>qT</var></sup><var>N</var>(−<var>d</var><sub>1</sub>)<br>Parity: C − P = <var>S</var>e<sup>−<var>qT</var></sup> − <var>K</var>e<sup>−<var>rT</var></sup></div>
+<p><b>Greeks:</b> delta e<sup>−<var>qT</var></sup><var>N</var>(<var>d</var><sub>1</sub>) (call), gamma, vega (per vol point), theta (per day), rho. American single-stock options: binomial tree. VIX options: Black-76 on the VIX future of the same expiry. Multiply by the contract size (100 shares, $100 × SPX/VIX, KRW 250,000 × KOSPI 200).</p></article>
+
+<article class="cs"><h3><a href="futures-options.html">Options on futures</a></h3>
+<div class="f left">Black-76: Call = <var>D</var>[<var>F</var><var>N</var>(<var>d</var><sub>1</sub>) − <var>K</var><var>N</var>(<var>d</var><sub>2</sub>)], Put = <var>D</var>[<var>K</var><var>N</var>(−<var>d</var><sub>2</sub>) − <var>F</var><var>N</var>(−<var>d</var><sub>1</sub>)]<br>Bachelier (STIR): Put = <var>D</var>[(<var>K</var>−<var>F</var>)<var>N</var>(−<var>d</var>) + <var>σ</var><sub>N</sub>√<var>T</var> <var>n</var>(<var>d</var>)], <var>d</var> = (<var>F</var>−<var>K</var>)/<var>σ</var><sub>N</sub>√<var>T</var><br><var>D</var> = e<sup>−<var>rT</var></sup> premium-style, 1 futures-style. PV = qty × price × point value</div>
+<p><b>Greeks:</b> delta in futures contracts, gamma (huge for weeklies), vega per vol point or per bp normal vol, theta. Point values: crude $1,000, E-mini Nasdaq $20, 5Y note $1,000 (strikes in 32nds, premium in 64ths), 3M SONIA £1,250. Put on STIR price = call on rate.</p></article>
+
+<article class="cs"><h3><a href="fx-options.html">FX vanilla options</a></h3>
+<div class="f left"><var>F</var> = <var>S</var>e<sup>(<var>r</var><sub>d</sub>−<var>r</var><sub>f</sub>)<var>T</var></sup><br>Call = <var>S</var>e<sup>−<var>r</var><sub>f</sub><var>T</var></sup><var>N</var>(<var>d</var><sub>1</sub>) − <var>K</var>e<sup>−<var>r</var><sub>d</sub><var>T</var></sup><var>N</var>(<var>d</var><sub>2</sub>)<br>Put = <var>K</var>e<sup>−<var>r</var><sub>d</sub><var>T</var></sup><var>N</var>(−<var>d</var><sub>2</sub>) − <var>S</var>e<sup>−<var>r</var><sub>f</sub><var>T</var></sup><var>N</var>(−<var>d</var><sub>1</sub>)<br>PV<sub>dom</sub> = <var>N</var><sub>for</sub> × price; PV<sub>for</sub> = PV<sub>dom</sub> / <var>S</var></div>
+<p><b>Greeks:</b> delta in foreign ccy (spot, forward or premium-adjusted = spot delta − PV<sub>for%</sub>), gamma per 1% spot, vega per vol point bucketed by expiry, domestic and foreign rho. Smile: σ<sub>25C/25P</sub> = ATM + BF ± ½RR.</p></article>
+
+<article class="cs"><h3><a href="capfloor.html">Caps &amp; floors</a></h3>
+<div class="f left"><var>F</var><sub>i</sub> = (<var>P</var>(<var>s</var><sub>i</sub>)/<var>P</var>(<var>e</var><sub>i</sub>) − 1)/<var>τ</var><sub>i</sub>, &nbsp;<var>d</var><sub>i</sub> = (<var>F</var><sub>i</sub> − <var>K</var>)/<var>σ</var><sub>N</sub>√<var>T</var><sub>i</sub><br>Caplet = <var>N</var><var>τ</var><sub>i</sub><var>D</var>(<var>e</var><sub>i</sub>)[(<var>F</var><sub>i</sub>−<var>K</var>)<var>N</var>(<var>d</var><sub>i</sub>) + <var>σ</var><sub>N</sub>√<var>T</var><sub>i</sub> <var>n</var>(<var>d</var><sub>i</sub>)]<br>Floorlet = <var>N</var><var>τ</var><sub>i</sub><var>D</var>(<var>e</var><sub>i</sub>)[(<var>K</var>−<var>F</var><sub>i</sub>)<var>N</var>(−<var>d</var><sub>i</sub>) + <var>σ</var><sub>N</sub>√<var>T</var><sub>i</sub> <var>n</var>(<var>d</var><sub>i</sub>)]<br>Cap/floor = Σ caplets/floorlets; cap − floor = payer swap at <var>K</var></div>
+<p><b>Greeks:</b> vega per bp normal vol bucketed by caplet expiry (main risk), delta as a strip of FRA DV01s weighted by <var>N</var>(<var>d</var><sub>i</sub>), positive gamma and negative theta for the buyer.</p></article>
+
+<article class="cs"><h3><a href="swaption.html">Swaptions</a></h3>
+<div class="f left"><var>A</var> = Σ <var>τ</var><sub>i</sub><var>D</var>(<var>t</var><sub>i</sub>), &nbsp;<var>S</var> = (<var>D</var>(<var>t</var><sub>start</sub>) − <var>D</var>(<var>t</var><sub>end</sub>))/<var>A</var> (OIS)<br><var>d</var> = (<var>S</var> − <var>K</var>)/<var>σ</var><sub>N</sub>√<var>T</var><br>Payer = <var>N</var><var>A</var>[(<var>S</var>−<var>K</var>)<var>N</var>(<var>d</var>) + <var>σ</var><sub>N</sub>√<var>T</var> <var>n</var>(<var>d</var>)]<br>Receiver = <var>N</var><var>A</var>[(<var>K</var>−<var>S</var>)<var>N</var>(−<var>d</var>) + <var>σ</var><sub>N</sub>√<var>T</var> <var>n</var>(<var>d</var>)]<br>Payer − receiver = forward swap; NDSwaption: PV<sub>USD</sub> = PV<sub>local</sub>/FX</div>
+<p><b>Greeks:</b> delta in DV01 (<var>N</var><var>A</var><var>N</var>(<var>d</var>) × 1bp, hedged with forward swaps), vega per bp normal vol bucketed on the expiry × tenor grid, positive gamma and negative theta for the buyer.</p></article>
+
+<article class="cs"><h3><a href="cms-spread.html">CMS spread options</a></h3>
+<div class="f left">CMS<sub>fwd</sub> = fwd swap rate + convexity adj; <var>X</var> = CMS<sub>30</sub> − CMS<sub>5</sub><br><var>σ</var><sub>X</sub> = √(<var>σ</var><sub>30</sub><sup>2</sup> + <var>σ</var><sub>5</sub><sup>2</sup> − 2<var>ρσ</var><sub>30</sub><var>σ</var><sub>5</sub>), &nbsp;<var>d</var> = (<var>X</var> − <var>K</var>)/<var>σ</var><sub>X</sub>√<var>T</var><br>Cap = <var>Nτ</var><var>D</var>[(<var>X</var>−<var>K</var>)<var>N</var>(<var>d</var>) + <var>σ</var><sub>X</sub>√<var>T</var> <var>n</var>(<var>d</var>)]<br>Floor = <var>Nτ</var><var>D</var>[(<var>K</var>−<var>X</var>)<var>N</var>(−<var>d</var>) + <var>σ</var><sub>X</sub>√<var>T</var> <var>n</var>(<var>d</var>)]; straddle = cap + floor</div>
+<p><b>Greeks:</b> spread delta (+ to the long rate, − to the short rate), vega to each rate's vol, correlation sensitivity (long options are short correlation), theta.</p></article>
+
+<article class="cs"><h3><a href="cds-option.html">CDS index options</a></h3><div class="f left"><var>A</var> = Σ<sub><var>t</var><sub><var>i</var></sub> &gt; <var>T</var><sub>e</sub></sub> <var>τ</var><sub><var>i</var></sub><var>D</var><sub><var>i</var></sub>(<var>Q</var><sub><var>i</var>−1</sub> + <var>Q</var><sub><var>i</var></sub>)/2;  <var>F</var> = fwd Prot ÷ <var>A</var><br>FEP = (1 − <var>R</var>)<var>D</var>(<var>T</var><sub>e</sub>)(1 − <var>Q</var>(<var>T</var><sub>e</sub>));  <var>F</var>′ = <var>F</var> + FEP/<var>A</var><br>Payer = <var>A</var>[<var>F</var>′<var>N</var>(<var>d</var><sub>1</sub>) − <var>K</var><var>N</var>(<var>d</var><sub>2</sub>)]<br>Receiver = <var>A</var>[<var>K</var><var>N</var>(−<var>d</var><sub>2</sub>) − <var>F</var>′<var>N</var>(−<var>d</var><sub>1</sub>)]<br>Payer − Receiver = <var>A</var>(<var>F</var>′ − <var>K</var>)</div><p><b>Greeks:</b> delta in CS01 terms (<var>N</var><var>A</var><var>N</var>(<var>d</var><sub>1</sub>) × 1bp for a payer), gamma, vega = <var>N</var><var>A</var><var>F</var>′<var>n</var>(<var>d</var><sub>1</sub>)√<var>T</var>/100, theta.</p></article>
+
+<article class="cs"><h3><a href="lpi.html">LPI: capped &amp; floored inflation</a></h3><div class="f left">X<sub>i</sub> = min(max(y<sub>i</sub>, 0%), 5%) = y<sub>i</sub> − Caplet(5%) + Floorlet(0%)<br>E[X<sub>i</sub>] = f<sub>i</sub> − Cap<sub>i</sub> + Floor<sub>i</sub> &nbsp;(Bachelier on the forward YoY rate)<br>PV = N·D(T)·{[(1+K)<sup>T</sup> − 1] − [∏(1 + E[X<sub>i</sub>]) − 1]} &nbsp;(LPI payer; years treated as independent)</div><p><b>Greeks:</b> inflation01 (damped by the clipping), normal vega on the YoY options, DV01, year-to-year inflation correlation.</p></article>
+
+<article class="cs"><h3><a href="fx-digitals.html">FX digitals, touches &amp; dual digitals</a></h3><div class="f left">Digital call = P·D<sub>d</sub>·N(d<sub>2</sub>), put = P·D<sub>d</sub>·N(−d<sub>2</sub>)<br>One-touch (up, paid at expiry) = P·D<sub>d</sub>·[N((−b+νT)/σ√T) + e<sup>2νb/σ²</sup>·N((−b−νT)/σ√T)], b = ln(H/S), ν = r<sub>d</sub> − r<sub>f</sub> − ½σ²<br>Dual digital = P·D·N<sub>2</sub>(s<sub>A</sub>d<sub>2,A</sub>, s<sub>B</sub>d<sub>2,B</sub>, s<sub>A</sub>s<sub>B</sub>ρ)</div><p><b>Greeks:</b> spiky delta and gamma near the strike or barrier close to expiry, vega that changes sign with moneyness, corr01 for dual digitals. A touch costs about 2 × the digital when drift is small.</p></article>
+
+<article class="cs"><h3><a href="fva.html">Forward volatility agreements</a></h3><div class="f left">σ<sub>f</sub>² = (σ<sub>2</sub>²T<sub>2</sub> − σ<sub>1</sub>²T<sub>1</sub>) / (T<sub>2</sub> − T<sub>1</sub>)<br>Straddle(σ) = 2FD·[2N(½σ√τ) − 1] ≈ 0.8·σ√τ·F·D<br>PV = N·[Straddle(σ<sub>f</sub>) − Straddle(K<sub>vol</sub>)]</div><p><b>Greeks:</b> forward vega (long σ<sub>2</sub>, short σ<sub>1</sub>), almost no delta or gamma before the strike date, vol-of-vol convexity.</p></article>
+
+<article class="cs"><h3><a href="var-vol-swaps.html">Variance &amp; volatility swaps</a></h3><div class="f left">σ<sub>real</sub> = 100·√(252/n · Σ ln(S<sub>i</sub>/S<sub>i−1</sub>)²)<br>Var: PV = D·N<sub>var</sub>·([n<sub>e</sub>σ<sub>e</sub>² + (n − n<sub>e</sub>)σ<sub>imp</sub>²]/n − K²), N<sub>var</sub> = N<sub>vega</sub>/2K<br>Vol: PV = D·N<sub>vega</sub>·(√K<sub>var</sub>·(1 − ν²/8) − K<sub>vol</sub>)</div><p><b>Greeks:</b> vega (≈ D·N<sub>var</sub>·2σ<sub>imp</sub>·remaining fraction, shrinks as days are realised), constant cash gamma, theta = realised vs implied each day, vol of vol for vol swaps.</p></article>
+
+<article class="cs"><h3><a href="correlation-swap.html">Correlation swaps</a></h3><div class="f left">ρ<sub>real</sub> = Σ(x − x̄)(y − ȳ) / √(Σ(x − x̄)² · Σ(y − ȳ)²)<br>PV = D·N·(w·ρ<sub>e</sub> + (1 − w)·ρ<sub>imp</sub> − K)<br>ρ<sub>imp</sub> = (σ<sub>1</sub>² + σ<sub>2</sub>² − σ<sub>12</sub>²) / (2σ<sub>1</sub>σ<sub>2</sub>)</div><p><b>Greeks:</b> corr01 = D·N·(1 − w); vega and delta close to zero.</p></article>
+
+<article class="cs"><h3><a href="structured.html">Structured products &amp; other records</a></h3><div class="f left">Protected note PV = N·π·D(T) + (N·p/S<sub>0</sub>)·BS<sub>call</sub>(K = S<sub>0</sub>)<br>Fair p = [N(1 − m) − N·π·D(T)] / (N·BS<sub>call</sub>/S<sub>0</sub>)<br>Cash records (SimpleFlow, Expense, PayToHold): PV = ± amount × D(pay date)</div><p><b>Greeks:</b> note: delta and vega from the calls, large DV01 and issuer CS01 from the bond. Cash records: FX only.</p></article>
+
+  </div>
+</section>
+<section class="sec" id="glossary">
+  <h2>Glossary <small class="mono">(190 terms)</small></h2>
+  <dl class="gloss">
+<dt>1st line</dt><dd>The front-month futures contract on each pricing day; the average rolls to the next contract when the front expires. <a href="commodity-swap-futures.html">→</a></dd>
+<dt>32nds and 64ths</dt><dd>US Treasury futures prices are quoted in 32nds (103-24 = 103.75). Their options are quoted in 64ths. <a href="futures-options.html">→</a></dd>
+<dt>Accrued interest</dt><dd>Coupon earned since the last payment, paid by the buyer to the seller. <a href="bond.html">→</a></dd>
+<dt>American / European</dt><dd>American options can be exercised on any day up to expiry. European options only at expiry. <a href="options-intro.html">→</a></dd>
+<dt>Annuity</dt><dd>Σ <var>τ</var><sub>i</sub><var>D</var>(<var>t</var><sub>i</sub>) over the fixed leg: the PV of 1 per year on each payment date. <a href="swaption.html">→</a></dd>
+<dt>Annuity (PV01)</dt><dd>Sum of accrual fractions times discount factors over the fixed leg; PV of receiving 1 per year. <a href="irs.html">→</a></dd>
+<dt>Asset swap spread</dt><dd>The spread over SOFR an investor earns after swapping a bond's fixed coupons to floating; a measure of the bond's cheapness to swaps. <a href="asset-swap.html">→</a></dd>
+<dt>Attachment / detachment</dt><dd>The pool-loss levels where a tranche starts and stops absorbing losses. <a href="tranche.html">→</a></dd>
+<dt>Autocallable</dt><dd>A note that repays early with a coupon if the underlying is above a trigger on an observation date. <a href="structured.html">→</a></dd>
+<dt>Average-price swap</dt><dd>Swap paying the average of a published commodity price over a period against a fixed price. <a href="commodity-swap-futures.html">→</a></dd>
+<dt>Base correlation</dt><dd>The market convention of quoting one correlation per base (0–K%) tranche. <a href="tranche.html">→</a></dd>
+<dt>Base index</dt><dd>The lagged index level at the start of the swap, against which the final index is compared. <a href="inflation-swap.html">→</a></dd>
+<dt>Basis</dt><dd>Futures price minus spot price; converges to zero at expiry. <a href="futures.html">→</a></dd>
+<dt>Basis point (bp)</dt><dd>One hundredth of a percent: 0.01% = 0.0001. <a href="toolkit.html">→</a></dd>
+<dt>Basis01</dt><dd>PV change for a 1bp move in the cross-currency basis curve. <a href="xccy.html">→</a></dd>
+<dt>bbl / mt conversion</dt><dd>Fuel oil is quoted per metric tonne; divide by about 6.35 barrels per tonne to compare with crude in $/bbl. <a href="commodity-swap-futures.html">→</a></dd>
+<dt>Bivariate normal N<sub>2</sub></dt><dd>The probability that two correlated bell-curve variables are both below given levels. <a href="fx-digitals.html">→</a></dd>
+<dt>Black-76</dt><dd>Black-Scholes written on a futures or forward price, with no carry term. <a href="futures-options.html">→</a></dd>
+<dt>Breakeven inflation</dt><dd>The fixed rate of a new zero-coupon inflation swap; the inflation rate at which nominal and inflation-linked bonds return the same. <a href="inflation-swap.html">→</a></dd>
+<dt>Bucketed delta</dt><dd>DV01 broken down by curve tenor, used to hedge each part of the curve. <a href="irs.html">→</a></dd>
+<dt>Butterfly (25BF)</dt><dd>Average extra vol of the 25-delta wings over ATM: a measure of fat tails. <a href="fx-options.html">→</a></dd>
+<dt>Call / put</dt><dd>The right to buy (call) or sell (put) the underlying at the strike on or before expiry. <a href="options-intro.html">→</a></dd>
+<dt>Cap / floor</dt><dd>A strip of options paying max(<var>L</var> − <var>K</var>, 0) (cap) or max(<var>K</var> − <var>L</var>, 0) (floor) on each floating-rate fixing. <a href="capfloor.html">→</a></dd>
+<dt>Capital protection</dt><dd>The guaranteed share of the notional repaid at maturity, as long as the issuer does not default. <a href="structured.html">→</a></dd>
+<dt>Caplet / floorlet</dt><dd>One single-period option within a cap or floor. <a href="capfloor.html">→</a></dd>
+<dt>Cheapest-to-deliver (CTD)</dt><dd>The bond in a futures delivery basket that is cheapest for the seller to deliver; the one with the highest implied repo. <a href="bond-futures.html">→</a></dd>
+<dt>Clean / dirty price</dt><dd>Dirty is what you pay; clean is dirty minus accrued interest and is what screens show. <a href="bond.html">→</a></dd>
+<dt>CMS rate</dt><dd>Constant maturity swap rate: the market swap rate of a fixed tenor observed on one date, used to set one payment. <a href="cms-spread.html">→</a></dd>
+<dt>Compounded in arrears</dt><dd>Rate computed after the period ends by compounding each daily overnight fixing. <a href="stir-futures.html">→</a></dd>
+<dt>Contango / backwardation</dt><dd>Futures curve sloping up (later months dearer) / sloping down (later months cheaper). <a href="futures.html">→</a></dd>
+<dt>Convenience yield</dt><dd>Implied benefit of holding a physical commodity now rather than later; lowers the futures price. <a href="futures.html">→</a></dd>
+<dt>Conversion factor</dt><dd>Exchange-set multiplier (price per 1 face at a 6% yield) that scales the invoice price for each deliverable bond. <a href="bond-futures.html">→</a></dd>
+<dt>Convexity</dt><dd>How much the price-yield relationship bends; positive convexity helps the holder. <a href="bond.html">→</a></dd>
+<dt>Convexity adjustment</dt><dd>Amount by which a futures rate exceeds the equivalent forward rate because of daily margining; about ½σ²T₁T₂. <a href="stir-futures.html">→</a></dd>
+<dt>Corr01</dt><dd>PV change for a 1-point rise in implied correlation. <a href="correlation-swap.html">→</a></dd>
+<dt>Correlation</dt><dd>A number between −1 and +1 measuring how much two rates move together. <a href="cms-spread.html">→</a></dd>
+<dt>Correlation swap</dt><dd>A swap paying N × (realised correlation − strike), in correlation points. <a href="correlation-swap.html">→</a></dd>
+<dt>Cost of carry</dt><dd>Funding cost plus storage minus income from holding the underlying until expiry; links spot to the fair futures price. <a href="futures.html">→</a></dd>
+<dt>Coupon</dt><dd>The fixed interest a bond pays each period, quoted per 100 face. <a href="bond.html">→</a></dd>
+<dt>Covered interest parity</dt><dd>The no-arbitrage link between spot, forward and the two currencies' interest rates. <a href="fx-forward.html">→</a></dd>
+<dt>CPR / SMM</dt><dd>Annual and monthly prepayment rates; SMM = 1 − (1 − CPR)<sup>1/12</sup>. <a href="mbs.html">→</a></dd>
+<dt>Crack spread</dt><dd>Price of a refined product minus the price of crude oil; a refiner's gross margin. <a href="commodity-swap-futures.html">→</a></dd>
+<dt>Credit event</dt><dd>The trigger for a CDS payout: failure to pay, bankruptcy, or (depending on the contract) restructuring. <a href="cds.html">→</a></dd>
+<dt>Cross-currency basis</dt><dd>The spread between a currency's FX-implied (USD-collateral) interest rate and its onshore OIS rate; quoted as a spread on the non-USD leg of float-for-float swaps. <a href="xccy.html">→</a></dd>
+<dt>CS01</dt><dd>PV change for a 1bp widening of the credit spread. <a href="cds.html">→</a></dd>
+<dt>Curve steepness (30s5s)</dt><dd>The 30-year swap rate minus the 5-year swap rate. <a href="cms-spread.html">→</a></dd>
+<dt>Cut</dt><dd>The time of day an FX option expires, such as New York 10am or Tokyo 3pm. <a href="fx-options.html">→</a></dd>
+<dt>Day count</dt><dd>The rule that turns two dates into a year fraction, such as ACT/360 or 30/360. <a href="toolkit.html">→</a></dd>
+<dt>Default correlation</dt><dd>How much companies tend to default together. It sets the shape of the pool loss distribution. <a href="tranche.html">→</a></dd>
+<dt>Delivery options</dt><dd>The seller's choices of which bond and which day to deliver, which lower the futures price. <a href="bond-futures.html">→</a></dd>
+<dt>Delta exchange</dt><dd>Trading an option together with its index hedge at an agreed reference level. <a href="cds-option.html">→</a></dd>
+<dt>Digital (binary) option</dt><dd>Pays a fixed amount if a condition holds at expiry, nothing otherwise. <a href="fx-digitals.html">→</a></dd>
+<dt>Dilution</dt><dd>The reduction in each share's slice when new shares are created. <a href="equity.html">→</a></dd>
+<dt>Discount factor</dt><dd>Today's value of one unit of currency paid at a future date. <a href="toolkit.html">→</a></dd>
+<dt>Discounting curve</dt><dd>The curve used to bring future payments back to today; the OIS curve for collateralised trades. <a href="fra.html">→</a></dd>
+<dt>Dividend</dt><dd>A share of company profits paid to shareholders. <a href="equity.html">→</a></dd>
+<dt>Dollar roll</dt><dd>Selling a TBA for one month and buying it back for the next. The price difference (the drop) acts as a financing rate. <a href="mbs.html">→</a></dd>
+<dt>Down-and-in put</dt><dd>A put that only comes alive if the underlying falls through a barrier during its life. <a href="structured.html">→</a></dd>
+<dt>Dual digital</dt><dd>Pays a fixed amount only if conditions on two different rates are both true at expiry. <a href="fx-digitals.html">→</a></dd>
+<dt>Equity, mezzanine, senior</dt><dd>Tranches ordered from first-loss (riskiest) to last-loss (safest). <a href="tranche.html">→</a></dd>
+<dt>Equity-linked swap (ELS)</dt><dd>A total return swap on a share, index or custom basket. <a href="trs.html">→</a></dd>
+<dt>Ex-date</dt><dd>The first day a share trades without the right to the next dividend. <a href="equity.html">→</a></dd>
+<dt>Expected tranche loss</dt><dd>The average fraction of a tranche lost by a date, over all default scenarios. <a href="tranche.html">→</a></dd>
+<dt>Expiry × tenor</dt><dd>Option life and underlying swap life, for example 2M × 5Y. <a href="swaption.html">→</a></dd>
+<dt>Fixing</dt><dd>The official reference rate used to settle an NDF or option, such as TAIFX1 or PTAX. <a href="fx-forward.html">→</a></dd>
+<dt>Flat vol</dt><dd>A single vol quoted for a whole cap. Desks strip it into one vol per caplet expiry. <a href="capfloor.html">→</a></dd>
+<dt>Foreign / domestic currency</dt><dd>In <code>USD:INR</code>, USD is foreign (base) and INR domestic (quote): the price of 1 USD in INR. <a href="fx-options.html">→</a></dd>
+<dt>Forward points</dt><dd>Forward minus spot, quoted in pips (× 10,000, or × 100 for JPY pairs). <a href="fx-forward.html">→</a></dd>
+<dt>Forward price (bond)</dt><dd>Today's price financed at the repo rate to a future date, minus coupons received on the way. <a href="trs.html">→</a></dd>
+<dt>Forward rate</dt><dd>The rate the curve implies today for a period that starts in the future. <a href="toolkit.html">→</a></dd>
+<dt>Forward risky annuity</dt><dd>The RPV01 of a CDS starting at expiry, weighted by survival from today. <a href="cds-option.html">→</a></dd>
+<dt>Forward smile</dt><dd>The shape of the vol smile expected at a future date; it makes forward-starting options model-dependent. <a href="fva.html">→</a></dd>
+<dt>Forward swap rate</dt><dd>The fixed rate that makes a forward-starting swap worth zero today. <a href="swaption.html">→</a></dd>
+<dt>Forward volatility</dt><dd>The volatility implied for a future period: √[(σ<sub>2</sub>²T<sub>2</sub> − σ<sub>1</sub>²T<sub>1</sub>)/(T<sub>2</sub> − T<sub>1</sub>)]. <a href="fva.html">→</a></dd>
+<dt>FRA</dt><dd>Forward rate agreement: a single fixed-versus-floating exchange on one future interest period, settled as one net payment. <a href="fra.html">→</a></dd>
+<dt>Front-end protection</dt><dd>Losses on defaults between trade and expiry, collected by a payer holder on exercise. <a href="cds-option.html">→</a></dd>
+<dt>Futures-style</dt><dd>No premium is paid. The option is margined daily like a future, so its PV is not discounted. <a href="futures-options.html">→</a></dd>
+<dt>FVA</dt><dd>Forward volatility agreement: an agreement to enter an at-the-money straddle at a future date at a vol fixed today. <a href="fva.html">→</a></dd>
+<dt>FX fixing</dt><dd>The official exchange rate published on a set day (for example TAIFX1 for USD/TWD) used to convert local amounts into USD. <a href="nds.html">→</a></dd>
+<dt>FX swap</dt><dd>A spot or near-date exchange plus the opposite forward exchange. <a href="fx-forward.html">→</a></dd>
+<dt>Garman-Kohlhagen</dt><dd>Black-Scholes for FX: the foreign interest rate plays the role of the dividend yield. <a href="fx-options.html">→</a></dd>
+<dt>General collateral (GC)</dt><dd>Any bond from an accepted basket; its repo rate sits close to OIS. <a href="repo.html">→</a></dd>
+<dt>GMRA</dt><dd>Global Master Repurchase Agreement, the standard legal contract for repo. <a href="repo.html">→</a></dd>
+<dt>Gross basis</dt><dd>Bond clean price minus futures price × conversion factor. <a href="bond-futures.html">→</a></dd>
+<dt>Haircut</dt><dd>The discount applied to collateral value when deciding how much cash to lend. <a href="repo.html">→</a></dd>
+<dt>Hazard rate</dt><dd>The default intensity λ: roughly the probability per year of defaulting, given survival so far. <a href="cds.html">→</a></dd>
+<dt>IE01</dt><dd>PV change for a 1bp rise in the breakeven inflation curve. <a href="inflation-swap.html">→</a></dd>
+<dt>IMM date</dt><dd>Third Wednesday of March, June, September and December; start and end of quarterly futures periods. <a href="stir-futures.html">→</a></dd>
+<dt>Implied correlation</dt><dd>Correlation backed out of option vols, for example from the vols of two assets and of their combination. <a href="correlation-swap.html">→</a></dd>
+<dt>Implied repo</dt><dd>Financing rate earned by buying the bond, selling the future and delivering. <a href="bond-futures.html">→</a></dd>
+<dt>Implied volatility</dt><dd>The volatility that makes the pricing formula match the market price. Options are quoted in it. <a href="options-intro.html">→</a></dd>
+<dt>Independent amount</dt><dd>Initial margin posted by the TRS receiver to cover a sudden move in the asset. <a href="trs.html">→</a></dd>
+<dt>Index basis</dt><dd>The difference between the quoted index level and its intrinsic value. <a href="cds-index.html">→</a></dd>
+<dt>Index factor</dt><dd>Fraction of the original notional still outstanding after defaults: names left ÷ original names. <a href="cds-index.html">→</a></dd>
+<dt>Index lag</dt><dd>The delay between a swap date and the month of the price index it references (2 months for UK RPI swaps, 3 months for US CPI and euro HICPx). <a href="inflation-swap.html">→</a></dd>
+<dt>Inflation01</dt><dd>PV change for a 1bp rise in forward inflation rates. <a href="lpi.html">→</a></dd>
+<dt>Initial margin</dt><dd>Deposit held by the clearing house as a cushion against losses; collateral, not a cost. <a href="futures.html">→</a></dd>
+<dt>Interest rate swap</dt><dd>Exchange of fixed-rate for floating-rate interest payments on the same notional over several years. <a href="irs.html">→</a></dd>
+<dt>Intrinsic value</dt><dd>The value of an index computed as the average of its constituents' single-name CDS. <a href="cds-index.html">→</a></dd>
+<dt>Invoice price</dt><dd>Amount the buyer pays at delivery: futures price × conversion factor + accrued interest. <a href="bond-futures.html">→</a></dd>
+<dt>Jump to default (JTD)</dt><dd>PV change if the reference entity defaults immediately. <a href="cds.html">→</a></dd>
+<dt>Large homogeneous pool</dt><dd>The one-factor Gaussian model with very many identical names, which gives pool loss in closed form for each state of the economy. <a href="tranche.html">→</a></dd>
+<dt>Log contract</dt><dd>The 1/K²-weighted strip of out-of-the-money options that replicates variance; the basis of the VIX. <a href="var-vol-swaps.html">→</a></dd>
+<dt>Lookback</dt><dd>Using overnight fixings from a few days earlier so the floating amount is known before the payment date. <a href="irs.html">→</a></dd>
+<dt>Loss-adjusted forward</dt><dd>The forward spread plus front-end protection divided by the forward annuity; the forward used in Black's formula. <a href="cds-option.html">→</a></dd>
+<dt>LPI (Limited Price Indexation)</dt><dd>UK pension indexation where each year's inflation is clipped into a band, typically [0%, 5%], before compounding. <a href="lpi.html">→</a></dd>
+<dt>Mid-curve option</dt><dd>A STIR option that expires a year or more before its underlying future. <a href="futures-options.html">→</a></dd>
+<dt>Modified duration</dt><dd>Percentage price change for a 1% change in yield. <a href="bond.html">→</a></dd>
+<dt>Monte Carlo</dt><dd>Pricing by simulating many random paths and averaging the discounted payoffs. <a href="fx-digitals.html">→</a></dd>
+<dt>MTM (resetting) swap</dt><dd>A cross-currency swap whose USD notional resets to the FX rate each period, with the change paid immediately. <a href="xccy.html">→</a></dd>
+<dt>Multiplier</dt><dd>Money value of a 1.00 move in a futures price for one contract (¥500 per Nikkei point on the CME yen contract). <a href="futures.html">→</a></dd>
+<dt>NDF</dt><dd>Non-deliverable forward: only the difference between forward and fixing is paid, usually in USD. <a href="fx-forward.html">→</a></dd>
+<dt>NDF-implied curve</dt><dd>The local-currency discount curve backed out of offshore NDF prices; it can differ from onshore rates. <a href="nds.html">→</a></dd>
+<dt>Negative convexity</dt><dd>Price rises less when rates fall than it drops when rates rise, because prepayments speed up. <a href="mbs.html">→</a></dd>
+<dt>Net basis</dt><dd>Gross basis minus carry; approximately the value of the seller's delivery options. <a href="bond-futures.html">→</a></dd>
+<dt>Net total return (NTR) index</dt><dd>An index whose level includes dividends reinvested after withholding tax. <a href="trs.html">→</a></dd>
+<dt>Non-deliverable swap (NDS)</dt><dd>An interest rate swap in a restricted currency whose net payments are converted at an FX fixing and paid in USD. <a href="nds.html">→</a></dd>
+<dt>Normal (Bachelier) vol</dt><dd>Volatility of a rate measured in basis points per year rather than in percent of the rate. <a href="capfloor.html">→</a></dd>
+<dt>Notional exchange</dt><dd>The swap of principal amounts at the start and end of a cross-currency swap. <a href="xccy.html">→</a></dd>
+<dt>OAS</dt><dd>Option-adjusted spread: the spread over simulated rate paths that reprices an MBS, accounting for prepayment. <a href="mbs.html">→</a></dd>
+<dt>OIS</dt><dd>Overnight index swap: the floating leg compounds a daily overnight rate (SOFR, SONIA, €STR) over each period. <a href="irs.html">→</a></dd>
+<dt>OIS curve</dt><dd>Curve built from overnight rates (SOFR, €STR, SONIA), used to discount collateralised trades. <a href="toolkit.html">→</a></dd>
+<dt>On-the-run</dt><dd>The newest series of an index, where most trading happens. <a href="cds-index.html">→</a></dd>
+<dt>One-touch</dt><dd>Pays a fixed amount if the rate trades at or through a barrier at any time before expiry. <a href="fx-digitals.html">→</a></dd>
+<dt>Par floater</dt><dd>A floating leg plus its notional, discounted on the curve that projects its rate, is worth exactly par. <a href="xccy.html">→</a></dd>
+<dt>Par swap rate</dt><dd>Fixed rate that makes a new swap worth zero; the rate quoted on screens. <a href="irs.html">→</a></dd>
+<dt>Par-par asset swap</dt><dd>Asset swap package bought for 100 regardless of the bond's price; the price difference is paid upfront. <a href="asset-swap.html">→</a></dd>
+<dt>Participation</dt><dd>The share of the underlying's rise paid out by a note. <a href="structured.html">→</a></dd>
+<dt>Pass-through</dt><dd>A security that passes homeowners' monthly mortgage payments to investors, net of servicing and guarantee fees. <a href="mbs.html">→</a></dd>
+<dt>Payer / receiver</dt><dd>The side that pays / receives the fixed rate. <a href="irs.html">→</a></dd>
+<dt>Payer / receiver swaption</dt><dd>The right to enter a swap paying (payer) or receiving (receiver) the fixed strike rate. <a href="swaption.html">→</a></dd>
+<dt>Physical / cash settlement</dt><dd>On exercise, either a real swap is booked (physical) or its value is paid in cash. <a href="swaption.html">→</a></dd>
+<dt>Pin risk</dt><dd>The hedging difficulty when spot sits at a digital's strike close to expiry. <a href="fx-digitals.html">→</a></dd>
+<dt>Pips</dt><dd>An FX option price in domestic currency per unit of foreign notional. <a href="fx-options.html">→</a></dd>
+<dt>Point value</dt><dd>The money value of a 1.00 move in a contract's quoted price. <a href="futures-options.html">→</a></dd>
+<dt>Preferred share</dt><dd>A share paying a fixed dividend, ranking ahead of ordinary shares, often perpetual and callable. <a href="equity.html">→</a></dd>
+<dt>Premium</dt><dd>The price paid up front for an option. <a href="options-intro.html">→</a></dd>
+<dt>Premium-adjusted delta</dt><dd>Spot delta minus the premium expressed in foreign currency, used when the premium is paid in the foreign currency. <a href="fx-options.html">→</a></dd>
+<dt>Premium-style</dt><dd>The option premium is paid in cash up front. PV is discounted to the payment date. <a href="futures-options.html">→</a></dd>
+<dt>Present value (PV)</dt><dd>The sum of all future cashflows, each multiplied by its discount factor. <a href="toolkit.html">→</a></dd>
+<dt>Price alignment interest</dt><dd>Interest adjustment on cleared products that returns the interest earned on variation margin. <a href="stir-futures.html">→</a></dd>
+<dt>Pricing day</dt><dd>A day on which the reference price (e.g. Platts Dubai) is published and counted in the average. <a href="commodity-swap-futures.html">→</a></dd>
+<dt>Proceeds asset swap</dt><dd>Asset swap whose notional equals the bond's dirty price, so no upfront is exchanged. <a href="asset-swap.html">→</a></dd>
+<dt>Projection curve</dt><dd>The curve used only to compute forward rates of a particular index (for example 3M STIBOR). <a href="fra.html">→</a></dd>
+<dt>PSA</dt><dd>A standard prepayment ramp: 100% PSA rises from 0.2% CPR to 6% CPR over 30 months. <a href="mbs.html">→</a></dd>
+<dt>Put-call parity</dt><dd>Call − Put = <var>S</var>e<sup>−<var>qT</var></sup> − <var>K</var>e<sup>−<var>rT</var></sup> for European options with the same strike and expiry. <a href="options-intro.html">→</a></dd>
+<dt>Quanto</dt><dd>A product on an asset paid in a different currency at a fixed rate; its value depends on the asset/FX correlation. <a href="correlation-swap.html">→</a></dd>
+<dt>Quanto adjustment</dt><dd>A small correction to expected values when a payoff in one currency is converted at a rate correlated with it. <a href="nds.html">→</a></dd>
+<dt>Realised volatility</dt><dd>The annualised size of daily log-returns actually observed: √(252/n × Σ r²). <a href="var-vol-swaps.html">→</a></dd>
+<dt>Recovery rate</dt><dd>The fraction of face value still worth something after default, set for CDS by an ISDA auction. Assumed 40% for senior debt. <a href="cds.html">→</a></dd>
+<dt>Reflection principle</dt><dd>The symmetry argument that counts paths which cross a barrier and come back; it gives the one-touch formula. <a href="fx-digitals.html">→</a></dd>
+<dt>Repo</dt><dd>Sale of a bond with an agreement to buy it back later: a secured cash loan. <a href="repo.html">→</a></dd>
+<dt>Reset price</dt><dd>The asset price recorded at the start of each TRS period, from which performance and funding are measured. <a href="trs.html">→</a></dd>
+<dt>Reverse repo</dt><dd>The other side of a repo: lending cash and holding the bond as collateral. <a href="repo.html">→</a></dd>
+<dt>Risk reversal (25RR)</dt><dd>Implied vol of the 25-delta call minus that of the 25-delta put. <a href="fx-options.html">→</a></dd>
+<dt>Risk-neutral probability</dt><dd>The probabilities that make expected discounted payoffs match market prices. <a href="toolkit.html">→</a></dd>
+<dt>RPV01</dt><dd>Risky annuity: the PV of receiving 1 per year until maturity or default, whichever comes first. <a href="cds.html">→</a></dd>
+<dt>Seasonality</dt><dd>The regular monthly pattern in price indices that the forward index curve must include. <a href="inflation-swap.html">→</a></dd>
+<dt>Series</dt><dd>A version of an index with a fixed list of names, launched every March and September. <a href="cds-index.html">→</a></dd>
+<dt>Shifted lognormal</dt><dd>Black's model applied to rate + shift, so it still works when rates are near or below zero. <a href="capfloor.html">→</a></dd>
+<dt>SimpleFlow</dt><dd>Booking record for a single known cash payment; PV = ± amount × discount factor. <a href="structured.html">→</a></dd>
+<dt>SOFR / SONIA / SARON / €STR</dt><dd>Overnight risk-free reference rates in USD, GBP, CHF and EUR. <a href="stir-futures.html">→</a></dd>
+<dt>Special</dt><dd>A bond in high demand to borrow, whose repo rate falls below GC. <a href="repo.html">→</a></dd>
+<dt>Spot date</dt><dd>The standard settlement date for FX, usually two business days after the trade. <a href="fx-forward.html">→</a></dd>
+<dt>STIR future</dt><dd>Short-term interest rate future quoted as 100 minus the rate for a future three-month (or one-month) period. <a href="stir-futures.html">→</a></dd>
+<dt>Straddle</dt><dd>A call plus a put at the same strike. It pays on a move in either direction. <a href="cms-spread.html">→</a></dd>
+<dt>Strike</dt><dd>The fixed price at which an option can be exercised. <a href="options-intro.html">→</a></dd>
+<dt>Strike date</dt><dd>The date on which an FVA's straddle strike is set at the then-forward. <a href="fva.html">→</a></dd>
+<dt>Structured product</dt><dd>A note combining a bond with options or other derivatives into one security with a tailored payoff. <a href="structured.html">→</a></dd>
+<dt>Survival probability</dt><dd>Q(t) = e<sup>−λt</sup>, the chance the company has not defaulted by time t. <a href="cds.html">→</a></dd>
+<dt>Swap spread</dt><dd>Swap rate minus the government bond yield of the same maturity. <a href="irs.html">→</a></dd>
+<dt>TBA</dt><dd>To-be-announced: a forward trade on agency pools where the exact pools are named two days before settlement. <a href="mbs.html">→</a></dd>
+<dt>Tick value</dt><dd>Money value of a one-basis-point price move for one contract ($25 for 3M SOFR). <a href="stir-futures.html">→</a></dd>
+<dt>Time value</dt><dd>Premium minus intrinsic value: the value of the chance that the option ends further in the money. <a href="options-intro.html">→</a></dd>
+<dt>Total return swap (TRS)</dt><dd>Swap where one side receives an asset's income and price change and pays a floating funding rate plus spread. <a href="trs.html">→</a></dd>
+<dt>Upfront</dt><dd>Cash paid at the start of a fixed-coupon CDS to settle the difference between the coupon and the market spread. <a href="cds.html">→</a></dd>
+<dt>Variance swap</dt><dd>A swap paying N<sub>var</sub> × (realised variance − strike²). <a href="var-vol-swaps.html">→</a></dd>
+<dt>Variation margin</dt><dd>Cash paid or received each evening equal to the change in the futures settlement price times multiplier times lots. <a href="futures.html">→</a></dd>
+<dt>Vega notional</dt><dd>Money per vol point; for a variance swap, N<sub>var</sub> = N<sub>vega</sub>/(2K). <a href="var-vol-swaps.html">→</a></dd>
+<dt>Version</dt><dd>Counter that increases each time a constituent of the series defaults. <a href="cds-index.html">→</a></dd>
+<dt>Vol cube</dt><dd>Swaption implied vols by expiry, tenor and strike. <a href="swaption.html">→</a></dd>
+<dt>Volatility swap</dt><dd>A swap paying N<sub>vega</sub> × (realised vol − strike). <a href="var-vol-swaps.html">→</a></dd>
+<dt>WAC</dt><dd>Weighted-average coupon: the average mortgage rate paid by the borrowers in a pool. <a href="mbs.html">→</a></dd>
+<dt>Warrant</dt><dd>A company-issued right to buy new shares at a fixed strike before expiry. <a href="equity.html">→</a></dd>
+<dt>Weekly option</dt><dd>A listed option expiring on a given weekday within the month, rather than at the monthly expiry. <a href="futures-options.html">→</a></dd>
+<dt>Yield to maturity</dt><dd>The single discount rate that makes a bond's cashflows equal its dirty price. <a href="bond.html">→</a></dd>
+<dt>YoY caplet / floorlet</dt><dd>An option paying max(YoY − K, 0) or max(K − YoY, 0) on one year's inflation. <a href="lpi.html">→</a></dd>
+<dt>YoY inflation</dt><dd>Year-on-year inflation: the index this year divided by the index a year earlier, minus 1. <a href="lpi.html">→</a></dd>
+<dt>Z-spread</dt><dd>Constant spread over the zero curve that reprices a bond to its market price. <a href="bond.html">→</a></dd>
+<dt>Zero rate</dt><dd>The rate for money locked up from today to one date with no payments in between. <a href="toolkit.html">→</a></dd>
+  </dl>
+</section>
+</main>
+</div>
+<script src="assets/course.js"></script>
+</body>
+</html>

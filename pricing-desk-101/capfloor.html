@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Caps &amp; Floors</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=JetBrains+Mono:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..600&display=swap">
+<link rel="stylesheet" href="assets/course.css">
+</head>
+<body data-page="capfloor.html">
+<div class="shell">
+<aside class="toc" id="toc"></aside>
+<main class="page">
+
+<header class="ph">
+  <p class="eyebrow">Part 6 · Vanilla options</p>
+  <h1>Caps &amp; floors</h1>
+  <p class="lede">A string of options on interest rate fixings, one per period. Price one option on one fixing, then add them up.</p>
+  <div class="ptypes" data-ptypes data-eg="Floor 1Y EUR-EURIBOR-3M 1.7 % 16/Mar/30"></div>
+</header>
+
+<section class="lvl" id="idea">
+  <h2><span class="lv">Level 1</span> The idea</h2>
+  <div class="prose">
+    <p>A company borrows at a floating rate: every three months it pays whatever 3-month EURIBOR is, plus a margin. If rates jump, its interest bill jumps too. A <b>cap</b> fixes that. Every quarter, if EURIBOR is above the cap rate (the strike), the cap pays the difference. The company's rate can never go above the strike.</p>
+    <p>A <b>floor</b> is the mirror image. Every quarter, if EURIBOR is <em>below</em> the strike, the floor pays the difference. Lenders and investors in floating-rate notes buy floors so their income never drops below a minimum.</p>
+    <p>Each single-period option is a <b>caplet</b> or a <b>floorlet</b>. A one-year floor on 3-month EURIBOR is four floorlets in a row.</p>
+  </div>
+  <aside class="analogy"><p>A thermostat with a minimum setting. Every quarter you check the temperature (the rate). If it is below 1.70°, the heater pays you for the gap. Each quarter is its own separate check, so four quarters means four chances to be paid.</p></aside>
+</section>
+
+<section class="lvl" id="cashflows">
+  <h2><span class="lv">Level 2</span> The cashflows</h2>
+  <div class="prose">
+    <p>The buyer <span class="pay-c">pays a premium</span> today. Then, for each period, the rate fixes at the start and the floorlet <span class="rec-c">may pay</span> at the end of the period:</p>
+  </div>
+  <div class="f"><span class="lbl">One period, paid at the period end</span>
+    Caplet = <var>N</var> × <var>τ</var> × max(<var>L</var> − <var>K</var>, 0) &nbsp;&nbsp;&nbsp; Floorlet = <var>N</var> × <var>τ</var> × max(<var>K</var> − <var>L</var>, 0)
+  </div>
+  <figure class="fig">
+    <div class="fig-title">Long EUR 50m 1-year floor on 3M EURIBOR, strike 1.70%, 16 Mar 2029 → 16 Mar 2030</div>
+    <div id="legs-cf"></div>
+    <figcaption>Four <b>contingent</b> floorlet payments, each paid only if that quarter's EURIBOR fixing is below 1.70%. The premium is paid up front, more than two years earlier.</figcaption>
+  </figure>
+  <figure class="fig">
+    <div class="fig-title">Whole floor: payoff if every fixing equals a given level, and value today</div>
+    <div id="pay-cf"></div>
+    <figcaption>EUR, discounted to today. The solid line is what the four floorlets would be worth if all fixings were known. The dashed line is today's value if the forwards were at that level. Today's forwards are about 2.28%.</figcaption>
+  </figure>
+</section>
+
+<section class="lvl" id="pv">
+  <h2><span class="lv">Level 3</span> The PV formula</h2>
+  <h3>Step 1 · Forward rate for each period</h3>
+  <div class="prose"><p>Each fixing <var>L</var><sub>i</sub> is unknown. Its centre is the forward rate from the EURIBOR projection curve, exactly as for an <a href="fra.html">FRA</a>:</p></div>
+  <div class="f"><var>F</var><sub>i</sub> = <span class="frac"><span>1</span><span><var>τ</var><sub>i</sub></span></span> ( <span class="frac"><span><var>P</var><sub>proj</sub>(<var>s</var><sub>i</sub>)</span><span><var>P</var><sub>proj</sub>(<var>e</var><sub>i</sub>)</span></span> − 1 )</div>
+  <h3>Step 2 · One option on one rate: Bachelier</h3>
+  <div class="prose">
+    <p>A caplet is a call on the rate, a floorlet a put. Rate desks model the rate with a bell curve measured in basis points: the normal (Bachelier) model. The normal vol <var>σ</var><sub>N</sub> is the typical yearly move in bp. 85bp means a typical move of ±0.85% in a year.</p>
+  </div>
+  <div class="f">
+    <var>d</var><sub>i</sub> = <span class="frac"><span><var>F</var><sub>i</sub> − <var>K</var></span><span><var>σ</var><sub>N</sub>√<var>T</var><sub>i</sub></span></span><br>
+    caplet rate value = (<var>F</var><sub>i</sub> − <var>K</var>) <var>N</var>(<var>d</var><sub>i</sub>) + <var>σ</var><sub>N</sub>√<var>T</var><sub>i</sub> <var>n</var>(<var>d</var><sub>i</sub>)<br>
+    floorlet rate value = (<var>K</var> − <var>F</var><sub>i</sub>) <var>N</var>(−<var>d</var><sub>i</sub>) + <var>σ</var><sub>N</sub>√<var>T</var><sub>i</sub> <var>n</var>(<var>d</var><sub>i</sub>)
+  </div>
+  <dl class="where">
+    <dt><var>T</var><sub>i</sub></dt><dd>time to the fixing date of period <var>i</var> (option expiry), in years</dd>
+    <dt><var>n</var>(<var>d</var>)</dt><dd>height of the bell curve: e<sup>−<var>d</var>²/2</sup> ÷ √(2π) (see <a href="toolkit.html#black">the toolkit</a>)</dd>
+  </dl>
+  <h3>Step 3 · Scale, discount and sum</h3>
+  <div class="f"><span class="lbl">The full cap or floor</span>
+    PV = <span class="sum"><span class="s">Σ</span><small>i</small></span> <var>N</var> × <var>τ</var><sub>i</sub> × <var>D</var>(<var>e</var><sub>i</sub>) × Bachelier(<var>F</var><sub>i</sub>, <var>K</var>, <var>T</var><sub>i</sub>, <var>σ</var><sub>N,i</sub>)
+  </div>
+  <dl class="where">
+    <dt><var>τ</var><sub>i</sub></dt><dd>accrual of period <var>i</var>, ACT/360 for EURIBOR</dd>
+    <dt><var>D</var>(<var>e</var><sub>i</sub>)</dt><dd>OIS (€STR) discount factor to the payment date <var>e</var><sub>i</sub></dd>
+    <dt><var>σ</var><sub>N,i</sub></dt><dd>caplet vol for that expiry and strike. It can differ for each period</dd>
+  </dl>
+  <aside class="key"><p><b>Cap − floor = swap.</b> Long a cap and short a floor at the same strike pays <var>L</var> − <var>K</var> every period, whatever happens. That is a payer swap at rate <var>K</var>. Use it to check your prices, and to see that an ATM cap and floor are worth the same.</p></aside>
+</section>
+
+<section class="lvl" id="desk">
+  <h2><span class="lv">Level 4</span> Desk reality</h2>
+  <ul>
+    <li><b>Reading the trade description.</b> <code>Floor 1Y EUR-EURIBOR-3M 1.7 % 16/Mar/30</code> means: floor, 1-year tenor, on 3-month EURIBOR, strike 1.70%, ending 16 Mar 2030. We read it as four quarterly floorlets from 16 Mar 2029. Check the schedule on the trade itself.</li>
+    <li><b>Fixing lag.</b> EURIBOR fixes two business days before each period starts. The option expiry <var>T</var><sub>i</sub> is that fixing date. We ignore the two days in the example.</li>
+    <li><b>Spot-starting caps skip the first period.</b> Its rate is already fixed today, so there is nothing optional left.</li>
+    <li><b>Flat vol vs caplet vol.</b> Brokers quote a cap with one "flat" vol for all its caplets. The desk strips these into a separate vol per caplet expiry, then interpolates by strike along the smile. Price with caplet vols.</li>
+    <li><b>Normal or shifted lognormal.</b> Since negative rates, EUR desks quote normal vols in bp. Some systems use a shifted Black model instead: Black on <var>F</var> + shift and <var>K</var> + shift.</li>
+    <li><b>SOFR and €STR caps.</b> Overnight-rate caps pay on a rate compounded over the period. It is only known at the <em>end</em> of the period, so the option keeps running through the accrual period. That adds a little extra time value.</li>
+  </ul>
+</section>
+
+<section class="sec" id="greeks">
+  <h2>Greeks that matter</h2>
+  <div class="tbl greeks"><table>
+    <thead><tr><th>Greek</th><th>What it measures</th><th>For a cap or floor</th></tr></thead>
+    <tbody>
+      <tr><td>Delta (DV01)</td><td>PV change if the forward rates rise 1bp</td><td>Positive for a cap, negative for a floor. The example floor loses about EUR 1,617 per bp. It is bucketed by period, like a strip of FRAs weighted by each <var>N</var>(<var>d</var>).</td></tr>
+      <tr><td>Vega</td><td>PV change for +1bp of normal vol</td><td>Always positive for the buyer: EUR 2,856 per bp here. Bucketed by caplet expiry: it is the main risk a cap/floor desk runs.</td></tr>
+      <tr><td>Gamma</td><td>How DV01 changes as rates move</td><td>Positive for the buyer, largest for caplets near the money and close to fixing.</td></tr>
+      <tr><td>Theta</td><td>PV change from one day passing</td><td>Negative for the buyer. Each floorlet decays fastest just before its own fixing.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="sec" id="example">
+  <h2>Worked example</h2>
+  <p>Valuation date 23 Nov 2026. A long EUR 50m floor on 3M EURIBOR, strike 1.70%, four quarterly periods from 16 Mar 2029 to 16 Mar 2030. Illustrative flat curves, continuously compounded ACT/365: EURIBOR zero 2.30%, €STR zero 2.10%. Normal vol 85bp for every floorlet.</p>
+  <ol class="steps">
+    <li><span>Floorlet 1 dates. Fixing 16 Mar 2029 (844 days), payment 16 Jun 2029 (936 days), period 92 days.</span>
+      <div class="calc-line">T1 = 844/365 = 2.31233    e1 = 936/365 = 2.56438    τ1 = 92/360 = 0.25556</div></li>
+    <li><span>Forward EURIBOR.</span>
+      <div class="calc-line">P(2.31233) = e^(−0.023×2.31233) = 0.948206    P(2.56438) = 0.942725
+F1 = (0.948206 / 0.942725 − 1) / 0.25556 = 2.2751%</div></li>
+    <li><span>Bachelier inputs.</span>
+      <div class="calc-line">σN√T = 0.0085 × √2.31233 = 0.0085 × 1.52063 = 0.012925
+d = (0.022751 − 0.017) / 0.012925 = 0.44492    N(−d) = 0.328187    n(d) = 0.361347</div></li>
+    <li><span>Floorlet rate value.</span>
+      <div class="calc-line">(0.017 − 0.022751) × 0.328187 + 0.012925 × 0.361347 = −0.0018873 + 0.0046705 = 0.0027832</div></li>
+    <li><span>Scale and discount.</span>
+      <div class="calc-line">D(e1) = e^(−0.021×2.56438) = 0.947572
+PV1 = 50,000,000 × 0.25556 × 0.947572 × 0.0027832 = 12,107,868 × 0.0027832 = EUR 33,699</div></li>
+    <li><span>Repeat for the other three floorlets. They are worth more because they have longer to expiry.</span>
+      <div class="calc-line">PV2 = 36,522    PV3 = 38,776    PV4 = 40,814</div></li>
+  </ol>
+  <p class="answer">The floor is worth <b>EUR 149,811</b> (about 30bp of notional). Every floorlet is out of the money today (forward 2.28% vs strike 1.70%), so the price is pure time value.</p>
+</section>
+
+<section class="sec" id="try">
+  <h2>Try it</h2>
+  <p>Defaults are the worked example. The table shows each caplet or floorlet. Switch to a cap, or move the strike to the forward (2.28%) to check that the ATM cap and floor are worth almost the same.</p>
+  <div id="calc-cf"></div>
+</section>
+
+<section class="sec" id="recap">
+  <h2>Remember</h2>
+  <ul class="recap">
+    <li>A cap is a strip of calls on each rate fixing, a floor a strip of puts.</li>
+    <li>For each period: forward from the projection curve, Bachelier with that caplet's normal vol, × <var>N</var> × <var>τ</var> × OIS discount factor.</li>
+    <li>Sum over periods. Cap − floor = payer swap at the strike.</li>
+    <li>The main risk is vega, bucketed by expiry. Delta is a weighted strip of FRA risks.</li>
+  </ul>
+</section>
+
+</main>
+</div>
+<script src="assets/course.js"></script>
+<script>
+(function () {
+  const TODAY = '2026-11-23';
+  // Build and price a cap/floor schedule. Returns rows and totals.
+  function strip(o) {
+    const rows = []; let pv = 0, vega = 0, dv01 = 0, intrinsicAt = [];
+    const n = Math.round(o.years * 12 / o.freq);
+    for (let i = 0; i < n; i++) {
+      const s = C.addMonths(o.start, o.freq * i), e = C.addMonths(o.start, o.freq * (i + 1));
+      const ts = C.days(TODAY, s) / 365, te = C.days(TODAY, e) / 365, tau = C.yearFrac(s, e, 'ACT/360');
+      if (ts <= 0) continue;
+      const F = (Math.exp(-o.zp * ts) / Math.exp(-o.zp * te) - 1) / tau + (o.shift || 0), D = Math.exp(-o.zd * te);
+      const b = C.bachelier({ F, K: o.K, T: ts, volN: o.vol, df: 1, call: o.cap });
+      const w = o.N * tau * D, v = w * b.pv;
+      pv += v; vega += w * b.vega; dv01 += w * b.delta * 1e-4;
+      rows.push({ s, e, ts, tau, F, D, d: b.d, b: b.pv, v, w });
+    }
+    return { rows, pv, vega, dv01 };
+  }
+  const ex = { start: '2029-03-16', years: 1, freq: 3, N: 50e6, K: 0.017, zp: 0.023, zd: 0.021, vol: 0.0085, cap: false };
+  const exS = strip(ex);
+
+  C.legs('#legs-cf', {
+    tMin: 0, tMax: 3.5, ticks: [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5], tickFmt: t => C.fmt(t, 1),
+    events: [{ t: 0, label: 'Trade' }, { t: 2.3123, label: 'First fixing' }, { t: 3.3123, label: 'End' }],
+    legs: [
+      { name: 'Floorlets: 50m × τ × max(1.70% − L, 0) (contingent)', dir: 1, style: 'contingent', flows: exS.rows.map((r, i) => ({ t: C.days(TODAY, r.e) / 365, a: 1, label: 'FL' + (i + 1), tip: `Floorlet ${i + 1}: fixes ${C.iso(r.s)}, pays ${C.iso(r.e)}, PV EUR ${C.fmt(r.v, 0)}` })) },
+      { name: 'Premium paid today', dir: -1, style: 'fixed', flows: [{ t: 0, a: 0.45, label: '149,811', tip: 'Premium EUR 149,811' }] },
+    ],
+  });
+
+  // Whole strip as a function of a flat forward level x.
+  const levelPV = (o, x, withVol) => strip(o).rows.reduce((acc, r) => {
+    const b = withVol ? C.bachelier({ F: x, K: o.K, T: r.ts, volN: o.vol, df: 1, call: o.cap }).pv : Math.max(o.cap ? x - o.K : o.K - x, 0);
+    return acc + r.w * b;
+  }, 0);
+  C.chart('#pay-cf', {
+    x: [0.002, 0.034], n: 120, xLabel: 'EURIBOR level (all periods)', yLabel: 'floor value (EUR, discounted)',
+    xFmt: x => C.pct(x, 1), yFmt: y => C.fmt(y / 1e3, 0) + 'k', tipFmt: y => 'EUR ' + C.fmt(y, 0),
+    series: [
+      { name: 'Payoff if all fixings = level', f: x => levelPV(ex, x, false), color: 1 },
+      { name: 'Value today with forwards = level', f: x => levelPV(ex, x, true), color: 3, dashed: true },
+    ],
+    marks: [{ x: 0.017, label: 'K = 1.70%' }, { x: 0.02275, label: 'forwards' }],
+  });
+
+  C.calc('#calc-cf', {
+    title: 'Cap / floor pricer (Bachelier per caplet)',
+    inputs: [
+      { id: 'type', label: 'Type', value: 'floor', options: [['cap', 'Cap'], ['floor', 'Floor']] },
+      { id: 'N', label: 'Notional', unit: 'EUR m', value: 50, step: 5 },
+      { id: 'K', label: 'Strike', unit: '%', value: 1.70, step: 0.05 },
+      { id: 'sy', label: 'Start year', value: 2029, step: 1, min: 2027, max: 2040 },
+      { id: 'sm', label: 'Start month', value: 3, step: 1, min: 1, max: 12 },
+      { id: 'yrs', label: 'Length', unit: 'years', value: 1, step: 1, min: 1, max: 20 },
+      { id: 'freq', label: 'Index tenor', value: 3, options: [[3, '3M EURIBOR'], [6, '6M EURIBOR']] },
+      { id: 'zp', label: 'EURIBOR zero', unit: '%', value: 2.30, step: 0.05 },
+      { id: 'zd', label: '€STR zero', unit: '%', value: 2.10, step: 0.05 },
+      { id: 'vol', label: 'Normal vol', unit: 'bp', value: 85, step: 1, min: 1 },
+    ],
+    compute: v => {
+      const mm = String(Math.min(12, Math.max(1, Math.round(v.sm)))).padStart(2, '0');
+      const o = { start: `${Math.round(v.sy)}-${mm}-16`, years: v.yrs, freq: v.freq, N: v.N * 1e6, K: v.K / 100, zp: v.zp / 100, zd: v.zd / 100, vol: v.vol / 1e4, cap: v.type === 'cap' };
+      const r = strip(o);
+      if (!r.rows.length) throw new Error('the start date must be after 23 Nov 2026');
+      const lbl = o.cap ? 'Caplet' : 'Floorlet';
+      return {
+        out: [
+          ['Number of ' + lbl.toLowerCase() + 's', String(r.rows.length)],
+          ['Average forward', C.pct(r.rows.reduce((a, x) => a + x.F, 0) / r.rows.length, 4)],
+          ['PV', 'EUR ' + C.fmt(r.pv, 0), true],
+          ['PV in bp of notional', C.fmt(r.pv / o.N * 1e4, 1) + 'bp'],
+          ['DV01 (forwards +1bp)', 'EUR ' + C.fmt(r.dv01, 0)],
+          ['Vega (+1bp normal vol)', 'EUR ' + C.fmt(r.vega, 0)],
+        ],
+        table: {
+          head: ['#', 'Fixing', 'Payment', 'T fix', 'τ', 'Forward', 'D(pay)', 'd', 'Rate value', 'PV (EUR)'],
+          num: [3, 4, 5, 6, 7, 8, 9],
+          rows: r.rows.map((x, i) => [lbl + ' ' + (i + 1), C.iso(x.s), C.iso(x.e), C.fmt(x.ts, 5), C.fmt(x.tau, 5), C.pct(x.F, 4), C.fmt(x.D, 6), C.fmt(x.d, 4), C.fmt(x.b * 1e4, 2) + 'bp', C.fmt(x.v, 0)]),
+        },
+        note: 'Periods start on the 16th of the chosen month; fixing lag and business-day adjustments are ignored. One normal vol for every caplet (a desk would use a different vol per expiry and strike).',
+      };
+    },
+  });
+})();
+</script>
+</body>
+</html>
